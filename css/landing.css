@@ -1,103 +1,285 @@
+/* ===========================
+   LANDING - GREMIO
+=========================== */
+
 body{
 
-background:#0F172A;
+    min-height:100vh;
 
-color:#F5E8C7;
+    background:
 
-font-family:"Cormorant Garamond",serif;
+        radial-gradient(circle at top,
+        rgba(255,220,120,.15),
+        transparent 30%),
 
-min-height:100vh;
+        radial-gradient(circle at bottom,
+        rgba(0,0,0,.35),
+        transparent 60%),
+
+        linear-gradient(
+        180deg,
+        #22304c,
+        #0d1321);
+
+    color:var(--text);
+
+    font-family:"Cormorant Garamond", serif;
 
 }
+
+/* ===========================
+        CONTENEDOR
+=========================== */
 
 .guild{
 
-max-width:500px;
+    width:min(92%,680px);
 
-margin:auto;
+    margin:auto;
 
-padding:2rem;
+    min-height:100vh;
 
-display:flex;
+    display:flex;
 
-flex-direction:column;
+    flex-direction:column;
 
-align-items:center;
+    justify-content:center;
 
-gap:2rem;
+    align-items:center;
+
+    gap:2.5rem;
+
+    padding:3rem 1.5rem;
 
 }
 
+/* ===========================
+          HERO
+=========================== */
+
 .hero{
 
-text-align:center;
+    text-align:center;
+
+}
+
+.hero-subtitle{
+
+    font-family:"Inter",sans-serif;
+
+    text-transform:uppercase;
+
+    letter-spacing:4px;
+
+    font-size:.8rem;
+
+    color:#c7ae79;
+
+    margin-bottom:1rem;
 
 }
 
 .hero h1{
 
-font-family:"Cinzel",serif;
+    font-family:"Cinzel",serif;
 
-font-size:2.4rem;
+    font-size:clamp(2.8rem,7vw,4.5rem);
 
-line-height:1.2;
+    line-height:1.15;
 
-margin-bottom:1rem;
+    color:var(--gold);
 
-}
+    text-shadow:
 
-.hero__quote{
-
-font-size:1.35rem;
-
-opacity:.9;
+        0 0 15px rgba(212,175,55,.25);
 
 }
 
-.book{
+.hero-text{
 
-position:relative;
+    margin-top:1.5rem;
 
-width:260px;
+    font-size:1.5rem;
 
-transition:.4s;
+    line-height:1.6;
 
-cursor:pointer;
-
-}
-
-.book img{
-
-width:100%;
-
-display:block;
-
-filter:drop-shadow(0 18px 35px rgba(0,0,0,.45));
+    color:var(--parchment);
 
 }
 
-.book:hover{
+/* ===========================
+      LIBRO
+=========================== */
 
-transform:translateY(-8px) scale(1.03);
+.book-area{
 
-}
+    display:flex;
 
-.book__glow{
+    justify-content:center;
 
-position:absolute;
-
-inset:0;
-
-border-radius:12px;
-
-background:radial-gradient(circle,#f8e7a355 0%,transparent 70%);
-
-animation:pulse 3s infinite;
+    width:100%;
 
 }
 
-.portal-button{
+.book-pedestal{
 
-margin-top:2rem;
+    position:relative;
+
+    padding:2rem;
+
+}
+
+.book-pedestal::after{
+
+    content:"";
+
+    position:absolute;
+
+    left:50%;
+
+    bottom:10px;
+
+    transform:translateX(-50%);
+
+    width:260px;
+
+    height:35px;
+
+    border-radius:50%;
+
+    background:rgba(0,0,0,.45);
+
+    filter:blur(18px);
+
+}
+
+.guild-book{
+
+    position:relative;
+
+    width:280px;
+
+    transition:all .35s ease;
+
+}
+
+.guild-book:hover{
+
+    transform:
+
+        translateY(-10px)
+
+        scale(1.03);
+
+}
+
+.guild-book img{
+
+    width:100%;
+
+    display:block;
+
+    filter:drop-shadow(0 20px 35px rgba(0,0,0,.45));
+
+}
+
+.book-light{
+
+    position:absolute;
+
+    inset:-25px;
+
+    background:
+
+        radial-gradient(circle,
+        rgba(248,231,163,.35),
+        transparent 70%);
+
+    animation:pulse 3s infinite;
+
+}
+
+/* ===========================
+      BOTONES
+=========================== */
+
+.actions{
+
+    width:100%;
+
+    display:flex;
+
+    flex-direction:column;
+
+    gap:1rem;
+
+}
+
+.guild-button{
+
+    padding:1.2rem;
+
+    border:none;
+
+    border-radius:14px;
+
+    cursor:pointer;
+
+    background:
+
+        linear-gradient(
+        180deg,
+        #5d4631,
+        #3d2d1f);
+
+    color:var(--parchment);
+
+    font-family:"Inter",sans-serif;
+
+    font-size:1rem;
+
+    letter-spacing:.5px;
+
+    transition:.35s;
+
+    box-shadow:var(--shadow-soft);
+
+}
+
+.guild-button:hover{
+
+    transform:translateY(-3px);
+
+    border:1px solid var(--gold);
+
+    box-shadow:
+
+        0 0 20px rgba(212,175,55,.25);
+
+}
+
+/* ===========================
+      ANIMACIONES
+=========================== */
+
+@keyframes pulse{
+
+    0%{
+
+        opacity:.45;
+
+    }
+
+    50%{
+
+        opacity:1;
+
+    }
+
+    100%{
+
+        opacity:.45;
+
+    }
 
 }

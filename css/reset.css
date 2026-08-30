@@ -1,0 +1,21 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+img{
+    display:block;
+    width:100%;
+}
+
+button{
+    border:none;
+    background:none;
+    cursor:pointer;
+    font:inherit;
+}
+
+body{
+    min-height:100vh;
+}

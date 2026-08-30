@@ -1,0 +1,44 @@
+:root{
+
+    /* ===== COLORES ===== */
+
+    --night:#0d1321;
+    --night-light:#18233b;
+
+    --wood:#3d2d1f;
+    --wood-light:#5d4631;
+
+    --gold:#d4af37;
+    --gold-soft:#f3d57c;
+
+    --parchment:#efe3c1;
+
+    --text:#f6edd5;
+
+    --magic:#89d7ff;
+
+    /* ===== SOMBRAS ===== */
+
+    --shadow-book:
+        0 25px 60px rgba(0,0,0,.55);
+
+    --shadow-soft:
+        0 10px 30px rgba(0,0,0,.25);
+
+    /* ===== BORDES ===== */
+
+    --radius:18px;
+
+    /* ===== ESPACIADO ===== */
+
+    --space-xs:.5rem;
+    --space-s:1rem;
+    --space-m:2rem;
+    --space-l:3rem;
+    --space-xl:5rem;
+
+    /* ===== TRANSICIONES ===== */
+
+    --transition:.35s ease;
+
+}
