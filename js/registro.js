@@ -59,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // Verificación de seguridad
-        if (!claseFinal) {
+        if (!claseFinal || claseFinal === "undefined") {
             claseFinal = "fantasia";
         }
 
@@ -87,13 +87,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 tipoUsuario: "aventurero",
                 imagen_avatar: "",
                 fuerza: 10,
-      agilidad: 10,
-      inteligencia: 10,
-      sabiduria: 10,
-      fatiga: 0,
-      mente: 0,
-      corazon: 0,
-      suerte: 0
+                agilidad: 10,
+                inteligencia: 10,
+                sabiduria: 10,
+                fatiga: 0,
+                mente: 0,
+                corazon: 0,
+                suerte: 0
 
             });
 
