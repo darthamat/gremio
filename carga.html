@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abriendo el Portal... - Gremio de Lectores</title>
+    
+    <!-- CSS global y específico -->
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/carga.css">
+</head>
+<body>
+
+    <main class="loader-container">
+        <!-- Contenedor con brillo y marco de la imagen -->
+        <div class="artwork-frame">
+            <!-- Sustituye la ruta por tu imagen generada -->
+            <img src="img/portal-gremio.png" alt="Ilustración del Gremio" class="loader-image">
+            <div class="artwork-overlay"></div>
+        </div>
+
+        <!-- Texto místico y barra de carga -->
+        <div class="loader-content">
+            <h2 class="loader-title">Cruzando el Umbral de Tinta</h2>
+            <p class="loader-subtitle" id="loader-quote">Consultando los tomos del Códice...</p>
+
+            <div class="progress-bar-container">
+                <div class="progress-bar-fill"></div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/carga.js"></script>
+</body>
+</html>

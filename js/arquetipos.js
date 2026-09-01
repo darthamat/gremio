@@ -28,7 +28,7 @@ export const CLASES_GREMIO = {
         nombre: "Ladrón de Libros",
         icono: "🗡️",
         descripcion: "Pícaro ágil que devora giros de guión a la velocidad de las sombras."
-    }
+    },
 
     nigromanteAbismo: {
         id: "nigromanteAbismo",

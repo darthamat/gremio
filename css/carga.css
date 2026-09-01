@@ -1,0 +1,112 @@
+/* ===========================
+   PANTALLA DE CARGA / PORTAL
+=========================== */
+
+body {
+    background: #080b12;
+    color: var(--parchment, #f4e8c1);
+    font-family: "Cinzel", serif;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    margin: 0;
+}
+
+.loader-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 550px;
+    width: 90%;
+    padding: 2rem;
+}
+
+/* Ilustración y Marco */
+.artwork-frame {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 300px;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 2px solid rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.25), 
+                0 15px 35px rgba(0, 0, 0, 0.8);
+    margin-bottom: 2rem;
+    animation: pulseFrame 3s infinite alternate ease-in-out;
+}
+
+.loader-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.9) contrast(1.1);
+    transition: transform 4s ease-out;
+    transform: scale(1);
+}
+
+/* Efecto Zoom en la imagen mientras carga */
+body:hover .loader-image,
+.loader-container .loader-image {
+    transform: scale(1.08);
+}
+
+.artwork-overlay {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle, transparent 40%, rgba(8, 11, 18, 0.8) 100%),
+                linear-gradient(180deg, transparent 60%, rgba(8, 11, 18, 0.9) 100%);
+}
+
+/* Textos */
+.loader-title {
+    font-size: 1.6rem;
+    color: var(--gold, #d4af37);
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+    margin-bottom: 0.5rem;
+    letter-spacing: 1px;
+}
+
+.loader-subtitle {
+    font-family: "Cormorant Garamond", serif;
+    font-size: 1.15rem;
+    font-style: italic;
+    color: #c4b8a5;
+    margin-bottom: 1.5rem;
+    min-height: 1.5rem;
+}
+
+/* Barra de progreso de XP/Carga */
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.progress-bar-fill {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #7a2b2b, #d4af37, #f4e8c1);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
+    border-radius: 10px;
+    animation: fillProgress 3.5s forwards cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Animaciones */
+@keyframes fillProgress {
+    0% { width: 0%; }
+    50% { width: 65%; }
+    100% { width: 100%; }
+}
+
+@keyframes pulseFrame {
+    0% { box-shadow: 0 0 20px rgba(212, 175, 55, 0.2); }
+    100% { box-shadow: 0 0 35px rgba(212, 175, 55, 0.5); }
+}
