@@ -1,111 +1,110 @@
-// Importaciones de Firebase SDK (versión modular)
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { generarNombreAleatorio, obtenerClaseAleatoria } from './arquetipos.js';
+// js/registro.js
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Tu configuración de Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyCyQaF1cDBu_7mItUTqcp3I29bgxugRXqk",
-  authDomain: "gremio-102c6.firebaseapp.com",
-  projectId: "gremio-102c6",
-  storageBucket: "gremio-102c6.firebasestorage.app",
-  messagingSenderId: "831650836895",
-  appId: "1:831650836895:web:9391d215aa0a0dc478cdaa"
-};
-
-// Inicialización de servicios
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Evento de envío del formulario
-document.addEventListener("DOMContentLoaded", () => {
-  const form = document.querySelector(".character-form");
-
-  if (!form) return;
-
-form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const username = document.getElementById("reg-username").value.trim();
-    const email = document.getElementById("reg-email").value.trim();
-    const password = document.getElementById("reg-password").value;
-
-    // 1. Capturar el elemento marcado
-    const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
-    
-    // 2. Extraer el valor de forma segura
-    let claseFinal = radioSeleccionado ? radioSeleccionado.value : "fantasia";
-
-    // 3. Si eligió la tarjeta aleatoria, tomar la clase asignada por el azar
-    if (claseFinal === "aleatorio") {
-        claseFinal = radioSeleccionado.dataset.claseAsignada || obtenerClaseAleatoria().id;
-    }
-
-    // 4. Verificación de seguridad para evitar enviar undefined a Firestore
-    if (!claseFinal) {
-        claseFinal = "fantasia"; // Clase por defecto en caso de fallo
-    }
-
-    const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;
-
-    try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Guardado en Firestore
-        await setDoc(doc(db, "aventureros", user.uid), {
-            uid: user.uid,
-            nombre: username,
-            email: email,
-            clase: claseFinal, // <--- Ahora se garantiza que nunca será undefined
-            nivel: 1,
-            xp: 0,
-            paginasLeidas: 0,
-            librosCompletados: 0,
-            fechaUnicion: serverTimestamp()
-        });
-
-        window.location.href = "carga.html";
-
-    } catch (error) {
-        console.error("Error al registrar aventurero:", error);
-        alert("⚠️ Fallo en el registro: " + error.message);
-    } finally {
-        submitBtn.disabled = false;
-    }
-});
-});
+// Importación de la conexión centralizada
+import { auth, db } from "./firebase-config.js";
+import { generarNombreAleatorio, obtenerClaseAleatoria } from "./arquetipos.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+    const form = document.querySelector(".character-form");
     const classCards = document.querySelectorAll('.class-card input[name="class-choice"]');
     const inputNombre = document.getElementById("reg-username");
 
+    // -----------------------------------------------------------
+    // 1. Gestión de selección de tarjetas (Lógica interactiva)
+    // -----------------------------------------------------------
     classCards.forEach(radio => {
         radio.addEventListener("change", (e) => {
             const valorSeleccionado = e.target.value;
 
-            // SOLO si selecciona la tarjeta del Azar / Aleatorio
             if (valorSeleccionado === "aleatorio") {
-                // 1. Asigna un nombre aleatorio al campo de texto
+                // Genera un nombre aleatorio
                 if (inputNombre) {
                     inputNombre.value = generarNombreAleatorio();
                 }
-                
 
-                // 2. Selecciona una clase real de forma transparente para la base de datos
+                // Asigna una clase real de forma transparente
                 const claseAzar = obtenerClaseAleatoria();
-                
-                // Guardamos la clase asignada por el azar en un atributo de datos
                 e.target.dataset.claseAsignada = claseAzar.id;
             } else {
-                // Si el usuario elige manualmente cualquier otra clase, NO tocamos el nombre
-                // dejando que escriba o mantenga el que prefiera.
+                // Si elije otra clase, limpiamos la clase asignada por el azar
                 delete e.target.dataset.claseAsignada;
-                inputNombre.value = "";
+                  inputNombre.value = "";
             }
         });
+    });
+
+    // -----------------------------------------------------------
+    // 2. Envío del Formulario y Guardado en Firestore
+    // -----------------------------------------------------------
+    if (!form) return;
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById("reg-username").value.trim();
+        const realname = document.getElementById("real-username").value.trim();
+        const email = document.getElementById("reg-email").value.trim();
+        const password = document.getElementById("reg-password").value;
+
+        // Capturar elemento seleccionado
+        const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
+        
+        let claseFinal = radioSeleccionado ? radioSeleccionado.value : "fantasia";
+
+        // Si eligió la tarjeta aleatoria, tomar la clase asignada por el azar
+        if (claseFinal === "aleatorio") {
+            claseFinal = radioSeleccionado.dataset.claseAsignada || obtenerClaseAleatoria().id;
+        }
+
+        // Verificación de seguridad
+        if (!claseFinal) {
+            claseFinal = "fantasia";
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+
+        try {
+            // Registrar usuario en Firebase Auth
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const user = userCredential.user;
+
+            // Guardar Ficha de Personaje en Firestore
+            await setDoc(doc(db, "aventureros", user.uid), {
+                uid: user.uid,
+                nombre: username,
+                nombreReal: realname,
+                email: email,
+                clase: claseFinal,
+                nivel: 1,
+                xp: 0,
+                prestigio: 0,
+                paginasLeidas: 0,
+                librosCompletados: 0,
+                fechaUnion: serverTimestamp(), 
+                tipoUsuario: "aventurero",
+                imagen_avatar: "",
+                fuerza: 10,
+      agilidad: 10,
+      inteligencia: 10,
+      sabiduria: 10,
+      fatiga: 0,
+      mente: 0,
+      corazon: 0,
+      suerte: 0
+
+            });
+
+            // Redirigir a la pantalla de carga intermedia
+            window.location.href = "carga.html";
+
+        } catch (error) {
+            console.error("Error al registrar aventurero:", error);
+            alert("⚠️ Fallo en el registro: " + error.message);
+        } finally {
+            submitBtn.disabled = false;
+        }
     });
 });
