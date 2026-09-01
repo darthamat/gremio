@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creación de Personaje - Gremio de Exploradores</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/registro.css">
+</head>
+
+<body>
+
+<main class="character-creation-container">
+
+    <header class="creation-header">
+        <p class="subtitle">Página 111 - El Reclutamiento</p>
+        <h1>Forja tu Ficha de Aventurero</h1>
+        <p class="intro-text">Responde al llamado de la tinta para registrar tu presencia en el Códice del Gremio.</p>
+    </header>
+
+    <form class="character-form">
+
+        <!-- Paso 1: Datos Personales -->
+        <fieldset class="form-section">
+            <legend>📜 Identidad y Claves</legend>
+
+            <div class="form-group">
+                <label for="reg-username">Nombre de Aventurero / Apodo</label>
+                <input type="text" id="reg-username" placeholder="Ej. Kvothe el Sin Sangre" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-email">Correo para la Lechuza (Email)</label>
+                <input type="email" id="reg-email" placeholder="aventurero@arcanum.com" required>
+            </div>
+
+            <div class="form-group">
+                <label for="reg-password">Palabra Mágica (Contraseña)</label>
+                <input type="password" id="reg-password" placeholder="••••••••" required>
+            </div>
+        </fieldset>
+
+        <!-- Paso 2: Elección de Clase Lectora -->
+        <fieldset class="form-section">
+            <legend>⚔️ Elige tu Clase Lectora Principal</legend>
+            <p class="section-desc">Tu clase determina tu atributo principal y las misiones que mejor se adapten a ti.</p>
+
+            <div class="class-selector">
+
+                <label class="class-card">
+                    <input type="radio" name="class-choice" value="fantasia" checked>
+                    <div class="card-content">
+                        <span class="class-icon">🧙‍♂️</span>
+                        <h3>Bardo Fantástico</h3>
+                        <p>Especialista en mundos épicos, magia e historias de alta fantasía.</p>
+                    </div>
+                </label>
+
+                <label class="class-card">
+                    <input type="radio" name="class-choice" value="misterio">
+                    <div class="card-content">
+                        <span class="class-icon">🔍</span>
+                        <h3>Inquisidor</h3>
+                        <p>Maestro del thriller, misterio, novela negra y deducción lógica.</p>
+                    </div>
+                </label>
+
+                <label class="class-card">
+                    <input type="radio" name="class-choice" value="ciencia-ficcion">
+                    <div class="card-content">
+                        <span class="class-icon">🚀</span>
+                        <h3>Navegante Estelar</h3>
+                        <p>Explorador del espacio, distopías y futurología de ciencia ficción.</p>
+                    </div>
+                </label>
+
+                <label class="class-card">
+                    <input type="radio" name="class-choice" value="erudito">
+                    <div class="card-content">
+                        <span class="class-icon">📚</span>
+                        <h3>Erudito</h3>
+                        <p>Buscador del saber a través del ensayo, la historia y la no ficción.</p>
+                    </div>
+                </label>
+
+            </div>
+        </fieldset>
+
+        <!-- Botón de Inscripción -->
+        <div class="form-actions">
+            <button type="submit" class="guild-button primary-action">
+                ✒️ Firmar el Códice y Comenzar
+            </button>
+            <button type="button" class="guild-button secondary-action" onclick="window.location.href='index.html';">
+                🏰 Volver
+            </button>
+        </div>
+
+    </form>
+
+</main>
+
+</body>
+</html>

@@ -7,3 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Page loaded successfully
     console.log('Gremio landing page loaded');
 });
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnLogin = document.getElementById('btn-login');
+    const loginForm = document.getElementById('login-form');
+
+    btnLogin.addEventListener('click', () => {
+        // Alterna la clase 'hidden' para abrir o cerrar suavemente
+        loginForm.classList.toggle('hidden');
+    });
+});

@@ -200,64 +200,48 @@ body{
 }
 
 /* ===========================
-      BOTONES
+      CONTENEDOR DE BOTONES
 =========================== */
 
-.actions{
-
-    width:100%;
-
-    display:flex;
-
-    flex-direction:column;
-
-    gap:1rem;
-
+.actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch; /* Estira todos los botones para medir lo mismo */
+    width: max-content;   /* Ajusta la anchura global al botón con el texto más largo */
+    max-width: 90vw;      /* Seguridad para no desbordar en dispositivos móviles */
+    margin: 0 auto;
+    gap: 1rem;
 }
 
-.guild-button{
+.guild-button {
+    width: 100%;          /* Rena todo el ancho fijado por .actions */
+    box-sizing: border-box;
+    white-space: nowrap;  /* Mantiene el texto en una sola línea para no distorsionar la medida */
+    
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    padding: 1.2rem 1.8rem;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
 
-    padding:1.2rem;
+    background: linear-gradient(180deg, #5d4631, #3d2d1f);
+    color: var(--parchment);
+    font-family: "Inter", sans-serif;
+    font-size: 1rem;
+    letter-spacing: .5px;
 
-    border:none;
-
-    border-radius:14px;
-
-    cursor:pointer;
-
-    background:
-
-        linear-gradient(
-        180deg,
-        #5d4631,
-        #3d2d1f);
-
-    color:var(--parchment);
-
-    font-family:"Inter",sans-serif;
-
-    font-size:1rem;
-
-    letter-spacing:.5px;
-
-    transition:.35s;
-
-    box-shadow:var(--shadow-soft);
-
+    transition: all .35s ease;
+    box-shadow: var(--shadow-soft);
 }
 
-.guild-button:hover{
-
-    transform:translateY(-3px);
-
-    border:1px solid var(--gold);
-
-    box-shadow:
-
-        0 0 20px rgba(212,175,55,.25);
-
+.guild-button:hover {
+    transform: translateY(-3px);
+    border: 1px solid var(--gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, .25);
 }
-
 /* ===========================
       ANIMACIONES
 =========================== */
@@ -282,4 +266,95 @@ body{
 
     }
 
+}
+/* Contenedor de botones (necesita flexbox para empujar elementos hacia abajo) */
+/* .actions {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    max-width: 400px;
+    margin: 0 auto;
+} */
+
+/* Caja de Login Mágica */
+.login-box {
+   width: 100%;
+    box-sizing: border-box; /* Crucial para que el padding no sume ancho extra */
+    background: rgba(10, 25, 47, 0.85);
+    border: 2px solid #64ffda;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 0 20px rgba(100, 255, 218, 0.3),
+                inset 0 0 15px rgba(100, 255, 218, 0.1);
+    backdrop-filter: blur(5px);
+    
+    max-height: 300px;
+    opacity: 1;
+    overflow: hidden;
+    transition: all 0.4s ease-in-out;
+    
+}
+
+/* Estado oculto para la animación */
+.login-box.hidden {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-color: transparent;
+    pointer-events: none;
+
+    /* Reglas esenciales para eliminar el margen fantasma */
+    margin-top: -1rem;  /* Anula exactamente el 'gap' extra de .actions */
+    border-width: 0;   /* Evita que el grosor del borde ocupe espacio */
+    overflow: hidden;  /* Asegura que nada se salga del área de 0px */
+}
+
+/* Campos del formulario */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    font-family: var(--font-serif);
+    color: #8892b0;
+    font-size: 0.95rem;
+    margin-bottom: 0.3rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.6rem;
+    background: rgba(2, 12, 27, 0.7);
+    border: 1px solid #233554;
+    border-radius: 4px;
+    color: #e6f1ff;
+    font-family: var(--font-ui);
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #64ffda;
+    box-shadow: 0 0 8px rgba(100, 255, 218, 0.5);
+}
+
+/* Botón de envío azul mágico */
+.magic-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    color: #e6f1ff;
+    border: 1px solid #64ffda;
+    box-shadow: 0 0 10px rgba(42, 82, 152, 0.5);
+    cursor: pointer;
+}
+
+.magic-btn:hover {
+    background: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+    box-shadow: 0 0 15px rgba(100, 255, 218, 0.6);
 }

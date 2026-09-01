@@ -1,0 +1,214 @@
+/* ===========================
+   CREACIÓN DE PERSONAJE
+=========================== */
+
+body {
+    min-height: 100vh;
+    background: 
+        radial-gradient(circle at top, rgba(255, 220, 120, 0.1), transparent 40%),
+        radial-gradient(circle at bottom, rgba(0, 0, 0, 0.6), transparent 70%),
+        linear-gradient(180deg, #182338, #0a0f1a);
+    color: var(--parchment, #f4e8c1);
+    font-family: "Cormorant Garamond", serif;
+    padding: 2rem 1rem;
+}
+
+.character-creation-container {
+    width: min(92%, 720px);
+    margin: 0 auto;
+    background: rgba(15, 23, 38, 0.85);
+    border: 2px solid rgba(212, 175, 55, 0.4);
+    border-radius: 14px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(212, 175, 55, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+/* Header */
+.creation-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.creation-header .subtitle {
+    font-family: "Inter", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.8rem;
+    color: #c7ae79;
+}
+
+.creation-header h1 {
+    font-family: "Cinzel", serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    color: var(--gold, #d4af37);
+    text-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    margin-top: 0.3rem;
+}
+
+.intro-text {
+    font-size: 1.2rem;
+    color: #d1c7b7;
+    margin-top: 0.5rem;
+}
+
+/* Secciones del Formulario (Fieldsets) */
+.form-section {
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    background: rgba(10, 15, 26, 0.4);
+}
+
+.form-section legend {
+    font-family: "Cinzel", serif;
+    color: #f3cf55;
+    font-size: 1.2rem;
+    padding: 0 0.8rem;
+}
+
+.section-desc {
+    font-size: 1rem;
+    color: #b5a995;
+    margin-bottom: 1.2rem;
+}
+
+/* Campos de entrada */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.2rem;
+}
+
+.form-group label {
+    font-family: "Inter", sans-serif;
+    font-size: 0.85rem;
+    color: #e6c875;
+    margin-bottom: 0.4rem;
+}
+
+.form-group input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.8rem 1rem;
+    background: rgba(5, 8, 15, 0.8);
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    border-radius: 6px;
+    color: #f4e8c1;
+    font-family: "Inter", sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+.form-group input:focus {
+    border-color: #d4af37;
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+
+/* Selector de Clases (Tarjetas de Selección) */
+.class-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.class-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.class-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.card-content {
+    background: rgba(20, 28, 45, 0.6);
+    border: 2px solid rgba(212, 175, 55, 0.2);
+    border-radius: 10px;
+    padding: 1.2rem;
+    height: 100%;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.class-icon {
+    font-size: 2.2rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.card-content h3 {
+    font-family: "Cinzel", serif;
+    color: #d4af37;
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+}
+
+.card-content p {
+    font-size: 0.95rem;
+    color: #c4b8a5;
+    line-height: 1.4;
+}
+
+/* Estado Seleccionado */
+.class-card input[type="radio"]:checked + .card-content {
+    background: rgba(45, 33, 18, 0.8);
+    border-color: #d4af37;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+    transform: translateY(-2px);
+}
+
+.class-card:hover .card-content {
+    border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* Acciones */
+.form-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.guild-button {
+    width: 100%;
+    max-width: 380px;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: "Inter", sans-serif;
+    font-size: 1rem;
+    transition: all 0.35s ease;
+    box-sizing: border-box;
+}
+
+.primary-action {
+    background: linear-gradient(180deg, #7a2b2b, #4a1818);
+    color: #f4e8c1;
+    border: 1px solid #d4af37;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.primary-action:hover {
+    background: linear-gradient(180deg, #943434, #5c1e1e);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+    transform: translateY(-2px);
+}
+
+.secondary-action {
+    background: transparent;
+    color: #c7ae79;
+    border: 1px dashed rgba(212, 175, 55, 0.3);
+}
+
+.secondary-action:hover {
+    color: #f4e8c1;
+    border-color: #d4af37;
+}

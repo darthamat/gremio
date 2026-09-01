@@ -62,19 +62,38 @@
 
     <section class="actions">
 
-        <button class="guild-button primary" type="button" onclick="window.location.href='portal.html';">
-            ⚔️¿Has recibido la carta?
-        </button>
+      
+    <button class="guild-button primary" id="btn-login" type="button">
+        ⚔️ ¿Has recibido la carta?
+    </button>
 
-        <button class="guild-button" type="button">
-            🛡 ¿Que carta?
-        </button>
+    <form class="login-box hidden" id="login-form">
+        <div class="form-group">
+            <label for="username">Nombre del Aventurero</label>
+            <input type="text" id="username" placeholder="Ej. Elminster" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Palabra Mágica</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
 
-        <button class="guild-button">
-            ✨ Comenzar una Nueva Leyenda
+        <button type="submit" class="guild-button magic-btn">
+            ✨ Entrar al gremio
         </button>
+    </form>
 
-    </section>
+    <button class="guild-button" type="button" onclick="window.location.href='lore.html';">
+        🛡 ¿Qué carta?
+    </button>
+
+    <button class="guild-button" type="button" onclick="window.location.href='registro.html';">
+        ✨ Comenzar una Nueva Leyenda
+    </button>
+
+</section>
+
+
 
 </main>
 
