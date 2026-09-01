@@ -25,62 +25,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form) return;
 
-  form.addEventListener("submit", async (e) => {
+form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Captura de campos del formulario
     const username = document.getElementById("reg-username").value.trim();
     const email = document.getElementById("reg-email").value.trim();
     const password = document.getElementById("reg-password").value;
-    const selectedClass = document.querySelector('input[name="class-choice"]:checked')?.value || "aventurero";
+
+    // 1. Capturar el elemento marcado
+    const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
+    
+    // 2. Extraer el valor de forma segura
+    let claseFinal = radioSeleccionado ? radioSeleccionado.value : "fantasia";
+
+    // 3. Si eligió la tarjeta aleatoria, tomar la clase asignada por el azar
+    if (claseFinal === "aleatorio") {
+        claseFinal = radioSeleccionado.dataset.claseAsignada || obtenerClaseAleatoria().id;
+    }
+
+    // 4. Verificación de seguridad para evitar enviar undefined a Firestore
+    if (!claseFinal) {
+        claseFinal = "fantasia"; // Clase por defecto en caso de fallo
+    }
 
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
-    submitBtn.innerText = "📜 Inscribiendo en el Códice...";
-
-    // Si eligió la tarjeta "aleatorio", tomamos la clase que le asignó la función; si no, la que marcó.
-let claseFinal = selectedClass?.value;
-if (claseFinal === "aleatorio") {
-    claseFinal = selectedClass.dataset.claseAsignada || obtenerClaseAleatoria().id;
-}
 
     try {
-      // 1. Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
-      // 2. Crear la Ficha de Personaje en Firestore
-      await setDoc(doc(db, "aventureros", user.uid), {
-        uid: user.uid,
-        nombre: username,
-        email: email,
-        clase: claseFinal,
-        nivel: 1,
-        xp: 0,
-        paginasLeidas: 0,
-        librosCompletados: 0,
-        fechaUnicion: serverTimestamp()
-      });
+        // Guardado en Firestore
+        await setDoc(doc(db, "aventureros", user.uid), {
+            uid: user.uid,
+            nombre: username,
+            email: email,
+            clase: claseFinal, // <--- Ahora se garantiza que nunca será undefined
+            nivel: 1,
+            xp: 0,
+            paginasLeidas: 0,
+            librosCompletados: 0,
+            fechaUnicion: serverTimestamp()
+        });
 
-      alert("✨ ¡Tu firma ha sido registrada con éxito en el Códice! Redirigiendo a la Taberna...");
-      window.location.href = "taberna.html"; // O tu página principal interna
+        window.location.href = "carga.html";
 
     } catch (error) {
-      console.error("Error al registrar aventurero:", error);
-      
-      // Manejo de errores comunes
-      if (error.code === "auth/email-already-in-use") {
-        alert("⚠️ Este correo ya ha sido firmado por otro aventurero.");
-      } else if (error.code === "auth/weak-password") {
-        alert("⚠️ La palabra mágica (contraseña) debe contener al menos 6 caracteres.");
-      } else {
-        alert("⚠️ Ocurrió un fallo en el ritual de inscripción. Revisa la consola.");
-      }
+        console.error("Error al registrar aventurero:", error);
+        alert("⚠️ Fallo en el registro: " + error.message);
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.innerText = "✒️ Firmar el Códice y Comenzar";
+        submitBtn.disabled = false;
     }
-  });
+});
 });
 
 document.addEventListener("DOMContentLoaded", () => {
