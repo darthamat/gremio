@@ -1,0 +1,6 @@
+IMPORTANT: Replace this file with the actual book-placeholder.png image file.
+
+The image should be a book cover or book-related graphic.
+File name: book-placeholder.png
+Size: Recommended at least 300x400px for good quality
+Format: PNG with transparency is preferred
