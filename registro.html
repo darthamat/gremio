@@ -38,6 +38,11 @@
                 <input type="text" id="reg-username" placeholder="Ej. Kvothe el Sin Sangre" required>
             </div>
 
+ <div class="form-group">
+                <label for="real-username">Nombre Real</label>
+                <input type="text" id="real-username" placeholder="Ej. José Diaz" required>
+            </div>
+
             <div class="form-group">
                 <label for="reg-email">Correo para la Lechuza (Email)</label>
                 <input type="email" id="reg-email" placeholder="aventurero@arcanum.com" required>
@@ -60,7 +65,7 @@
                     <input type="radio" name="class-choice" value="fantasia" checked>
                     <div class="card-content">
                         <span class="class-icon">🧙‍♂️</span>
-                        <h3>Bardo Fantástico</h3>
+                        <h3>Mago/a CuentaCuentos</h3>
                         <p>Especialista en mundos épicos, magia e historias de alta fantasía.</p>
                     </div>
                 </label>
@@ -69,8 +74,8 @@
                     <input type="radio" name="class-choice" value="misterio">
                     <div class="card-content">
                         <span class="class-icon">🔍</span>
-                        <h3>Inquisidor</h3>
-                        <p>Maestro del thriller, misterio, novela negra y deducción lógica.</p>
+                        <h3>Inquisidor/a</h3>
+                        <p>Maestro/a del thriller, misterio, novela negra y deducción lógica.</p>
                     </div>
                 </label>
 
@@ -78,8 +83,8 @@
                     <input type="radio" name="class-choice" value="ciencia-ficcion">
                     <div class="card-content">
                         <span class="class-icon">🚀</span>
-                        <h3>Navegante Estelar</h3>
-                        <p>Explorador del espacio, distopías y futurología de ciencia ficción.</p>
+                        <h3>Pirata Estelar</h3>
+                        <p>Explorador/a del espacio, distopías y futurología de ciencia ficción.</p>
                     </div>
                 </label>
 
@@ -87,10 +92,46 @@
                     <input type="radio" name="class-choice" value="erudito">
                     <div class="card-content">
                         <span class="class-icon">📚</span>
-                        <h3>Erudito</h3>
-                        <p>Buscador del saber a través del ensayo, la historia y la no ficción.</p>
+                        <h3>Erudito/a</h3>
+                        <p>Buscador/a del saber a través del ensayo, la historia y la no ficción.</p>
                     </div>
                 </label>
+
+                  <label class="class-card">
+    <input type="radio" name="class-choice" value="guerrero">
+    <div class="card-content">
+        <span class="class-icon">⚔️</span>
+        <h3>Guerrero/a Friki</h3>
+        <p>Defensor/a de los datos puros. Devora ensayos, historia y biografías para ganar cada debate en la taberna.</p>
+    </div>
+</label>
+
+                  <label class="class-card">
+    <input type="radio" name="class-choice" value="picaro">
+    <div class="card-content">
+        <span class="class-icon">🗡️</span>
+        <h3>Ladrón/a de Libros</h3>
+        <p>Experto/a en giros de guión, misterios y thrillers oscuros. Devora capítulos a la velocidad de las sombras.</p>
+    </div>
+</label>
+
+                  <label class="class-card">
+    <input type="radio" name="class-choice" value="explorador">
+    <div class="card-content">
+        <span class="class-icon">🛡️</span>
+        <h3>Explorador/a</h3>
+        <p>Descubridor/a de nuevos mundos, historias y realidades alternativas. Devora libros como si fueran aventuras.</p>
+    </div>
+</label>
+
+                  <label class="class-card random-card">
+    <input type="radio" name="class-choice" value="aleatorio" id="card-random">
+    <div class="card-content">
+        <span class="class-icon">🎲</span>
+        <h3>Destino Impredecible</h3>
+        <p>Deja que la suerte determine tu clase y te asigne un nombre legendario en el Códice.</p>
+    </div>
+</label>
 
             </div>
         </fieldset>
@@ -108,6 +149,6 @@
     </form>
 
 </main>
-
+<script type="module" src="js/registro.js"></script>
 </body>
 </html>
