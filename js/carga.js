@@ -26,6 +26,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // Redireccionar al Dashboard / Taberna tras 3.5 segundos
     setTimeout(() => {
         clearInterval(interval);
-        window.location.href = "dashboard.html"; // Ajusta la ruta a tu página destino
+        window.location.href = "gremio.html"; // Ajusta la ruta a tu página destino
     }, 3500);
 });

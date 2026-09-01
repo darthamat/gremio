@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Gremio de Aventureros Lectores</title>
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/gremio.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
+</head>
+<body class="dashboard-body">
+
+  <div class="dashboard-container">
+
+    <header class="guild-header">
+      <h1 class="guild-title">GREMIO DE AVENTUREROS LECTORES</h1>
+      <p class="guild-motto">«Todo libro es un portal. Todo lector, un aventurero.»</p>
+    </header>
+
+<!-- ÁREA CENTRAL: LIBRO MÁGICO / RETO MENSUAL -->
+    <main class="central-portal-section">
+      <div class="open-book">
+        
+        <!-- PÁGINA IZQUIERDA: PORTADA DESDE FIREBASE -->
+        <div class="book-page page-left">
+          <div class="book-cover-container">
+            <!-- La portada se cargará dinámicamente con JS -->
+            <img id="book-cover" src="img/placeholder-book.jpg" alt="Portada del libro del mes" class="book-cover-img">
+            <div class="cover-glow"></div>
+          </div>
+        </div>
+
+        <!-- CENTRO DEL LIBRO (LUZ MÁGICA / LOMO) -->
+        <div class="book-spine">
+          <div class="magic-glow"></div>
+        </div>
+
+        <!-- PÁGINA DERECHA: DETALLES DEL RETO -->
+        <div class="book-page page-right">
+          <div class="page-content">
+            <span class="chapter-tag">RETO MENSUAL</span>
+            <h2 id="book-title">Cargando libro...</h2>
+            <p class="book-author" id="book-author">Autor: ---</p>
+            <p class="book-desc" id="book-description">Cargando la misión y detalles del reto mensual desde el Cónclave...</p>
+            
+            <div class="expedition-badge">
+              <span>Misión Actual:</span>
+              <strong id="expedition-name">Expedición en curso</strong>
+            </div>
+
+            <a href="reto-mensual.html" class="book-btn">Ver Ficha del Reto</a>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <nav class="guild-menu-grid">
+
+      <a href="orden.html" class="portal-card">
+        <div class="card-icon">📜</div>
+        <div class="card-info">
+          <h3>El Cónclave de la Tinta</h3>
+          <p>Organigrama, dignatarios y ranking de miembros</p>
+        </div>
+      </a>
+
+      <a href="perfil.html" class="portal-card">
+        <div class="card-icon">🛡️</div>
+        <div class="card-info">
+          <h3>Ficha de Aventurero</h3>
+          <p>Tus estadísticas, nivel, inventario y medallas</p>
+        </div>
+      </a>
+
+      <a href="reto-mensual.html" class="portal-card highlight-card">
+        <div class="card-icon">🗡️</div>
+        <div class="card-info">
+          <h3>Expedición Mensual</h3>
+          <p>Detalles del libro, reglas y reporte de avance</p>
+        </div>
+      </a>
+
+      <a href="atlas.html" class="portal-card">
+        <div class="card-icon">🗺️</div>
+        <div class="card-info">
+          <h3>Atlas de Reinos</h3>
+          <p>Mapas y regiones descubiertas en los libros</p>
+        </div>
+      </a>
+
+    </nav>
+
+    <footer class="guild-footer">
+      <p>«Hay puertas que no se abren con una llave. Se abren al pasar una página.»</p>
+    </footer>
+
+  </div>
+
+</body>
+</html>

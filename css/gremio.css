@@ -1,0 +1,288 @@
+/* VARIABLES Y TEMA MÁGICO / MEDIEVAL */
+:root {
+  --bg-dark: #0d0c10;
+  --bg-card: rgba(25, 22, 34, 0.85);
+  --paper-bg: #f4e8c1;
+  --paper-border: #c8b27c;
+  --gold-primary: #d4af37;
+  --gold-light: #f3e5ab;
+  --gold-glow: rgba(212, 175, 55, 0.4);
+  --text-dark: #2b1e10;
+  --text-light: #e0d7c6;
+  --blue-magic: #4aa3df;
+  --font-title: 'Cinzel', serif;
+  --font-body: 'MedievalSharp', cursive, Georgia, serif;
+}
+
+body.dashboard-body {
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 50% 30%, rgba(30, 25, 50, 0.8) 0%, rgba(10, 10, 15, 0.95) 100%);
+  color: var(--text-light);
+  font-family: var(--font-body);
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+}
+
+/* HEADER */
+.guild-header {
+  text-align: center;
+}
+
+.guild-title {
+  font-family: var(--font-title);
+  color: var(--gold-primary);
+  font-size: 2.4rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin: 0 0 5px 0;
+  text-shadow: 0 0 15px var(--gold-glow);
+}
+
+.guild-motto {
+  color: #a8a090;
+  font-style: italic;
+  margin: 0;
+}
+
+/* LIBRO CENTRAL (PORTAL) */
+.central-portal-section {
+  width: 100%;
+  max-width: 900px;
+  perspective: 1000px;
+}
+
+/* LIBRO CENTRAL CON RESPLANDOR ALREDEDOR */
+.open-book {
+  display: flex;
+  background: var(--paper-bg);
+  border: 3px solid var(--gold-primary);
+  border-radius: 12px;
+  color: var(--text-dark);
+  position: relative;
+  overflow: hidden;
+  padding: 30px 20px;
+  
+  /* Sombra base + Resplandor (Glow) envolvente alrededor de todo el libro */
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.8),
+    0 0 25px rgba(212, 175, 55, 0.4),
+    0 0 50px rgba(212, 175, 55, 0.2);
+  
+  /* Transición suave para animación de pulso */
+  animation: aura-glow 3s infinite alternate ease-in-out;
+}
+
+.book-page {
+  flex: 1;
+  padding: 20px 30px;
+}
+
+.page-left {
+  border-right: 2px dashed var(--paper-border);
+}
+
+.page-right {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.chapter-tag {
+  font-size: 0.8rem;
+  font-family: var(--font-title);
+  color: #8b5a2b;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.open-book h2 {
+  font-family: var(--font-title);
+  color: #4a2c11;
+  margin: 10px 0 15px 0;
+}
+
+.book-quote {
+  font-style: italic;
+  color: #5a4332;
+  line-height: 1.5;
+}
+
+.expedition-badge {
+  background: rgba(139, 90, 43, 0.15);
+  border-left: 3px solid #8b5a2b;
+  padding: 8px 12px;
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+.book-btn {
+  display: inline-block;
+  align-self: flex-start;
+  margin-top: 15px;
+  padding: 10px 20px;
+  background-color: #8b5a2b;
+  color: var(--gold-light);
+  text-decoration: none;
+  font-family: var(--font-title);
+  font-weight: bold;
+  border-radius: 4px;
+  border: 1px solid var(--gold-primary);
+  transition: all 0.3s ease;
+}
+
+.book-btn:hover {
+  background-color: #5a3818;
+  box-shadow: 0 0 10px rgba(139, 90, 43, 0.5);
+}
+
+/* LOMO Y EFECTO MÁGICO CENTRAL */
+
+
+.magic-glow {
+  width: 4px;
+  height: 90%;
+  background: var(--blue-magic);
+  box-shadow: 0 0 15px 8px var(--blue-magic);
+  border-radius: 50%;
+  animation: pulse-glow 2.5s infinite ease-in-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.4; transform: scaleY(0.9); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+
+/* GRID DE BOTONES / TARJETAS ALREDEDOR */
+.guild-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  width: 100%;
+}
+
+.portal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--gold-primary);
+  border-radius: 8px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-decoration: none;
+  color: var(--text-light);
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.portal-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--gold-light);
+  box-shadow: 0 6px 20px var(--gold-glow);
+  background: rgba(40, 35, 55, 0.95);
+}
+
+.card-icon {
+  font-size: 2rem;
+  background: rgba(212, 175, 55, 0.1);
+  padding: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--gold-primary);
+}
+
+.card-info h3 {
+  margin: 0 0 5px 0;
+  font-family: var(--font-title);
+  color: var(--gold-primary);
+  font-size: 1.05rem;
+}
+
+.card-info p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #b0a898;
+}
+
+.highlight-card {
+  border-color: var(--blue-magic);
+}
+
+.highlight-card .card-info h3 {
+  color: var(--blue-magic);
+}
+
+/* FOOTER */
+.guild-footer {
+  text-align: center;
+  font-style: italic;
+  color: var(--gold-primary);
+  border-top: 1px solid rgba(212, 175, 55, 0.2);
+  padding-top: 15px;
+  width: 100%;
+}
+
+/* RESPONSIVO EN PANTALLAS PEQUEÑAS */
+@media (max-width: 768px) {
+  .open-book {
+    flex-direction: column;
+  }
+  .page-left {
+    border-right: none;
+    border-bottom: 2px dashed var(--paper-border);
+  }
+  .book-spine {
+    display: none;
+  }
+}
+
+/* ESTILOS PARA LA PORTADA EN LA PÁGINA IZQUIERDA */
+.page-left {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-right: 2px dashed var(--paper-border);
+  padding: 15px;
+}
+
+.book-cover-container {
+  position: relative;
+  max-width: 180px;
+  width: 100%;
+  border-radius: 6px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+  border: 3px solid #8b5a2b;
+  overflow: hidden;
+  transition: transform 0.3s ease;
+}
+
+.book-cover-container:hover {
+  transform: scale(1.03);
+}
+
+.book-cover-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 2 / 3;
+}
+
+/* Título y autor en la página derecha */
+.book-author {
+  font-style: italic;
+  color: #6e4723;
+  margin-top: -8px;
+  font-size: 0.95rem;
+}
