@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ficha de Aventurero - El Gremio</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/perfil.css">
+</head>
+<body>
+
+    <main class="character-sheet-container">
+        <header class="sheet-header">
+            <h2>Ficha del Aventurero Lector</h2>
+        </header>
+
+        <!-- SECCIÓN SUPERIOR -->
+        <section class="profile-top-section">
+            
+            <!-- Columna Izquierda: Avatar Clicable -->
+        <!-- Columna Izquierda: Avatar con barra inferior para cambiar foto -->
+<div class="avatar-card" id="avatar-container">
+    <div class="avatar-frame">
+        <img id="avatar-img" src="img/default-avatar.jpg" alt="Avatar del Aventurero">
+    </div>
+    
+    <!-- Barra inferior interactiva -->
+    <button id="btn-cambiar-avatar" class="btn-avatar">✨ Cambiar foto</button>
+        
+    </button>
+    
+    <!-- Input de archivo oculto -->
+    <input type="file" id="avatar-input" accept="image/*" class="hidden-input">
+</div>
+
+            <!-- Columna Derecha: Características e Información -->
+            <div class="character-info-panel">
+                
+                <div class="header-info">
+                    <h1 id="char-name">Cargando aventurero...</h1>
+                    <span class="char-class" id="char-class">Iniciado</span>
+                </div>
+
+                <!-- Economía y Progreso General -->
+                <div class="meta-stats-grid">
+                    <div class="stat-badge">
+                        <span class="stat-label">Nivel</span>
+                        <strong id="char-level">1</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Experiencia</span>
+                        <strong id="char-xp">0 XP</strong>
+                    </div>
+                    <div class="stat-badge">
+                        <span class="stat-label">Prestigio</span>
+                        <strong id="char-prestige">0</strong>
+                    </div>
+                    <div class="stat-badge currency-badge">
+                        <span class="stat-label">🔖 Marcapáginas</span>
+                        <strong id="char-gold-bookmarks">0</strong>
+                    </div>
+                </div>
+                <!-- Barra de Progreso de Experiencia -->
+<div class="xp-bar-container">
+    <div class="xp-bar-header">
+        <span class="xp-title">Progreso de Nivel</span>
+        <span class="xp-text"><span id="xp-current">0</span> / <span id="xp-next-level">100</span> XP</span>
+    </div>
+    <div class="xp-bar-track">
+        <div class="xp-bar-fill" id="xp-fill" style="width: 0%;"></div>
+    </div>
+</div>
+
+                <!-- Métricas de Lectura -->
+                <div class="reading-stats-row">
+                    <div class="reading-stat">
+                        <span>📖 Páginas Leídas:</span>
+                        <strong id="char-pages">0</strong>
+                    </div>
+                    <div class="reading-stat">
+                        <span>📚 Libros Completados:</span>
+                        <strong id="char-books">0</strong>
+                    </div>
+                </div>
+
+                <!-- Atributos Principales y Secundarios -->
+                <div class="attributes-container">
+                    <h3>Atributos del Aventurero</h3>
+                    <div class="attributes-grid">
+                        <div class="attr-box"><span>Fuerza:</span> <strong id="attr-fuerza">10</strong></div>
+                        <div class="attr-box"><span>Agilidad:</span> <strong id="attr-agilidad">10</strong></div>
+                        <div class="attr-box"><span>Inteligencia:</span> <strong id="attr-inteligencia">10</strong></div>
+                        <div class="attr-box"><span>Sabiduría:</span> <strong id="attr-sabiduria">10</strong></div>
+                        <div class="attr-box"><span>Fatiga:</span> <strong id="attr-fatiga">0</strong></div>
+                        <div class="attr-box"><span>Mente:</span> <strong id="attr-mente">0</strong></div>
+                        <div class="attr-box"><span>Corazón:</span> <strong id="attr-corazon">0</strong></div>
+                        <div class="attr-box"><span>Suerte:</span> <strong id="attr-suerte">0</strong></div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="js/perfil.js"></script>
+</body>
+</html>

@@ -1,0 +1,209 @@
+.character-sheet-container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: rgba(20, 15, 25, 0.9);
+    border: 2px solid #c5a059;
+    border-radius: 12px;
+    color: #e0d8c3;
+}
+
+.profile-top-section {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 2rem;
+}
+
+/* Avatar Interactivo */
+.avatar-upload-container {
+    cursor: pointer;
+    position: relative;
+}
+
+.avatar-frame {
+    width: 100%;
+    height: 340px;
+    border: 3px solid #c5a059;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    background: #000;
+}
+
+.avatar-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.avatar-upload-container:hover .avatar-overlay {
+    opacity: 1;
+}
+
+.perfil-columna-avatar {
+  display: flex;
+  flex-direction: column; /* Apila los elementos verticalmente */
+  align-items: center;    /* Centra horizontalmente todo el contenido */
+  gap: 12px;              /* Espacio entre la tarjeta y el botón */
+}
+
+/* Opcional: Centrar el texto dentro del botón si es necesario */
+.btn-avatar {
+     gap: 1rem;
+    margin: 1.5rem auto;
+  display: block;
+    padding: 10px 20px;
+  
+    border: 1px solid #c5a059;
+    border-radius: 1px;
+    overflow: hidden;
+       background: #dbb06177;
+
+}
+
+.hidden-input {
+    display: none;
+}
+
+/* Grillas de Atributos y Estadísticas */
+/* Reorganización de la cuadrícula superior */
+.meta-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.2rem 0;
+}
+
+/* Tarjeta individual de estadística */
+.stat-badge {
+    background: linear-gradient(180deg, #1f1728 0%, #120c18 100%);
+    padding: 0.8rem 0.5rem;
+    border-radius: 8px;
+    border: 1px solid #4a385c;
+    display: flex;
+    flex-direction: column; /* Alinea etiqueta arriba y valor abajo */
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Texto superior de la etiqueta */
+.stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a393b5;
+}
+
+/* Valores numéricos grandes con tono mágico */
+.stat-badge strong {
+    font-family: 'Cinzel', serif; /* O la fuente de títulos de tu tema */
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #9d4edd; /* Tono violeta mágico brillante */
+    text-shadow: 0 0 10px rgba(157, 78, 221, 0.5); /* Resplandor mágico */
+}
+
+/* Estilo especial para el Marcapáginas de Oro */
+.currency-badge {
+    border-color: #c5a059;
+    background: linear-gradient(180deg, #2b2111 0%, #171108 100%);
+}
+
+.currency-badge strong {
+    color: #ffd700; /* Dorado mágico brillante */
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.currency-badge {
+    border-color: #ffd700;
+    background: #332b1a;
+}
+
+.reading-stats-row {
+    display: flex;
+    gap: 2rem;
+    margin: 1rem 0;
+    padding: 0.8rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+}
+
+.attributes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+}
+
+.attr-box {
+    background: #1a1622;
+    padding: 0.5rem;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    border: 1px solid #3d314a;
+}
+
+/* Contenedor principal de la barra de XP */
+.xp-bar-container {
+    background: #140e1b;
+    border: 1px solid #4a385c;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.2rem;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+}
+
+.xp-bar-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+    color: #e0d8c3;
+}
+
+.xp-title {
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #a393b5;
+    font-weight: 600;
+}
+
+.xp-text {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    color: #c5a059;
+}
+
+/* Pista de la barra */
+.xp-bar-track {
+    width: 100%;
+    height: 14px;
+    background: #0a070d;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #2d2138;
+    position: relative;
+}
+
+/* Relleno Mágico */
+.xp-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #7b2cbf 0%, #9d4edd 50%, #e0aaff 100%);
+    border-radius: 10px;
+    box-shadow: 0 0 12px rgba(157, 78, 221, 0.8);
+    transition: width 0.5s ease-in-out;
+}
