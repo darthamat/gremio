@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("¡Bienvenido al gremio!", userCredential.user);
 
             // 3. Redirigir a la página principal del gremio
-            window.location.href = "gremio.html";
+            window.location.href = "carga.html";
 
         } catch (error) {
             console.error("Error en el inicio de sesión:", error.code, error.message);
