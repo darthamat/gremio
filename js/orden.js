@@ -1,5 +1,5 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -17,9 +17,8 @@ async function cargarOrdenAventureros() {
     try {
         const aventurerosRef = collection(db, "aventureros");
         
-        // Intentamos ordenar por prestigio o nivel (descendente)
-        const q = query(aventurerosRef, orderBy("prestigio", "desc"));
-        const snapshot = await getDocs(q);
+        // 1. Obtenemos TODOS los documentos sin filtrar por campos opcionales
+        const snapshot = await getDocs(aventurerosRef);
 
         let listaAventureros = [];
 
@@ -29,39 +28,55 @@ async function cargarOrdenAventureros() {
                 id: docSnap.id,
                 nombre: data.nombre || data.email || "Aventurero Anónimo",
                 clase: data.clase || "Iniciado",
-                nivel: data.nivel || 1,
-                prestigio: data.prestigio || 0,
+                nivel: Number(data.nivel) || 1,
+                prestigio: Number(data.prestigio) || 0,
                 avatar: data.avatar || "img/default-avatar.jpg",
-                paginasLeidas: data.paginasLeidas || 0,
-                librosCompletados: data.librosCompletados || 0
+                paginasLeidas: Number(data.paginasLeidas) || 0,
+                librosCompletados: Number(data.librosCompletados) || 0
             });
         });
 
-        // Si la ordenación por Firestore falló por campos vacíos, ordenamos manualmente en JS
-        listaAventureros.sort((a, b) => b.prestigio - a.prestigio || b.nivel - a.nivel);
+        console.log("Aventureros encontrados en Firestore:", listaAventureros);
 
         if (listaAventureros.length === 0) {
-            console.warn("No hay aventureros registrados aún.");
+            console.warn("No se encontró ningún documento en la colección 'aventureros'.");
             return;
         }
 
-        // 👑 1. EL CAMPEÓN: Siempre es el primer elemento (índice 0)
+        // 2. Ordenamos en JavaScript de mayor a menor prestigio (o nivel)
+       listaAventureros.sort((a, b) => {
+            if (b.nivel !== a.nivel) {
+                return b.nivel - a.nivel;
+            }
+            if (b.prestigio !== a.prestigio) {
+                return b.prestigio - a.prestigio;
+            }
+            return a.nombre.localeCompare(b.nombre);
+        });
+
+        // 👑 3. El de mayor puntuación (índice 0) es el Campeón
         const campeon = listaAventureros[0];
         mostrarCampeon(campeon);
 
-        // 🛡️ 2. RESTO DE AVENTUREROS: Del índice 1 en adelante (o mostrar vacío si solo hay 1)
-        const restoAventureros = listaAventureros.slice(1);
+        // 🛡️ 4. El resto de aventureros
+        const restoAventureros = listaAventureros;
         mostrarRestoAventureros(restoAventureros);
 
     } catch (error) {
-        console.error("Error al cargar la Orden:", error);
+        console.error("Error al cargar la Orden de Aventureros:", error);
     }
 }
 
 // Renderizar la tarjeta del Campeón
 function mostrarCampeon(campeon) {
     const contenedorCampeon = document.getElementById("contenedor-campeon");
-    if (!contenedorCampeon) return;
+    if (!contenedorCampeon) {
+        console.error("No se encontró el elemento con id='contenedor-campeon' en orden.html");
+        return;
+    }
+
+    // Redondear el prestigio si tiene decimales
+    const prestigioFormateado = Math.round(campeon.prestigio);
 
     contenedorCampeon.innerHTML = `
         <div class="campeon-card">
@@ -72,7 +87,7 @@ function mostrarCampeon(campeon) {
             <h2>${campeon.nombre}</h2>
             <span class="campeon-clase">${campeon.clase} - Nivel ${campeon.nivel}</span>
             <div class="campeon-stats">
-                <span>✨ Prestigio: <strong>${campeon.prestigio}</strong></span>
+                <span>✨ Prestigio: <strong>${prestigioFormateado}</strong></span>
                 <span>📖 Páginas: <strong>${campeon.paginasLeidas}</strong></span>
                 <span>📚 Libros: <strong>${campeon.librosCompletados}</strong></span>
             </div>
@@ -88,7 +103,7 @@ function mostrarRestoAventureros(lista) {
     contenedorLista.innerHTML = "";
 
     if (lista.length === 0) {
-        contenedorLista.innerHTML = `<p class="sin-mas-aventureros">No hay más aventureros en la Orden por el momento. ¡Invita a tus compañeros!</p>`;
+        contenedorLista.innerHTML = `<p class="sin-mas-aventureros">No hay aventureros en la Orden por el momento.</p>`;
         return;
     }
 
@@ -96,13 +111,13 @@ function mostrarRestoAventureros(lista) {
         const item = document.createElement("div");
         item.className = "aventurero-item";
         item.innerHTML = `
-            <span class="puesto">#${index + 2}</span>
+            <span class="puesto">#${index + 1}</span>
             <img class="mini-avatar" src="${aventurero.avatar}" alt="${aventurero.nombre}">
             <div class="info">
                 <strong>${aventurero.nombre}</strong>
-                <span>${aventurero.clase} (Nivel ${aventurero.nivel})</span>
+                <span>${aventurero.clase} (Niv. ${aventurero.nivel})</span>
             </div>
-            <span class="prestigio">✨ ${aventurero.prestigio} pts</span>
+            <span class="prestigio">✨ ${Math.round(aventurero.prestigio)}</span>
         `;
         contenedorLista.appendChild(item);
     });

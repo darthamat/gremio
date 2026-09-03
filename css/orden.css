@@ -214,3 +214,260 @@
     color: #1a1a24;
     box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
 }
+/* ===================================================
+   ORDEN DE AVENTUREROS (CAMPEÓN Y LISTADO)
+=================================================== */
+
+/* Sección principal del ranking */
+.orden-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
+}
+
+/* 👑 TARJETA DEL CAMPEÓN */
+.campeon-card {
+    position: relative;
+    background: linear-gradient(135deg, #1c1a24 0%, #2a2215 100%);
+    border: 2px solid #d4af37;
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem 1.5rem 1.5rem;
+    text-align: center;
+    box-shadow: 0 0 25px rgba(212, 175, 55, 0.25);
+    margin-bottom: 3rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.campeon-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0 35px rgba(212, 175, 55, 0.4);
+}
+
+/* Insignia superior del Campeón */
+.corona-badge {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #d4af37;
+    color: #121218;
+    font-weight: bold;
+    font-size: 0.85rem;
+    padding: 6px 16px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Avatar del Campeón */
+.campeon-avatar-frame {
+    width: 110px;
+    height: 110px;
+    margin: 0 auto 1rem auto;
+    border-radius: 50%;
+    border: 3px solid #d4af37;
+    overflow: hidden;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+.campeon-avatar-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.campeon-card h2 {
+    color: #f4e8c1;
+    font-size: 1.8rem;
+    margin: 0.2rem 0;
+}
+
+.campeon-clase {
+    color: #a0a0b0;
+    font-size: 0.95rem;
+    display: block;
+    margin-bottom: 1.2rem;
+}
+
+/* Estadísticas del Campeón */
+.campeon-stats {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.8rem;
+    border-radius: 8px;
+    border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+.campeon-stats span {
+    color: #d1c7b7;
+    font-size: 0.9rem;
+}
+
+.campeon-stats strong {
+    color: #d4af37;
+}
+
+/* 🛡️ LISTA DEL RESTO DE AVENTUREROS */
+#lista-aventureros {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.aventurero-item {
+    display: flex;
+    align-items: center;
+    background: #171821;
+    border: 1px solid #2a2a3b;
+    border-radius: 8px;
+    padding: 12px 18px;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.aventurero-item:hover {
+    background: #1f202c;
+    border-color: #d4af37;
+}
+
+/* Puesto en la jerarquía */
+.aventurero-item .puesto {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #8c8275;
+    width: 40px;
+}
+
+/* Avatar reducido */
+.mini-avatar {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    border: 2px solid #3f3f5a;
+    object-fit: cover;
+    margin-right: 15px;
+}
+
+/* Nombre y Clase */
+.aventurero-item .info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.aventurero-item .info strong {
+    color: #f4e8c1;
+    font-size: 1rem;
+}
+
+.aventurero-item .info span {
+    color: #8c8275;
+    font-size: 0.8rem;
+}
+
+/* Puntos de Prestigio */
+.aventurero-item .prestigio {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 0.95rem;
+}
+
+/* Estado sin más aventureros */
+.sin-mas-aventureros {
+    text-align: center;
+    color: #8c8275;
+    font-style: italic;
+    padding: 1.5rem;
+}
+
+/* Contenedor en rejilla (Grid) de 5 columnas por fila */
+#lista-aventureros {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr); /* Exactamente 5 columnas de igual tamaño */
+    gap: 15px;
+    width: 100%;
+}
+
+/* Tarjeta individual ajustada para vista vertical dentro de la rejilla */
+.aventurero-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    background: #171821;
+    border: 1px solid #2a2a3b;
+    border-radius: 8px;
+    padding: 12px 8px;
+    position: relative;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.aventurero-item:hover {
+    transform: translateY(-3px);
+    border-color: #d4af37;
+}
+
+/* Número de puesto en la esquina superior izquierda */
+.aventurero-item .puesto {
+    position: absolute;
+    top: 6px;
+    left: 8px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #8c8275;
+}
+
+/* Avatar centrado */
+.mini-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #3f3f5a;
+    object-fit: cover;
+    margin: 10px 0 6px 0;
+}
+
+/* Información del aventurero */
+.aventurero-item .info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 6px;
+}
+
+.aventurero-item .info strong {
+    color: #f4e8c1;
+    font-size: 0.85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.aventurero-item .info span {
+    color: #8c8275;
+    font-size: 0.75rem;
+}
+
+/* Puntos de Prestigio */
+.aventurero-item .prestigio {
+    font-weight: bold;
+    color: #d4af37;
+    font-size: 0.8rem;
+}
+
+/* Adaptación responsive para pantallas más pequeñas */
+@media (max-width: 1024px) {
+    #lista-aventureros {
+        grid-template-columns: repeat(3, 1fr); /* 3 por fila en tablets */
+    }
+}
+
+@media (max-width: 600px) {
+    #lista-aventureros {
+        grid-template-columns: repeat(2, 1fr); /* 2 por fila en móviles */
+    }
+}
