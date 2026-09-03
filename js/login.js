@@ -1,11 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { firebaseConfig } from "./firebase-config.js";
-//import { auth } from "./firebase-config.js";
-
-// Inicializar Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { auth } from "./firebase-config.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const loginForm = document.getElementById("login-form");
@@ -13,40 +7,56 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!loginForm) return;
 
     loginForm.addEventListener("submit", async (event) => {
-        // DETENER la recarga de página y el envío estándar del HTML
+        // 1. Detener el envío nativo del formulario
         event.preventDefault();
         event.stopPropagation();
 
-        const email = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value;
-        const submitBtn = document.getElementById("submit-btn");
+        const emailInput = document.getElementById("username");
+        const passwordInput = document.getElementById("password");
+
+        // Buscar el botón de envío dentro del formulario de manera segura
+        const submitBtn = loginForm.querySelector("button[type='submit']") || document.getElementById("submit-btn");
+
+        if (!emailInput || !passwordInput) {
+            console.error("No se encontraron los campos de input id='username' o id='password'");
+            return;
+        }
+
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
 
         try {
-            submitBtn.disabled = true;
-            submitBtn.textContent = "✨ Abriendo el portal...";
+            // Cambiar estado del botón si existe
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = "✨ Abriendo el portal...";
+            }
 
-            // 1. Iniciar sesión en Firebase Auth
+            // 2. Iniciar sesión con Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            console.log("Aventurero autenticado:", userCredential.user);
+            console.log("¡Bienvenido al gremio!", userCredential.user);
 
-            // 2. Redirigir a gremio.html al autenticarse correctamente
+            // 3. Redirigir a la página principal del gremio
             window.location.href = "gremio.html";
 
         } catch (error) {
             console.error("Error en el inicio de sesión:", error.code, error.message);
 
-            let mensajeError = "No se pudo cruzar el portal. Revisa tus datos.";
+            let mensajeError = "No se pudo cruzar el portal. Revisa tus credenciales.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                 mensajeError = "Correo o Palabra Mágica incorrectos.";
             } else if (error.code === 'auth/invalid-email') {
-                mensajeError = "El correo escrito no tiene un formato válido.";
+                mensajeError = "El formato del correo no es válido.";
             }
 
             alert(mensajeError);
 
-            // Reestablecer el botón en caso de error
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = "✨ Entrar al gremio";
+        } finally {
+            // Restablecer el botón de forma segura si ocurrió un error
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = "✨ Entrar al gremio";
+            }
         }
     });
 });
