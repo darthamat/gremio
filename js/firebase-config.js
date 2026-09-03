@@ -4,7 +4,7 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Configuración de tu proyecto en Firebase
-const firebaseConfig = {
+export const firebaseConfig = {
   apiKey: "AIzaSyCyQaF1cDBu_7mItUTqcp3I29bgxugRXqk",
   authDomain: "gremio-102c6.firebaseapp.com",
   projectId: "gremio-102c6",
