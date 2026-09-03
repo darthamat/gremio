@@ -9,6 +9,15 @@
 </head>
 <body>
 
+    <header class="top-nav-bar">
+        <a href="gremio.html" class="nav-btn btn-gremio">
+            <span>🏰 Volver al Gremio</span>
+        </a>
+        <button id="btn-logout" class="nav-btn btn-logout">
+            <span>🚪 Cerrar Sesión</span>
+        </button>
+    </header>
+
     <main class="character-sheet-container">
         <header class="sheet-header">
             <h2>Ficha del Aventurero Lector</h2>
@@ -27,8 +36,7 @@
     <!-- Barra inferior interactiva -->
     <button id="btn-cambiar-avatar" class="btn-avatar">✨ Cambiar foto</button>
         
-    </button>
-    
+     
     <!-- Input de archivo oculto -->
     <input type="file" id="avatar-input" accept="image/*" class="hidden-input">
 </div>
@@ -100,6 +108,64 @@
 
             </div>
         </section>
+
+        <!-- Contenedor Principal de Secciones Desplegables -->
+<section class="acordeon-seccion">
+  
+  <!-- Barra de Botones / Pestañas -->
+  <div class="acordeon-botones">
+    <button class="btn-tab" data-tab="estadisticas">
+      <span>Estadísticas</span>
+      <i class="flecha">▼</i>
+    </button>
+    
+    <button class="btn-tab" data-tab="mochila">
+      <span>Mochila</span>
+      <i class="flecha">▼</i>
+    </button>
+    
+   
+    <button class="btn-tab" data-tab="misiones">
+      <span>Misiones</span>
+      <i class="flecha">▼</i>
+    </button>
+
+        <!-- ⬇️ CAMBIO AQUÍ: Ahora es un enlace <a> que abre biblioteca.html en nueva pestaña -->
+  <a href="biblioteca.html" target="_blank" class="btn-tab btn-enlace">
+    <span>Biblioteca</span>
+    <i class="flecha-enlace">↗</i>
+  </a>
+  </div>
+
+  <!-- Panel Desplegable (Donde se muestra el contenido) -->
+  <div id="panel-contenido" class="panel-desplegable oculto">
+    
+    <!-- Contenido: Estadísticas -->
+    <div id="tab-estadisticas" class="tab-contenido oculto">
+      <h2>Estadísticas Generales</h2>
+      <p>Aquí puedes mostrar gráficos o desglose detallado de lecturas, hábitos y récords.</p>
+    </div>
+
+    <!-- Contenido: Mochila -->
+    <div id="tab-mochila" class="tab-contenido oculto">
+      <h2>Mochila de Objetos</h2>
+      <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
+    </div>
+
+    <!-- Contenido: Biblioteca -->
+    <div id="tab-biblioteca" class="tab-contenido oculto">
+      <h2>Biblioteca Personal</h2>
+      <p>Lista de libros leyéndose, terminados y pendientes.</p>
+    </div>
+
+    <!-- Contenido: Misiones -->
+    <div id="tab-misiones" class="tab-contenido oculto">
+      <h2>Misiones Activas</h2>
+      <p>Misiones diarias, semanales y retos de lectura RPG.</p>
+    </div>
+
+  </div>
+</section>
     </main>
 
     <script type="module" src="js/perfil.js"></script>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Estantería de Libros - Librería del Aventurero</title>
+  <link rel="stylesheet" href="css/biblioteca.css">
+</head>
+<body>
+
+  <!-- Encabezado con navegación -->
+  <header class="header-biblioteca">
+    <a href="perfil.html" class="btn-regresar">⬅ Volver al Perfil</a>
+    <h1>📜 Librería de Hazañas</h1>
+    <button id="btn-abrir-modal" class="btn-agregar">+ Registrar Libro Leído</button>
+  </header>
+
+  <!-- Resumen de estadísticas rápidas -->
+  <section class="resumen-stats">
+    <div class="stat-card">
+      <span class="stat-num" id="total-libros">0</span>
+      <span class="stat-label">Libros Leídos</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-num" id="total-paginas">0</span>
+      <span class="stat-label">Páginas Totales</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-num" id="total-xp">0</span>
+      <span class="stat-label">XP Ganada</span>
+    </div>
+      <div class="stat-card">
+      <span class="stat-num" id="total-prestigio">0</span>
+      <span class="stat-label">Prestigio Ganado</span>
+    </div>
+  </section>
+
+  <!-- Estantería de Madera Virtual -->
+  <main class="estanteria-contenedor">
+    <div id="estante-libros" class="estante">
+      <!-- Los lomos de los libros se insertarán dinámicamente aquí -->
+    </div>
+    <div class="tabla-madera"></div>
+  </main>
+
+  <!-- Modal para Registrar Nuevo Libro Leído -->
+  <div id="modal-libro" class="modal oculto">
+    <div class="modal-contenido">
+      <span id="btn-cerrar-modal" class="cerrar">&times;</span>
+      <h2>📖 Agregar Libro Completado</h2>
+      <form id="form-libro">
+        <label for="titulo">Título del Libro:</label>
+        <input type="text" id="titulo" placeholder="Ej: El Nombre del Viento" required>
+
+        <label for="autor">Autor:</label>
+        <input type="text" id="autor" placeholder="Ej: Patrick Rothfuss" required>
+
+        <label for="paginas">Número de Páginas:</label>
+        <input type="number" id="paginas" min="10" placeholder="Ej: 662" required>
+
+        <label for="color">Color de la Encuadernación:</label>
+        <input type="color" id="color" value="#8b263e">
+
+        <button type="submit" class="btn-guardar">¡Añadir a la Estantería!</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="js/biblioteca.js"></script>
+</body>
+</html>

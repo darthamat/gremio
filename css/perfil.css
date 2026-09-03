@@ -207,3 +207,134 @@
     box-shadow: 0 0 12px rgba(157, 78, 221, 0.8);
     transition: width 0.5s ease-in-out;
 }
+
+/* Contenedor general */
+.acordeon-seccion {
+  width: 100%;
+  max-width: 900px;
+  margin: 20px auto;
+}
+
+/* Grid de botones adaptativo */
+.acordeon-botones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+/* Estilo individual del botón */
+.btn-tab {
+  background-color: #2a2a3b;
+  color: #fff;
+  border: 2px solid #3f3f5a;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.btn-tab:hover {
+  background-color: #3b3b54;
+  border-color: #f39c12; /* Color destacado RPG (Dorado) */
+}
+
+/* Animación y rotación de la flecha */
+.btn-tab .flecha {
+  font-style: normal;
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+}
+
+/* Botón activo (Desplegado) */
+.btn-tab.activo {
+  background-color: #f39c12;
+  color: #1e1e2f;
+  border-color: #f1c40f;
+}
+
+.btn-tab.activo .flecha {
+  transform: rotate(180deg); /* Apunta hacia arriba o se invierte según preferencia */
+}
+
+/* Panel desplegable que contiene la información */
+.panel-desplegable {
+  background-color: #1e1e2f;
+  border: 2px solid #3f3f5a;
+  border-radius: 8px;
+  margin-top: 15px;
+  padding: 20px;
+  color: #e0e0e0;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+/* Clases de utilidad para ocultar/mostrar */
+.oculto {
+  display: none !important;
+}
+.btn-enlace {
+  text-decoration: none;
+}
+
+/* Opcional: Estilo para el icono de enlace externo */
+.flecha-enlace {
+  font-style: normal;
+  font-size: 0.9rem;
+}
+/* Barra de navegación superior */
+.top-nav-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1100px;
+  margin: 10px auto 20px auto;
+  padding: 0 10px;
+}
+
+/* Estilo base de los botones de la barra */
+.nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Botón Volver al Gremio */
+.btn-gremio {
+  background: #2a2a3b;
+  color: #f39c12;
+  border: 2px solid #f39c12;
+}
+
+.btn-gremio:hover {
+  background: #f39c12;
+  color: #121218;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(243, 156, 18, 0.3);
+}
+
+/* Botón Cerrar Sesión */
+.btn-logout {
+  background: #2a2a3b;
+  color: #e74c3c;
+  border: 2px solid #e74c3c;
+}
+
+.btn-logout:hover {
+  background: #e74c3c;
+  color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(231, 76, 60, 0.3);
+}

@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
@@ -165,3 +165,52 @@ if (avatarContainer && avatarInput) {
         }
     });
 }
+
+// Lógica para el sistema de acordeón / pestañas
+document.addEventListener("DOMContentLoaded", () => {
+    const botones = document.querySelectorAll(".btn-tab");
+    const panelContenido = document.getElementById("panel-contenido");
+    const contenidos = document.querySelectorAll(".tab-contenido");
+
+    botones.forEach(boton => {
+        boton.addEventListener("click", () => {
+            const tabSeleccionada = boton.getAttribute("data-tab");
+            const yaEstabaActivo = boton.classList.contains("activo");
+
+            // 1. Desactivar todos los botones y ocultar todos los contenidos
+            botones.forEach(b => b.classList.remove("activo"));
+            contenidos.forEach(c => c.classList.add("oculto"));
+
+            // 2. Si el botón pulsado NO estaba activo, lo activamos y mostramos su sección
+            if (!yaEstabaActivo) {
+                boton.classList.add("activo");
+                panelContenido.classList.remove("oculto");
+                
+                const contenidoAMostrar = document.getElementById(`tab-${tabSeleccionada}`);
+                if (contenidoAMostrar) {
+                    contenidoAMostrar.classList.remove("oculto");
+                }
+            } else {
+                // Si vuelve a hacer clic en la pestaña abierta, se repliega todo el panel
+                panelContenido.classList.add("oculto");
+            }
+        });
+    });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const btnLogout = document.getElementById("btn-logout");
+
+    if (btnLogout) {
+        btnLogout.addEventListener("click", async () => {
+            try {
+                await signOut(auth);
+                // Redirigir a la página principal tras cerrar sesión
+                window.location.href = "index.html";
+            } catch (error) {
+                console.error("Error al cerrar la sesión:", error);
+                alert("Ocurrió un error al intentar cerrar la sesión.");
+            }
+        });
+    }
+});

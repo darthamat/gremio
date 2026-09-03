@@ -1,0 +1,208 @@
+/* Reset básico */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #121218;
+  color: #e0e0e0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Header */
+.header-biblioteca {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1100px;
+  margin: 0 auto 20px auto;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.header-biblioteca h1 {
+  color: #f39c12;
+  font-size: 1.8rem;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+.btn-regresar, .btn-agregar {
+  background: #2a2a3b;
+  color: #fff;
+  padding: 10px 18px;
+  border: 2px solid #3f3f5a;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-agregar {
+  background: #f39c12;
+  color: #121218;
+  border-color: #f1c40f;
+}
+
+.btn-regresar:hover, .btn-agregar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+}
+
+/* Resumen de estadísticas */
+.resumen-stats {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 0 auto 30px auto;
+}
+
+.stat-card {
+  background: #1e1e2f;
+  border: 1px solid #3f3f5a;
+  border-radius: 8px;
+  padding: 15px 25px;
+  text-align: center;
+  min-width: 140px;
+}
+
+.stat-num {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #f39c12;
+}
+
+.stat-label {
+  font-size: 0.85rem;
+  color: #a0a0b0;
+}
+
+/* Estantería Virtual */
+.estanteria-contenedor {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding-top: 40px;
+}
+
+.estante {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 6px;
+  min-height: 260px;
+  padding: 0 20px;
+  overflow-x: auto;
+}
+
+.tabla-madera {
+  height: 24px;
+  background: linear-gradient(180deg, #8a5229 0%, #4a2810 100%);
+  border-radius: 4px;
+  border-top: 3px solid #b87333;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+}
+
+/* Lomo del libro */
+.lomo-libro {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 6px;
+  border-radius: 4px 4px 0 0;
+  box-shadow: inset -2px 0 5px rgba(0,0,0,0.4), inset 2px 0 5px rgba(255,255,255,0.1), 3px 0 6px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  user-select: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lomo-libro:hover {
+  transform: rotate(180deg) translateY(10px) scale(1.03);
+  filter: brightness(1.2);
+}
+
+.lomo-titulo {
+  font-weight: bold;
+  font-size: 0.9rem;
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: 180px;
+}
+
+.lomo-paginas {
+  font-size: 0.7rem;
+  color: #ffd700;
+  margin-top: 5px;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.modal.oculto {
+  display: none;
+}
+
+.modal-contenido {
+  background: #1e1e2f;
+  padding: 30px;
+  border-radius: 12px;
+  border: 2px solid #f39c12;
+  width: 90%;
+  max-width: 450px;
+  position: relative;
+}
+
+.cerrar {
+  position: absolute;
+  top: 15px; right: 20px;
+  font-size: 1.8rem;
+  cursor: pointer;
+  color: #aaa;
+}
+
+.modal-contenido form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.modal-contenido input {
+  padding: 10px;
+  background: #2a2a3b;
+  border: 1px solid #3f3f5a;
+  color: #fff;
+  border-radius: 6px;
+}
+
+.btn-guardar {
+  background: #f39c12;
+  color: #121218;
+  font-weight: bold;
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 10px;
+}
