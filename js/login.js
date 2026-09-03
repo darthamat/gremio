@@ -11,36 +11,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!loginForm) return;
 
-    loginForm.addEventListener("submit", async (e) => {
-        e.preventDefault(); // Previene la recarga de página por defecto
+    loginForm.addEventListener("submit", async (event) => {
+        // DETENER la recarga de página y el envío estándar del HTML
+        event.preventDefault();
+        event.stopPropagation();
 
         const email = document.getElementById("username").value.trim();
         const password = document.getElementById("password").value;
-        const submitBtn = loginForm.querySelector("button[type='submit']");
+        const submitBtn = document.getElementById("submit-btn");
 
         try {
             submitBtn.disabled = true;
             submitBtn.textContent = "✨ Abriendo el portal...";
 
-            // Intentar inicio de sesión en Firebase Auth
+            // 1. Iniciar sesión en Firebase Auth
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            console.log("Acceso concedido:", userCredential.user);
+            console.log("Aventurero autenticado:", userCredential.user);
 
-            // Redirigir a la taberna / sección privada del gremio
-            window.location.href = "taberna.html";
+            // 2. Redirigir a gremio.html al autenticarse correctamente
+            window.location.href = "gremio.html";
 
         } catch (error) {
-            console.error("Error de autenticación:", error.code, error.message);
-            
-            let mensajeError = "No se pudo cruzar el portal. Revisa tus credenciales.";
+            console.error("Error en el inicio de sesión:", error.code, error.message);
+
+            let mensajeError = "No se pudo cruzar el portal. Revisa tus datos.";
             if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
                 mensajeError = "Correo o Palabra Mágica incorrectos.";
             } else if (error.code === 'auth/invalid-email') {
-                mensajeError = "El formato del correo electrónico no es válido.";
+                mensajeError = "El correo escrito no tiene un formato válido.";
             }
 
             alert(mensajeError);
-        } finally {
+
+            // Reestablecer el botón en caso de error
             submitBtn.disabled = false;
             submitBtn.innerHTML = "✨ Entrar al gremio";
         }
