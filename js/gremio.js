@@ -1,30 +1,29 @@
-import { db } from './firebase-config.js'; // Ajusta a la ruta de tu configuración de Firebase
+import { db } from './firebase-config.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-async function cargarRetoMensual() {
+async function cargarRetoActualGremio() {
   try {
-    // Referencia al documento del reto actual en Firestore (ejemplo: colección 'retos', doc 'actual')
     const docRef = doc(db, 'retos', 'actual');
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       const data = docSnap.data();
 
-      // Inyectar datos en el libro mágico
-      if (data.portadaUrl) {
-        document.getElementById('book-cover').src = data.portadaUrl;
-      }
+      // Inyectar datos en la interfaz del Gremio
+      const imgCover = document.getElementById('book-cover');
+      if (imgCover && data.portadaUrl) imgCover.src = data.portadaUrl;
+
       document.getElementById('book-title').textContent = data.titulo || 'Misión Sin Título';
-      document.getElementById('book-author').textContent = `Por: ${data.autor || 'Desconocido'}`;
-      document.getElementById('book-description').textContent = data.descripcion || 'Sin descripción disponible.';
-      document.getElementById('expedition-name').textContent = data.nombreExpedicion || 'Expedición Activa';
+      document.getElementById('book-description').textContent = data.descripcion || 'Sin descripción.';
+      
+      const elPuntos = document.getElementById('book-puntos');
+      if (elPuntos) elPuntos.textContent = `${data.puntosPrestigio || 0} Pts Prestigio`;
     } else {
-      console.log("No se encontró el reto mensual en Firestore.");
+      console.warn("⚠️ No hay ningún reto activo configurado en 'actual'.");
     }
   } catch (error) {
-    console.error("Error al obtener el reto de Firebase:", error);
+    console.error("❌ Error al obtener el reto del Gremio:", error);
   }
 }
 
-// Ejecutar al cargar el DOM
-document.addEventListener('DOMContentLoaded', cargarRetoMensual);
+document.addEventListener('DOMContentLoaded', cargarRetoActualGremio);

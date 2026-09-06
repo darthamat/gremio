@@ -119,3 +119,120 @@ body {
   background-color: #777;
   cursor: not-allowed;
 }
+#contenedor-catalogo-retos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.tarjeta-reto-historico {
+  background: #2a2421;
+  border: 2px solid #8b5a2b;
+  border-radius: 8px;
+  overflow: hidden;
+  color: #f3e5ab;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s ease;
+}
+
+.tarjeta-reto-historico:hover {
+  transform: translateY(-5px);
+  border-color: #d4af37;
+}
+
+.portada-wrapper {
+  position: relative;
+  height: 220px;
+}
+
+.portada-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.badge-id {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.85);
+  color: #d4af37;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  border: 1px solid #d4af37;
+}
+
+.info-reto {
+  padding: 15px;
+}
+
+.info-reto h3 {
+  margin: 0 0 8px 0;
+  color: #fff;
+}
+
+.puntos {
+  color: #d4af37;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.descripcion {
+  font-size: 0.9rem;
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.fecha-publicacion {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.75rem;
+  color: #888;
+}
+/* Botón principal de completar */
+.btn-completar-reto {
+  width: 100%;
+  margin-top: 15px;
+  background-color: #8b5a2b;
+  color: #fff;
+  border: 1px solid #d4af37;
+  padding: 10px;
+  border-radius: 5px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-completar-reto:hover:not(:disabled) {
+  background-color: #a66c35;
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
+}
+
+/* Estado cuando el reto ya ha sido completado */
+.btn-completar-reto:disabled {
+  background-color: #3a3835;
+  color: #888;
+  border-color: #555;
+  cursor: not-allowed;
+}
+
+.tarjeta-reto-historico.reto-superado {
+  border-color: #4CAF50; /* Borde verde para destacar victoria */
+  opacity: 0.9;
+}
+
+.badge-completado {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: #2e7d32;
+  color: #ffffff;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+}
