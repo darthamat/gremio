@@ -36,8 +36,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             console.log("¡Bienvenido al gremio!", userCredential.user);
 
-            // 3. Redirigir a la página principal del gremio
-            window.location.href = "carga.html";
+          const userDocRef = doc(db, "aventureros", user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (userDocSnap.exists()) {
+        const userData = userDocSnap.data();
+        const rol = userData.rol ? userData.rol.toLowerCase() : "";
+
+        // 4. Redirigir según el rol
+        if (rol === "admin" || rol === "archimago") {
+            window.location.href = "admin.html";
+        } else {
+            window.location.href = "carga.html"; // O "index.html"
+        }
+    } else {
+        // Si no existe el documento por defecto va al flujo habitual
+        window.location.href = "carga.html";
+    }
 
         } catch (error) {
             console.error("Error en el inicio de sesión:", error.code, error.message);
