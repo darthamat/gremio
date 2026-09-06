@@ -1,7 +1,10 @@
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { auth } from "js/firebase-config.js";
+import { auth } from "./firebase-config.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+
+    const db = getFirestore(app);
     const loginForm = document.getElementById("login-form");
 
     if (!loginForm) return;
