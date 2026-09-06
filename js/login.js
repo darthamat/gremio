@@ -1,5 +1,6 @@
 import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { auth } from "./firebase-config.js";
+// 1. Importamos 'app' además de 'auth' desde tu archivo de configuración
+import { auth, app } from "./firebase-config.js"; 
 import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -37,25 +38,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // 2. Iniciar sesión con Firebase
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            console.log("¡Bienvenido al gremio!", userCredential.user);
+            const user = userCredential.user; // <-- ✅ Definimos la variable 'user'
+            console.log("¡Bienvenido al gremio!", user);
 
-          const userDocRef = doc(db, "aventureros", user.uid);
-    const userDocSnap = await getDoc(userDocRef);
+            // 3. Consultar rol en Firestore usando la variable 'user'
+            const userDocRef = doc(db, "aventureros", user.uid);
+            const userDocSnap = await getDoc(userDocRef);
 
-    if (userDocSnap.exists()) {
-        const userData = userDocSnap.data();
-        const rol = userData.rol ? userData.rol.toLowerCase() : "";
+            if (userDocSnap.exists()) {
+                const userData = userDocSnap.data();
+                const rol = userData.rol ? userData.rol.toLowerCase() : "";
 
-        // 4. Redirigir según el rol
-        if (rol === "admin" || rol === "archimago") {
-            window.location.href = "admin.html";
-        } else {
-            window.location.href = "carga.html"; // O "index.html"
-        }
-    } else {
-        // Si no existe el documento por defecto va al flujo habitual
-        window.location.href = "carga.html";
-    }
+                // 4. Redirigir según el rol
+                if (rol === "admin" || rol === "archimago") {
+                    window.location.href = "admin.html";
+                } else {
+                    window.location.href = "carga.html";
+                }
+            } else {
+                // Si no existe el documento va al flujo habitual
+                window.location.href = "carga.html";
+            }
 
         } catch (error) {
             console.error("Error en el inicio de sesión:", error.code, error.message);
@@ -70,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(mensajeError);
 
         } finally {
-            // Restablecer el botón de forma segura si ocurrió un error
+            // Restablecer el botón si ocurrió un error
             if (submitBtn) {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = "✨ Entrar al gremio";
