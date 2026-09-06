@@ -1,7 +1,7 @@
 import { db, auth } from './firebase-config.js';
 import { collection, getDocs, doc, getDoc, updateDoc, arrayUnion, query, orderBy, increment } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
-import { procesarEvolucionLectura } from './oraculo.js'; // Importa la lógica de rasgos ganados
+import { procesarEvolucionLectura } from 'js/oraculo.js'; // Importa la lógica de rasgos ganados
 
 let usuarioActual = null;
 let retosCompletadosUsuario = [];
