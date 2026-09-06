@@ -1,4 +1,4 @@
-import { BANCO_HUELLAS, HUELLAS_GENERICAS } from "./rasgosData.js";
+import { BANCO_HUELLAS, HUELLAS_GENERICAS } from "js/rasgosData.js";
 
 export function procesarEvolucionLectura(generoLibro, habilidadesActuales = {}) {
     const generoNorm = generoLibro.toLowerCase();

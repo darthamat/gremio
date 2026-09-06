@@ -1,6 +1,7 @@
 import { getAuth, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { app } from "./firebase-config.js";
+import { app } from "js/firebase-config.js";
+import { generarResumenEvolucion } from "js/sintetizadorPerfil.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -214,3 +215,19 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// Función para renderizar el resumen en el DOM
+export function renderizarEspejoDelLector(huellasUsuario) {
+    const contenedor = document.getElementById("bloque-espejo-lector");
+    if (!contenedor) return;
+
+    const { tituloArquetipo, resumenTextual } = generarResumenEvolucion(huellasUsuario);
+
+    contenedor.innerHTML = `
+        <div class="tarjeta-espejo">
+            <div class="sello-cronista">📜 CRÓNICA DE TU EVOLUCIÓN</div>
+            <h2 class="arquetipo-titulo">${tituloArquetipo}</h2>
+            <p class="resumen-texto">${resumenTextual}</p>
+        </div>
+    `;
+}

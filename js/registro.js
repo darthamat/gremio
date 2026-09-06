@@ -4,7 +4,7 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
 
 // Importación de la conexión centralizada
 import { auth, db } from "./firebase-config.js";
-import { generarNombreAleatorio, obtenerClaseAleatoria } from "./arquetipos.js";
+import { generarNombreAleatorio, obtenerClaseAleatoria } from "js/arquetipos.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".character-form");

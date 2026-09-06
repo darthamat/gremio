@@ -1,6 +1,29 @@
 // rasgosData.js - Banco ampliado de habilidades y huellas intelectuales por género
 
 export const BANCO_HUELLAS = {
+
+     fantasia: { //cambiar rasgos son copiados de poesia
+        
+        rasgos: [
+            { id: "sensibilidad_linguistica", nombre: "Sensibilidad Lingüística", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje." },
+            { id: "inteligencia_emocional", nombre: "Inteligencia Emocional", icono: "🖤", desc: "Capacidad para descifrar estados de ánimo complejos y matices no verbales." },
+            { id: "pensamiento_metaforico", nombre: "Pensamiento Metafórico", icono: "🌙", desc: "Facilidad para trazar analogías entre conceptos abstractos y la realidad." },
+            { id: "sintesis_expresiva", nombre: "Síntesis Expresiva", icono: "✒️", desc: "Habilidad para transmitir grandes ideas utilizando las palabras precisas." },
+            { id: "atencion_estetica", nombre: "Atención Estética", icono: "🎨", desc: "Capacidad para encontrar valor poético y belleza en detalles cotidianos." },
+            { id: "escucha_profunda", nombre: "Escucha Empática", icono: "🕊️", desc: "Receptividad aumentada ante la vulnerabilidad y el discurso ajeno." },
+            { id: "riqueza_lexica", nombre: "Vocabulario Evocador", icono: "📖", desc: "Dominio de términos connotativos y precisión verbal al expresarte." },
+            { id: "intuicion_simbolica", nombre: "Intuición Simbólica", icono: "🔮", desc: "Habilidad para interpretar alegorías e imágenes en la cultura y el arte." },
+            { id: "paciencia_contemplativa", nombre: "Paciencia Contemplativa", icono: "⏳", desc: "Tolerancia a la pausa y a la observación pausada del entorno." },
+            { id: "resonancia_humana", nombre: "Resonancia Humana", icono: "🕯️", desc: "Comprensión intuitiva del sufrimiento y la alegría universal." }
+        ],
+        cicatrices: [
+            { id: "melancolia_reflexiva", nombre: "Tendencia Melancólica", icono: "🌧️", desc: "Propensión a la nostalgia injustificada por momentos e ideas del pasado." },
+            { id: "vulnerabilidad_expuesta", nombre: "Sensibilidad Aumentada", icono: "🥀", desc: "Mayor susceptibilidad a la rudeza, la prisa o el cinismo del entorno." },
+            { id: "idealismo_inviable", nombre: "Idealismo Estético", icono: "🫧", desc: "Frustración recurrente cuando la realidad prosaica rompe tus expectativas." },
+            { id: "introversion_severa", nombre: "Refugio Interior", icono: "🗝️", desc: "Tendencia a aislarte en tus propios pensamientos ante la saturación social." },
+            { id: "sobrepensamiento_afectivo", nombre: "Sobreanálisis Emocional", icono: "🕸️", desc: "Dificultad para vivir las relaciones sin desarmar intelectualmente cada gesto." }
+        ]
+    },
     poesia: {
         rasgos: [
             { id: "sensibilidad_linguistica", nombre: "Sensibilidad Lingüística", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje." },
