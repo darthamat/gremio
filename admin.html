@@ -22,6 +22,10 @@
       flex-direction: column;
       text-align: left;
     }
+    /* Estilo para que el contenedor del buscador posicione el desplegable flotante */
+    .buscador-container {
+      position: relative;
+    }
     .form-row {
       display: flex;
       gap: 15px;
@@ -61,22 +65,34 @@
     .buscador-box input {
       flex: 1;
     }
+
+    /* 👇 AJUSTE CLAVE: Transforma la lista en un menú flotante superpuesto */
     .resultados-busqueda {
-      max-height: 200px;
-      overflow-y: auto;
-      background: #fff;
-      border: 2px solid #8b5a2b;
-      margin-top: 5px;
-      border-radius: 4px;
       display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #2a221b;
+      color: #fff8e7;
+      border: 2px solid #8b5a2b;
+      border-radius: 4px;
+      z-index: 1000;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
     }
+
     .item-resultado {
       padding: 8px 12px;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 1px solid #443224;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .item-resultado:hover {
-      background: #f0e2b6;
+      background: #4a3627;
     }
     .preview-portada {
       max-width: 120px;
@@ -129,12 +145,13 @@
   <main class="admin-container">
     
     <!-- BUSCADOR GOOGLE BOOKS -->
-    <div class="form-group">
+    <div class="form-group buscador-container">
       <label for="buscarLibro">🔍 Buscar Libro en Google Books:</label>
       <div class="buscador-box">
         <input type="text" id="buscarLibro" placeholder="Escribe el nombre del libro o autor...">
         <button type="button" id="btn-buscar-gb" class="btn-secundario">Buscar</button>
       </div>
+      <!-- Menú Flotante de Resultados -->
       <div id="resultados-busqueda" class="resultados-busqueda"></div>
     </div>
 

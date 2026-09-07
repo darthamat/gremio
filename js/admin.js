@@ -1,23 +1,44 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { app } from "js/firebase-config.js";
+import { app } from "./firebase-config.js"; // 👈 Corregida la ruta de importación
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 // 🔑 CONFIGURACIÓN
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0"; // Coloca tu clave aquí
 const CLOUDINARY_CLOUD_NAME = "dwuokewzr";
 const CLOUDINARY_UPLOAD_PRESET = "portadas";
 
 // Configuración predeterminada de rasgos/cicatrices por género
 const HUELLAS_POR_GENERO = {
-  fantasia: { rasgos: ["Visión Esotérica", "Voluntad Inquebrantable"], cicatrices: ["Fascinación Prohibida"] },
-  terror: { rasgos: ["Coraje Templado"], cicatrices: ["Susurro de la Cordura", "Miedo Ancestral"] },
-  clasicos: { rasgos: ["Elocuencia Antigua", "Sabiduría Epistolar"], cicatrices: ["Melancolía Crónica"] },
-  filosofia: { rasgos: ["Lógica Afilada", "Pensamiento Crítico"], cicatrices: ["Parálisis Duda"] },
-  historica: { rasgos: ["Estrategia Militar", "Memoria de Eras"], cicatrices: ["Fatiga de Guerra"] },
-  ciencia_ficcion: { rasgos: ["Ingeniería Mental", "Mente Tecnológica"], cicatrices: ["Disonancia Futurista"] }
+  fantasia: { 
+    rasgos: ["Mente Imaginativa", "Aura Maravillosa"], 
+    cicatrices: ["Evasionista", "Voz de Leyenda"] 
+  },
+  terror: { 
+    rasgos: ["Valentia Inquebrantable", "Sentidos Alerta"], 
+    cicatrices: ["Trauma Oscuro", "Sombras Persistentes"] 
+  },
+  poesia: { 
+    rasgos: ["Sensibilidad Profunda", "Espíritu Poético"], 
+    cicatrices: ["Corazón Melancólico", "Anhelo Inconsolable"] 
+  },
+  clasicos: { 
+    rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], 
+    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
+  },
+  filosofia: { 
+    rasgos: ["Criterio Propio", "Mente Inquisitiva"], 
+    cicatrices: ["Duda Existencial", "Espíritu Inquieto"] 
+  },
+  historica: { 
+    rasgos: ["Perspectiva Épica", "Conciencia del Tiempo"], 
+    cicatrices: ["Memoria Pesada", "Cicatriz de Eras"] 
+  },
+  ciencia_ficcion: { 
+    rasgos: ["Visión Futurista", "Curiosidad Cósmica"], 
+    cicatrices: ["Desconexión Humana", "Vértigo Digital"] 
+  }
 };
 
 // Elementos DOM
@@ -60,11 +81,26 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // 2. Buscador de Google Books API
-btnBuscarGB.addEventListener("click", buscarEnGoogleBooks);
-inputBuscarGB.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") {
+if (btnBuscarGB) {
+  btnBuscarGB.addEventListener("click", (e) => {
     e.preventDefault();
     buscarEnGoogleBooks();
+  });
+}
+
+if (inputBuscarGB) {
+  inputBuscarGB.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      buscarEnGoogleBooks();
+    }
+  });
+}
+
+// Cerrar desplegable si se hace clic fuera de él
+document.addEventListener("click", (e) => {
+  if (divResultadosGB && !divResultadosGB.contains(e.target) && e.target !== inputBuscarGB && e.target !== btnBuscarGB) {
+    divResultadosGB.style.display = "none";
   }
 });
 
@@ -73,34 +109,56 @@ async function buscarEnGoogleBooks() {
   if (!query) return;
 
   divResultadosGB.style.display = "block";
-  divResultadosGB.innerHTML = "<div class='item-resultado'>⏳ Buscando libros...</div>";
+  divResultadosGB.innerHTML = "<div class='item-resultado'>⏳ Buscando tomos en la gran biblioteca...</div>";
 
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=${GOOGLE_BOOKS_API_KEY}`);
+    // Consulta a Google Books
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+    
+    if (!response.ok) {
+      throw new Error(`Respuesta HTTP no válida: ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {
-      divResultadosGB.innerHTML = "<div class='item-resultado'>No se encontraron resultados.</div>";
+      divResultadosGB.innerHTML = "<div class='item-resultado'>No se encontraron libros.</div>";
       return;
     }
 
     divResultadosGB.innerHTML = "";
+    
     data.items.forEach(item => {
       const info = item.volumeInfo;
+      const autores = info.authors ? info.authors.join(", ") : "Autor desconocido";
+      const imagenUrl = (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) 
+        ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail).replace("http://", "https://") 
+        : "";
+
       const div = document.createElement("div");
       div.className = "item-resultado";
-      div.innerHTML = `<strong>${info.title}</strong> - ${info.authors ? info.authors.join(", ") : "Autor desconocido"}`;
-      div.addEventListener("click", () => seleccionarLibroGB(info));
+      div.style.cssText = "display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #444;";
+      
+      div.innerHTML = `
+        ${imagenUrl ? `<img src="${imagenUrl}" style="width: 35px; height: 50px; object-fit: cover; border-radius: 3px;">` : `<div style="width: 35px; height: 50px; background: #333; display: flex; align-items: center; justify-content: center; font-size: 10px;">Sin foto</div>`}
+        <div>
+          <div style="font-weight: bold; color: #ffd700;">${info.title}</div>
+          <div style="font-size: 0.85em; color: #ccc;">${autores}</div>
+        </div>
+      `;
+
+      div.addEventListener("click", () => seleccionarLibroGB(info, imagenUrl));
       divResultadosGB.appendChild(div);
     });
+
   } catch (error) {
     console.error("Error al consultar Google Books API:", error);
-    divResultadosGB.innerHTML = "<div class='item-resultado'>❌ Error en la búsqueda.</div>";
+    divResultadosGB.innerHTML = "<div class='item-resultado'>❌ Error al conectar con Google Books.</div>";
   }
 }
 
 // 3. Autocompletar Formulario desde Google Books
-function seleccionarLibroGB(info) {
+function seleccionarLibroGB(info, urlImagen) {
   document.getElementById("titulo").value = info.title || "";
   document.getElementById("autor").value = info.authors ? info.authors.join(", ") : "";
   document.getElementById("paginas").value = info.pageCount || 100;
@@ -110,8 +168,7 @@ function seleccionarLibroGB(info) {
   }
 
   // Cargar Portada de Google Books
-  if (info.imageLinks && (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail)) {
-    const urlImagen = (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail).replace("http://", "https://");
+  if (urlImagen) {
     inputPortadaGB.value = urlImagen;
     previewPortada.src = urlImagen;
     previewPortada.style.display = "block";
@@ -133,6 +190,7 @@ function seleccionarLibroGB(info) {
     actualizarHuellasPorGenero();
   }
 
+  // Ocultar la lista flotante
   divResultadosGB.style.display = "none";
 }
 
@@ -189,7 +247,6 @@ window.eliminarTag = function(tipo, index) {
 
 // 5. FUNCIONES DE SUBIDA A CLOUDINARY (Archivo Local o URL externa)
 
-// Subir un archivo local seleccionado desde el equipo
 async function subirArchivoACloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -203,10 +260,9 @@ async function subirArchivoACloudinary(file) {
   return data.secure_url;
 }
 
-// Subir una imagen pasando directamente la URL traída de Google Books
 async function subirUrlACloudinary(urlImagen) {
   const formData = new FormData();
-  formData.append("file", urlImagen); // Cloudinary acepta URLs directas en el campo 'file'
+  formData.append("file", urlImagen);
   formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
@@ -244,12 +300,9 @@ form.addEventListener("submit", async (e) => {
 
     btnSubmit.innerText = "⏳ Procesando y subiendo portada a Cloudinary...";
 
-    // Prioridad 1: Subir archivo adjunto manualmente
     if (archivoImagen) {
       finalPortadaUrl = await subirArchivoACloudinary(archivoImagen);
-    } 
-    // Prioridad 2: Guardar en Cloudinary la portada obtenida desde Google Books
-    else if (urlPortadaGB) {
+    } else if (urlPortadaGB) {
       finalPortadaUrl = await subirUrlACloudinary(urlPortadaGB);
     }
 
@@ -264,7 +317,7 @@ form.addEventListener("submit", async (e) => {
       genero,
       puntosPrestigio,
       descripcion,
-      portadaUrl: finalPortadaUrl, // Esta URL SIEMPRE apuntará a tu CDN de Cloudinary
+      portadaUrl: finalPortadaUrl,
       rasgosOtorga: listaRasgos,
       cicatricesOtorga: listaCicatrices,
       idMes: idHistorico,
@@ -278,9 +331,8 @@ form.addEventListener("submit", async (e) => {
     await batch.commit();
 
     mensajeEstado.innerText = `✅ ¡Reto publicado con éxito en Cloudinary y Firestore!`;
-    mensajeEstado.style.color = "green";
+    mensajeEstado.style.color = "#4CAF50";
     
-    // Limpieza
     form.reset();
     inputPortadaGB.value = "";
     previewPortada.style.display = "none";

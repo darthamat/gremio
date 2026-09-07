@@ -1,0 +1,25 @@
+/* Contenedor relativo para posicionar el desplegable */
+.buscador-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+/* Desplegable de resultados de Google Books */
+#resultados-busqueda {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #2a221b;
+  border: 1px solid #d4af37;
+  border-radius: 4px;
+  max-height: 250px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.item-resultado:hover {
+  background: #3d3024;
+}
