@@ -24,13 +24,13 @@ async function cargarOrdenAventureros() {
             const data = docSnap.data();
             listaAventureros.push({
                 id: docSnap.id,
-                nombre: data.nombre || data.nombreReal || data.email || "Aventurero Anónimo",
+                nombre: data.nombre || data.email || "Aventurero Anónimo",
                 clase: data.clase || "Iniciado",
-                rol: data.rol || data.tipoUsuario || "Aventurero",
+                rol: data.rol || "Aventurero",
                 nivel: Number(data.nivel) || 1,
                 prestigio: Number(data.prestigio) || 0,
-                // Leemos imagen_avatar, photoURL o avatar de Firestore
-                avatar: data.imagen_avatar || data.photoURL || data.avatar || "/img/default-avatar.jpg",
+                // Leemos photoURL o avatar de Firestore
+                avatar: data.photoURL || data.avatar || "/img/default-avatar.jpg",
                 paginasLeidas: Number(data.paginasLeidas) || 0,
                 librosCompletados: Number(data.librosCompletados) || 0
             });
@@ -49,7 +49,6 @@ async function cargarOrdenAventureros() {
         );
         let archimago = null;
         if (archimagoIndex !== -1) {
-            // El Archimago sí lo separamos de la clasificación general
             archimago = listaAventureros.splice(archimagoIndex, 1)[0];
         }
 
@@ -60,20 +59,22 @@ async function cargarOrdenAventureros() {
             return a.nombre.localeCompare(b.nombre);
         });
 
-        // 3. Campeón: El #1 de la clasificación
-        const campeon = listaAventureros.length > 0 ? listaAventureros[0] : null;
-
-        // 4. Señores del Gremio: Del puesto #2 al #6 (máximo 5) usando .slice() (NO corta el array)
+        // 3. Extraer Señores del Gremio SOLO SI hay más de 1 aventurero disponible
         let senoresGremio = [];
         if (listaAventureros.length > 1) {
-            senoresGremio = listaAventureros.slice(1, 6);
+            // Se toman máximo 5 señores, pero dejando siempre al menos 1 para el Campeón
+            const cantidadSenores = Math.min(listaAventureros.length - 1, 5);
+            senoresGremio = listaAventureros.splice(0, cantidadSenores);
         }
+
+        // 4. El primer puesto restante es el Campeón
+        const campeon = listaAventureros.length > 0 ? listaAventureros[0] : null;
 
         // 5. Renderizar cada bloque en el DOM
         mostrarArchimago(archimago);
-        mostrarCampeon(campeon);
         mostrarSenoresGremio(senoresGremio);
-        mostrarRestoAventureros(listaAventureros); // Muestra la lista completa ordenada (#1, #2, #3...)
+        mostrarCampeon(campeon);
+        mostrarRestoAventureros(listaAventureros); // Muestra a todos los aventureros incluyendo al Campeón
 
     } catch (error) {
         console.error("Error al cargar la Orden de Aventureros:", error);
@@ -107,33 +108,6 @@ function mostrarArchimago(archimago) {
     `;
 }
 
-// 👑 Renderizar la tarjeta del Campeón
-function mostrarCampeon(campeon) {
-    const contenedorCampeon = document.getElementById("contenedor-campeon");
-    if (!contenedorCampeon) return;
-
-    if (!campeon) {
-        contenedorCampeon.innerHTML = `<p class="sin-datos">No hay un Campeón en la Orden.</p>`;
-        return;
-    }
-
-    contenedorCampeon.innerHTML = `
-        <div class="campeon-card">
-            <div class="corona-badge">👑 CAMPEÓN DE LOS AVENTUREROS</div>
-            <div class="campeon-avatar-frame">
-                <img src="${campeon.avatar}" alt="${campeon.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
-            </div>
-            <h2>${campeon.nombre}</h2>
-            <span class="campeon-clase">${campeon.clase} - Nivel ${campeon.nivel}</span>
-            <div class="campeon-stats">
-                <span>✨ Prestigio: <strong>${Math.round(campeon.prestigio)}</strong></span>
-                <span>📖 Páginas: <strong>${campeon.paginasLeidas}</strong></span>
-                <span>📚 Libros: <strong>${campeon.librosCompletados}</strong></span>
-            </div>
-        </div>
-    `;
-}
-
 // 🛡️ Renderizar Señores del Gremio
 function mostrarSenoresGremio(senores) {
     const contenedor = document.getElementById("contenedor-senores");
@@ -162,7 +136,34 @@ function mostrarSenoresGremio(senores) {
     });
 }
 
-// 📜 Renderizar la lista completa de aventureros
+// 👑 Renderizar la tarjeta del Campeón
+function mostrarCampeon(campeon) {
+    const contenedorCampeon = document.getElementById("contenedor-campeon");
+    if (!contenedorCampeon) return;
+
+    if (!campeon) {
+        contenedorCampeon.innerHTML = `<p class="sin-datos">No hay un Campeón en la Orden.</p>`;
+        return;
+    }
+
+    contenedorCampeon.innerHTML = `
+        <div class="campeon-card">
+            <div class="corona-badge">👑 CAMPEÓN DE LOS AVENTUREROS</div>
+            <div class="campeon-avatar-frame">
+                <img src="${campeon.avatar}" alt="${campeon.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
+            </div>
+            <h2>${campeon.nombre}</h2>
+            <span class="campeon-clase">${campeon.clase} - Nivel ${campeon.nivel}</span>
+            <div class="campeon-stats">
+                <span>✨ Prestigio: <strong>${Math.round(campeon.prestigio)}</strong></span>
+                <span>📖 Páginas: <strong>${campeon.paginasLeidas}</strong></span>
+                <span>📚 Libros: <strong>${campeon.librosCompletados}</strong></span>
+            </div>
+        </div>
+    `;
+}
+
+// 📜 Renderizar la lista de aventureros
 function mostrarRestoAventureros(lista) {
     const contenedorLista = document.getElementById("lista-aventureros");
     if (!contenedorLista) return;
