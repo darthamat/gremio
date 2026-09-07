@@ -172,5 +172,9 @@ export function obtenerClaseAleatoria() {
  * @returns {Object} Objeto de la clase o Fantasía por defecto
  */
 export function obtenerArquetipoPorId(id) {
-    return CLASES_GREMIO[id] || CLASES_GREMIO.fantasia;
+    if (id && CLASES_GREMIO[id]) {
+        return CLASES_GREMIO[id];
+    }
+    // Si no se encuentra o el ID no es válido, asigna una clase aleatoria
+    return obtenerClaseAleatoria();
 }

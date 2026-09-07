@@ -1,6 +1,7 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
+import { obtenerArquetipoPorId } from "./clases.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -22,10 +23,16 @@ async function cargarOrdenAventureros() {
 
         snapshot.forEach(docSnap => {
             const data = docSnap.data();
+            
+            // Si data.clase coincide con un ID (ej: "misterio"), o si no existe/es inválido, 
+            // obtenerArquetipoPorId devolverá la clase correspondiente o una ALEATORIA.
+            const arquetipo = obtenerArquetipoPorId(data.clase);
+
             listaAventureros.push({
                 id: docSnap.id,
                 nombre: data.nombre || data.nombreReal || data.email || "Aventurero Anónimo",
-                clase: data.clase || "Iniciado",
+                claseRaw: data.clase || "", // Conservamos el valor original para comprobar 'archimago'
+                clase: arquetipo.nombre, // Nombre épico (ej: "Inquisidor del Misterio")
                 rol: data.rol || data.tipoUsuario || "Aventurero",
                 prestigio: Number(data.prestigio) || 0,
                 avatar: data.imagen_avatar || data.photoURL || data.avatar || "/img/default-avatar.jpg",
@@ -48,9 +55,10 @@ async function cargarOrdenAventureros() {
             return;
         }
 
-        // 2. Extraer Archimago (Si existe por rol o clase)
+        // 2. Extraer Archimago (Comprobando tanto el rol como la clase original en Firestore)
         const archimagoIndex = listaAventureros.findIndex(
-            a => (a.rol && a.rol.toLowerCase() === "archimago") || (a.clase && a.clase.toLowerCase() === "archimago")
+            a => (a.rol && a.rol.toLowerCase() === "archimago") || 
+                 (a.claseRaw && a.claseRaw.toLowerCase() === "archimago")
         );
         let archimago = null;
         if (archimagoIndex !== -1) {
