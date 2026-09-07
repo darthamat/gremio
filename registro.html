@@ -27,7 +27,7 @@
         <p class="intro-text">Responde al llamado de la tinta para registrar tu presencia en el Códice del Gremio.</p>
     </header>
 
-    <form class="character-form">
+    <form class="character-form" id="registro-form">
 
         <!-- Paso 1: Datos Personales -->
         <fieldset class="form-section">
@@ -38,7 +38,7 @@
                 <input type="text" id="reg-username" placeholder="Ej. Kvothe el Sin Sangre" required>
             </div>
 
- <div class="form-group">
+            <div class="form-group">
                 <label for="real-username">Nombre Real</label>
                 <input type="text" id="real-username" placeholder="Ej. José Diaz" required>
             </div>
@@ -61,8 +61,9 @@
 
             <div class="class-selector">
 
+                <!-- Sin el atributo 'checked' por defecto -->
                 <label class="class-card">
-                    <input type="radio" name="class-choice" value="fantasia" checked>
+                    <input type="radio" name="class-choice" value="fantasia">
                     <div class="card-content">
                         <span class="class-icon">🧙‍♂️</span>
                         <h3>Mago/a CuentaCuentos</h3>
@@ -80,7 +81,7 @@
                 </label>
 
                 <label class="class-card">
-                    <input type="radio" name="class-choice" value="ciencia-ficcion">
+                    <input type="radio" name="class-choice" value="cienciaFiccion">
                     <div class="card-content">
                         <span class="class-icon">🚀</span>
                         <h3>Pirata Estelar</h3>
@@ -89,49 +90,31 @@
                 </label>
 
                 <label class="class-card">
-                    <input type="radio" name="class-choice" value="erudito">
+                    <input type="radio" name="class-choice" value="guerreroFriki">
                     <div class="card-content">
-                        <span class="class-icon">📚</span>
-                        <h3>Erudito/a</h3>
-                        <p>Buscador/a del saber a través del ensayo, la historia y la no ficción.</p>
+                        <span class="class-icon">⚔️</span>
+                        <h3>Guerrero/a Friki</h3>
+                        <p>Defensor/a de los datos puros. Devora ensayos, historia y biografías para ganar cada debate en la taberna.</p>
                     </div>
                 </label>
 
-                  <label class="class-card">
-    <input type="radio" name="class-choice" value="guerrero">
-    <div class="card-content">
-        <span class="class-icon">⚔️</span>
-        <h3>Guerrero/a Friki</h3>
-        <p>Defensor/a de los datos puros. Devora ensayos, historia y biografías para ganar cada debate en la taberna.</p>
-    </div>
-</label>
+                <label class="class-card">
+                    <input type="radio" name="class-choice" value="ladronLibros">
+                    <div class="card-content">
+                        <span class="class-icon">🗡️</span>
+                        <h3>Ladrón/a de Libros</h3>
+                        <p>Experto/a en giros de guión, misterios y thrillers oscuros. Devora capítulos a la velocidad de las sombras.</p>
+                    </div>
+                </label>
 
-                  <label class="class-card">
-    <input type="radio" name="class-choice" value="picaro">
-    <div class="card-content">
-        <span class="class-icon">🗡️</span>
-        <h3>Ladrón/a de Libros</h3>
-        <p>Experto/a en giros de guión, misterios y thrillers oscuros. Devora capítulos a la velocidad de las sombras.</p>
-    </div>
-</label>
-
-                  <label class="class-card">
-    <input type="radio" name="class-choice" value="explorador">
-    <div class="card-content">
-        <span class="class-icon">🛡️</span>
-        <h3>Explorador/a</h3>
-        <p>Descubridor/a de nuevos mundos, historias y realidades alternativas. Devora libros como si fueran aventuras.</p>
-    </div>
-</label>
-
-                  <label class="class-card random-card">
-    <input type="radio" name="class-choice" value="aleatorio" id="card-random">
-    <div class="card-content">
-        <span class="class-icon">🎲</span>
-        <h3>Destino Impredecible</h3>
-        <p>Deja que la suerte determine tu clase y te asigne un nombre legendario en el Códice.</p>
-    </div>
-</label>
+                <label class="class-card random-card">
+                    <input type="radio" name="class-choice" value="aleatorio" id="card-random">
+                    <div class="card-content">
+                        <span class="class-icon">🎲</span>
+                        <h3>Destino Impredecible</h3>
+                        <p>Deja que la suerte determine tu clase y te asigne un arquetipo legendario en el Códice.</p>
+                    </div>
+                </label>
 
             </div>
         </fieldset>

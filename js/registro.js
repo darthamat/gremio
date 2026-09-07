@@ -2,9 +2,9 @@
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Importaciones centralizadas con rutas relativas correctas
+// Importaciones de configuración y arquetipos
 import { auth, db } from "./firebase-config.js";
-import { generarNombreAleatorio, obtenerClaseAleatoria, obtenerArquetipoPorId } from "./arquetipos.js";
+import { generarNombreAleatorio, obtenerClaseAleatoria, obtenerArquetipoPorId } from "./clases.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".character-form");
@@ -12,23 +12,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const inputNombre = document.getElementById("reg-username");
 
     // -----------------------------------------------------------
-    // 1. Gestión de selección de tarjetas (Lógica interactiva)
+    // 1. Gestión de selección interactiva (Al hacer clic en las opciones)
     // -----------------------------------------------------------
     classCards.forEach(radio => {
         radio.addEventListener("change", (e) => {
             const valorSeleccionado = e.target.value;
 
             if (valorSeleccionado === "aleatorio") {
-                // Genera un nombre aleatorio
-                if (inputNombre) {
+                // Genera un nombre de aventurero aleatorio si el campo existe
+                if (inputNombre && !inputNombre.value.trim()) {
                     inputNombre.value = generarNombreAleatorio();
                 }
 
-                // Asigna una clase real al azar y guarda su ID en el dataset
+                // Genera una clase al azar y guarda su ID en el dataset
                 const claseAzar = obtenerClaseAleatoria();
                 e.target.dataset.claseAsignadaId = claseAzar.id;
             } else {
-                // Si selecciona otra clase, se limpia la asignación previa del azar
+                // Si elige una clase manual, limpia la asignación previa del azar
                 delete e.target.dataset.claseAsignadaId;
             }
         });
@@ -42,40 +42,56 @@ document.addEventListener("DOMContentLoaded", () => {
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        // A. Validar selección de Clase Lectora
+        const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
+
+        if (!radioSeleccionado) {
+            alert("⚠️ ¡Aguardad, Aventurero! Debes elegir una Clase Lectora o dejar tu suerte en manos del 'Destino Impredecible' 🎲 antes de firmar el Códice.");
+            
+            const contenedorClases = document.querySelector(".class-selector");
+            if (contenedorClases) {
+                contenedorClases.scrollIntoView({ behavior: "smooth" });
+            }
+            return;
+        }
+
+        let idSeleccionada = radioSeleccionado.value;
+
+        // B. Resolver asignación si eligió 'Destino Impredecible'
+        if (idSeleccionada === "aleatorio") {
+            idSeleccionada = radioSeleccionado.dataset.claseAsignadaId || obtenerClaseAleatoria().id;
+            const claseAzarData = obtenerArquetipoPorId(idSeleccionada);
+            if (claseAzarData) {
+                alert(`🎲 ¡Los dados del destino han hablado! Has sido asignado a la clase: "${claseAzarData.nombre}".`);
+            }
+        }
+
+        // C. Obtener el objeto de datos de la clase seleccionada
+        const datosClase = obtenerArquetipoPorId(idSeleccionada);
+        const nombreClaseFinal = datosClase ? datosClase.nombre : "Aventurero Novato";
+
+        // D. Leer los campos del formulario
         const username = document.getElementById("reg-username").value.trim();
         const realname = document.getElementById("real-username").value.trim();
         const email = document.getElementById("reg-email").value.trim();
         const password = document.getElementById("reg-password").value;
 
-        // Capturar elemento de clase seleccionado
-        const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
-        let idSeleccionada = radioSeleccionado ? radioSeleccionado.value : "fantasia";
-
-        // Si eligió la tarjeta aleatoria, tomar la ID que generó la tirada al azar
-        if (idSeleccionada === "aleatorio") {
-            idSeleccionada = radioSeleccionado.dataset.claseAsignadaId || obtenerClaseAleatoria().id;
-        }
-
-        // Buscar los datos de la clase desde CLASES_GREMIO
-        const datosClase = obtenerArquetipoPorId(idSeleccionada);
-        const nombreClaseFinal = datosClase ? datosClase.nombre : "Mago/a CuentaCuentos";
-
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
 
         try {
-            // Registrar usuario en Firebase Auth
+            // E. Registrar usuario en Firebase Auth
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
-            // Guardar Ficha de Personaje en Firestore
+            // F. Guardar Ficha de Personaje en Firestore
             await setDoc(doc(db, "aventureros", user.uid), {
                 uid: user.uid,
                 nombre: username,
                 nombreReal: realname,
                 email: email,
-                clase: nombreClaseFinal,    // 👈 Nombre legible (ej: "Mago/a CuentaCuentos")
-                claseId: idSeleccionada,     // 👈 Identificador de clase (ej: "fantasia")
+                clase: nombreClaseFinal,     // Ejemplo: "Mago/a CuentaCuentos"
+                claseId: idSeleccionada,      // Ejemplo: "fantasia"
                 nivel: 1,
                 xp: 0,
                 prestigio: 0,
@@ -94,7 +110,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 suerte: 0
             });
 
-            // Redirigir a la pantalla de carga intermedia
+            // G. Redirigir a la pantalla de carga
             window.location.href = "carga.html";
 
         } catch (error) {
