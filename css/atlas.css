@@ -1,0 +1,260 @@
+/* css/atlas.css */
+
+.atlas-header {
+  text-align: center;
+  padding: 30px 20px 10px 20px;
+}
+
+.atlas-header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 2.5rem;
+  color: var(--gold-primary, #ffd700);
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+  margin-bottom: 8px;
+}
+
+.atlas-header .subtitle {
+  font-family: 'Cinzel', serif;
+  color: #c8a251;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.atlas-header .intro-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.25rem;
+  color: #cccccc;
+  max-width: 650px;
+  margin: 0 auto;
+}
+
+/* 🗺️ Contenedor General */
+.atlas-container {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 25px;
+  max-width: 1300px;
+  margin: 25px auto;
+  padding: 0 20px;
+}
+
+/* 🖼️ Marco del Mapa */
+.mapa-wrapper {
+  background: rgba(15, 12, 10, 0.9);
+  border: 3px double var(--gold-primary, #c8a251);
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.9);
+  position: relative;
+}
+
+.mapa-frame {
+  width: 100%;
+  height: 650px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(200, 162, 81, 0.3);
+}
+
+/* Lienzo Pergamino */
+.mapa-canvas {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #2b231b 0%, #120e0b 100%);
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 10px;
+  padding: 15px;
+}
+
+.rosa-vientos {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 3.5rem;
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+/* Regiones del Mapa */
+.region-territorio {
+  border: 2px dashed rgba(200, 162, 81, 0.3);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.5s ease;
+  background-size: cover;
+  background-position: center;
+  /* Por defecto están oscuras por la Niebla de Guerra */
+  filter: grayscale(80%) brightness(0.4);
+}
+
+.region-territorio:hover {
+  filter: grayscale(30%) brightness(0.7);
+}
+
+.region-fantasia { background-color: rgba(128, 0, 128, 0.15); }
+.region-misterio { background-color: rgba(139, 0, 0, 0.15); }
+.region-ciencia  { background-color: rgba(0, 102, 204, 0.15); }
+.region-erudito  { background-color: rgba(218, 165, 32, 0.15); }
+
+/* Etiquetas de Reino en el Mapa */
+.marcador-reino {
+  background: rgba(10, 10, 15, 0.85);
+  border: 1px solid var(--gold-primary, #c8a251);
+  padding: 12px 20px;
+  border-radius: 8px;
+  text-align: center;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
+
+.icono-reino {
+  font-size: 1.8rem;
+  display: block;
+}
+
+.nombre-reino {
+  font-family: 'Cinzel', serif;
+  color: #fff;
+  font-weight: 600;
+  display: block;
+  font-size: 1rem;
+}
+
+.porcentaje-reino {
+  font-family: 'Inter', sans-serif;
+  color: var(--gold-primary, #ffd700);
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+/* 📊 Panel Lateral de Barras y Datos */
+.panel-progreso-gremio {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.card-hito-global, .card-reinos-progreso, .card-ultimos-aportes {
+  background: rgba(20, 20, 30, 0.95);
+  border: 1px solid rgba(200, 162, 81, 0.4);
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+
+.card-hito-global h2, .card-reinos-progreso h3, .card-ultimos-aportes h3 {
+  font-family: 'Cinzel', serif;
+  color: var(--gold-primary, #ffd700);
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(200, 162, 81, 0.2);
+  padding-bottom: 6px;
+}
+
+/* Contador Principal */
+.contador-paginas-totales {
+  text-align: center;
+  margin: 15px 0;
+}
+
+.numero-magico {
+  font-family: 'Cinzel', serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #fff;
+  display: block;
+  text-shadow: 0 0 10px rgba(255,215,0,0.3);
+}
+
+.etiqueta-paginas {
+  font-family: 'Cormorant Garamond', serif;
+  color: #aaa;
+  font-size: 1.1rem;
+}
+
+.meta-texto {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: right;
+  margin-top: 6px;
+}
+
+/* 📏 Barras de Progreso Estilizadas */
+.barra-contenedor {
+  width: 100%;
+  height: 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  margin-top: 6px;
+}
+
+.barra-relleno {
+  height: 100%;
+  width: 0%;
+  transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 6px;
+}
+
+.barra-relleno.global   { background: linear-gradient(90deg, #c8a251, #ffd700); }
+.barra-relleno.fantasia { background: linear-gradient(90deg, #8a2be2, #da70d6); }
+.barra-relleno.misterio { background: linear-gradient(90deg, #8b0000, #ff4500); }
+.barra-relleno.ciencia  { background: linear-gradient(90deg, #0066cc, #00ffff); }
+.barra-relleno.erudito  { background: linear-gradient(90deg, #b8860b, #ffee58); }
+
+.item-progreso-reino {
+  margin-bottom: 15px;
+}
+
+.reino-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #ddd;
+  font-family: 'Inter', sans-serif;
+}
+
+.reino-paginas {
+  color: var(--gold-primary, #c8a251);
+  font-weight: 600;
+}
+
+/* 📜 Feed de Aportes */
+.lista-aportes {
+  list-style: none;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.lista-aportes li {
+  font-size: 0.85rem;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  color: #ccc;
+  line-height: 1.4;
+}
+
+.lista-aportes strong {
+  color: #ffd700;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .atlas-container {
+    grid-template-columns: 1fr;
+  }
+  .mapa-frame {
+    height: 450px;
+  }
+}

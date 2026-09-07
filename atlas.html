@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Atlas del Códice - Gremio de Lectura</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- CSS del Proyecto -->
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/atlas.css">
+</head>
+<body>
+
+  <!-- Encabezado de la Cartografía -->
+  <header class="atlas-header">
+    <div class="header-content">
+      <p class="subtitle">🗺️ Cartografía Colectiva del Gremio</p>
+      <h1>El Atlas Unificado de Mundos</h1>
+      <p class="intro-text">
+        Cada tomo finalizado por los Aventureros disipa las nieblas de lo desconocido.
+        Unid vuestras lecturas para revelar la totalidad del continente.
+      </p>
+    </div>
+  </header>
+
+  <main class="atlas-container">
+
+    <!-- Sección del Mapa Interactivo -->
+    <section class="mapa-wrapper">
+      <div class="mapa-frame">
+        <!-- Capa de fondo del mapa (Irá cambiando o ganando brillo) -->
+        <div class="mapa-canvas" id="mapa-canvas">
+          
+          <!-- Regiones del Continente (Rendimiento dinámico por opacidad/efectos) -->
+          <div class="region-territorio region-fantasia" id="region-fantasia">
+            <div class="marcador-reino">
+              <span class="icono-reino">🧙‍♂️</span>
+              <span class="nombre-reino">Reino de la Fantasía</span>
+              <span class="porcentaje-reino" id="porcentaje-fantasia">0% Explorado</span>
+            </div>
+          </div>
+
+          <div class="region-territorio region-misterio" id="region-misterio">
+            <div class="marcador-reino">
+              <span class="icono-reino">🔍</span>
+              <span class="nombre-reino">Bosque del Misterio</span>
+              <span class="porcentaje-reino" id="porcentaje-misterio">0% Explorado</span>
+            </div>
+          </div>
+
+          <div class="region-territorio region-ciencia" id="region-ciencia">
+            <div class="marcador-reino">
+              <span class="icono-reino">🚀</span>
+              <span class="nombre-reino">Frontera Estelar</span>
+              <span class="porcentaje-reino" id="porcentaje-ciencia">0% Explorado</span>
+            </div>
+          </div>
+
+          <div class="region-territorio region-erudito" id="region-erudito">
+            <div class="marcador-reino">
+              <span class="icono-reino">📚</span>
+              <span class="nombre-reino">Ciudades del Saber</span>
+              <span class="porcentaje-reino" id="porcentaje-erudito">0% Explorado</span>
+            </div>
+          </div>
+
+          <!-- Rosa de los vientos ornamental -->
+          <div class="rosa-vientos">🧭</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Panel Lateral: Barras de Progreso Cooperativo -->
+    <aside class="panel-progreso-gremio">
+      
+      <!-- Hito Global -->
+      <div class="card-hito-global">
+        <h2>📜 Avance Mundial</h2>
+        <div class="contador-paginas-totales">
+          <span class="numero-magico" id="total-paginas-comunidad">0</span>
+          <span class="etiqueta-paginas">Páginas Devoradas</span>
+        </div>
+        <div class="barra-contenedor global">
+          <div class="barra-relleno global" id="barra-global" style="width: 0%;"></div>
+        </div>
+        <p class="meta-texto" id="texto-meta-global">Meta del Gremio: 100,000 páginas</p>
+      </div>
+
+      <!-- Conquistas por Género -->
+      <div class="card-reinos-progreso">
+        <h3>⚔️ Conquistas por Territorio</h3>
+
+        <!-- Fantasía -->
+        <div class="item-progreso-reino">
+          <div class="reino-info">
+            <span class="reino-titulo">🧙‍♂️ Fantasía Épica</span>
+            <span class="reino-paginas" id="paginas-fantasia">0 págs</span>
+          </div>
+          <div class="barra-contenedor fantasia">
+            <div class="barra-relleno fantasia" id="barra-fantasia" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Misterio / Terror -->
+        <div class="item-progreso-reino">
+          <div class="reino-info">
+            <span class="reino-titulo">🔍 Misterio & Terror</span>
+            <span class="reino-paginas" id="paginas-misterio">0 págs</span>
+          </div>
+          <div class="barra-contenedor misterio">
+            <div class="barra-relleno misterio" id="barra-misterio" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Ciencia Ficción -->
+        <div class="item-progreso-reino">
+          <div class="reino-info">
+            <span class="reino-titulo">🚀 Ciencia Ficción</span>
+            <span class="reino-paginas" id="paginas-ciencia">0 págs</span>
+          </div>
+          <div class="barra-contenedor ciencia">
+            <div class="barra-relleno ciencia" id="barra-ciencia" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- No Ficción / Erudito -->
+        <div class="item-progreso-reino">
+          <div class="reino-info">
+            <span class="reino-titulo">📚 No Ficción & Ensayo</span>
+            <span class="reino-paginas" id="paginas-erudito">0 págs</span>
+          </div>
+          <div class="barra-contenedor erudito">
+            <div class="barra-relleno erudito" id="barra-erudito" style="width: 0%;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Feed de Descubrimientos Recientes -->
+      <div class="card-ultimos-aportes">
+        <h3>📜 Registro de Exploradores</h3>
+        <ul class="lista-aportes" id="lista-ultimos-aportes">
+          <li class="aporte-item cargando">Sincronizando con el Códice...</li>
+        </ul>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <script type="module" src="js/atlas.js"></script>
+</body>
+</html>
