@@ -1,4 +1,4 @@
-import { db } from 'js/firebase-config.js';
+import { db } from './firebase-config.js';
 import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
 async function cargarRetoActualGremio() {
