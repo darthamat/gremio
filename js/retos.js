@@ -1,91 +1,183 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  arrayUnion 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const contenedorRetos = document.getElementById("contenedor-retos");
+let usuarioSesionId = null;
 
-// Verificar sesión de usuario
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
-  
-  // Cargar retos desde Firestore
-  await cargarRetos();
+  usuarioSesionId = user.uid;
+  await cargarYRenderizarRetos();
 });
 
-async function cargarRetos() {
-  contenedorRetos.innerHTML = "<p style='text-align:center; color:#fff;'>📜 Consultando los pergaminos del Gremio...</p>";
-
+async function cargarYRenderizarRetos() {
   try {
-    // 1. Intentar obtener el reto actual
-    const docActual = await getDoc(doc(db, "retos", "actual"));
+    // 1. Obtener datos del usuario en sesión
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    const userSnap = await getDoc(userRef);
+    const usuarioData = userSnap.exists() ? userSnap.data() : {};
 
-    if (!docActual.exists()) {
-      contenedorRetos.innerHTML = `
-        <div style="text-align: center; color: #fff; padding: 20px;">
-          <h2>📜 No hay retos activos en este momento</h2>
-          <p>Un administrador debe publicar el reto del mes desde el panel de control.</p>
-        </div>
-      `;
+    const retosAceptados = usuarioData.retosAceptados || [];
+    const retosCompletados = usuarioData.retosCompletados || [];
+
+    // 2. Obtener la colección de retos desde Firestore
+    const snapshot = await getDocs(collection(db, "retos"));
+    let listaRetos = [];
+
+    snapshot.forEach((docSnap) => {
+      listaRetos.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    // Ordenar por fecha de creación (los más recientes primero)
+    listaRetos.sort((a, b) => (b.fechaCreacion || 0) - (a.fechaCreacion || 0));
+
+    const contenedorActual = document.getElementById("contenedor-reto-actual");
+    const contenedorPasados = document.getElementById("contenedor-retos-pasados");
+    const elProponente = document.getElementById("proponente-reto");
+
+    if (listaRetos.length === 0) {
+      if (elProponente) elProponente.textContent = "[Aventurero Anónimo]";
+      if (contenedorActual) contenedorActual.innerHTML = `<p class="sin-datos">No hay un reto activo en este momento.</p>`;
       return;
     }
 
-    const reto = docActual.data();
+    // 3. RETO ACTUAL (El primero de la lista)
+    const retoActual = listaRetos[0];
+    const retosPasados = listaRetos.slice(1);
 
-    // 2. Formatear la lista de Rasgos y Cicatrices
-    const listaRasgosHTML = (reto.rasgosOtorga && reto.rasgosOtorga.length > 0)
-      ? reto.rasgosOtorga.map(r => `<span class="tag-huella rasgo">✨ ${r}</span>`).join(" ")
-      : "<small>Sin rasgos asignados</small>";
+    // Rellenar el proponente en la proclamación
+    if (elProponente) {
+      elProponente.textContent = retoActual.proponente || "un aventurero anónimo";
+    }
 
-    const listaCicatricesHTML = (reto.cicatricesOtorga && reto.cicatricesOtorga.length > 0)
-      ? reto.cicatricesOtorga.map(c => `<span class="tag-huella cicatriz">👁️ ${c}</span>`).join(" ")
-      : "<small>Sin cicatrices asignadas</small>";
+    // Estado del reto actual para el usuario que inició sesión
+    const esAceptado = retosAceptados.includes(retoActual.id);
+    const esCompletado = retosCompletados.includes(retoActual.id);
 
-    // 3. Renderizar la tarjeta del reto activo
-    contenedorRetos.innerHTML = `
-      <article class="tarjeta-reto">
-        <div class="reto-portada-box">
-          <img src="${reto.portadaUrl || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" alt="${reto.titulo}" class="reto-portada">
-        </div>
-        
-        <div class="reto-info">
-          <span class="badge-mes">RETO ACTUAL</span>
-          <h2 class="reto-titulo">${reto.titulo}</h2>
-          <h4 class="reto-autor">por ${reto.autor}</h4>
-          
-          <div class="reto-detalles-grid">
-            <p><strong>📖 Páginas:</strong> ${reto.paginas} (Bono de Prestigio)</p>
-            <p><strong>🏷️ Género:</strong> <span style="text-transform: capitalize;">${reto.genero}</span></p>
+    // Renderizar tarjeta del Reto Actual
+    if (contenedorActual) {
+      contenedorActual.innerHTML = `
+        <div class="card-reto-actual">
+          <div class="portada-frame">
+            <img src="${retoActual.portada || '/img/default-reto.jpg'}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
           </div>
-
-          <p class="reto-descripcion">${reto.descripcion}</p>
-
-          <div class="seccion-recompensas">
-            <h3>🎁 Recompensas al completar:</h3>
-            <div class="bloque-huellas">
-              <strong>Rasgos:</strong>
-              <div class="contenedor-tags">${listaRasgosHTML}</div>
+          <div class="info-reto-actual">
+            <h2>${retoActual.titulo || "Misión del Mes"}</h2>
+            <p class="descripcion">${retoActual.descripcion || "Sin descripción proporcionada."}</p>
+            <div class="meta-info">
+              <span>📖 Libro asignado: <strong>${retoActual.libro || 'Libro del mes'}</strong></span>
+              <span>🏆 Recompensa: <strong>+${retoActual.puntos || 0} Prestigio</strong></span>
             </div>
-            <div class="bloque-huellas" style="margin-top: 8px;">
-              <strong>Cicatrices:</strong>
-              <div class="contenedor-tags">${listaCicatricesHTML}</div>
+
+            <div class="acciones-reto">
+              ${esCompletado ? `
+                <div class="sello-completado grande">📜 RETO COMPLETADO</div>
+              ` : `
+                <button id="btn-aceptar" class="btn-magico ${esAceptado ? 'aceptado' : ''}" ${esAceptado ? 'disabled' : ''}>
+                  ${esAceptado ? '⚔️ Reto Aceptado' : '🗡️ Aceptar Reto'}
+                </button>
+                <button id="btn-terminar" class="btn-magico exito" ${!esAceptado ? 'disabled' : ''}>
+                  ✨ Marcar como Terminado
+                </button>
+              `}
             </div>
           </div>
         </div>
-      </article>
-    `;
+      `;
+
+      // Eventos de interacción
+      if (!esCompletado) {
+        const btnAceptar = document.getElementById("btn-aceptar");
+        const btnTerminar = document.getElementById("btn-terminar");
+
+        if (btnAceptar && !esAceptado) {
+          btnAceptar.addEventListener("click", () => aceptarReto(retoActual.id));
+        }
+        if (btnTerminar && esAceptado) {
+          btnTerminar.addEventListener("click", () => terminarReto(retoActual.id, retoActual.puntos || 0));
+        }
+      }
+    }
+
+    // 4. RETOS PASADOS
+    if (contenedorPasados) {
+      contenedorPasados.innerHTML = "";
+
+      if (retosPasados.length === 0) {
+        contenedorPasados.innerHTML = `<p class="sin-datos">No hay retos pasados registrados.</p>`;
+        return;
+      }
+
+      retosPasados.forEach((reto) => {
+        const fueCompletado = retosCompletados.includes(reto.id);
+        const item = document.createElement("div");
+        item.className = "card-reto-pasado";
+        item.innerHTML = `
+          <div class="portada-miniatura">
+            <img src="${reto.portada || '/img/default-reto.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
+            ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
+          </div>
+          <div class="info-reto-pasado">
+            <h3>${reto.titulo}</h3>
+            <span class="proponente-pasado">Propuesto por: <strong>${reto.proponente || 'Anónimo'}</strong></span>
+            <span class="estado-texto ${fueCompletado ? 'exito' : 'pendiente'}">
+              ${fueCompletado ? '✅ Misión Cumplida' : '❌ No Logrado'}
+            </span>
+          </div>
+        `;
+        contenedorPasados.appendChild(item);
+      });
+    }
 
   } catch (error) {
-    console.error("Error al cargar los retos:", error);
-    contenedorRetos.innerHTML = `
-      <div style="text-align: center; color: #ff6b6b; padding: 20px;">
-        ❌ Hubo un error al conectar con la biblioteca del Gremio.
-      </div>
-    `;
+    console.error("Error al cargar retos:", error);
+  }
+}
+
+// Función para aceptar el reto
+async function aceptarReto(retoId) {
+  try {
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    await updateDoc(userRef, {
+      retosAceptados: arrayUnion(retoId)
+    });
+    await cargarYRenderizarRetos();
+  } catch (error) {
+    console.error("Error al aceptar el reto:", error);
+  }
+}
+
+// Función para completar el reto
+async function terminarReto(retoId, puntos) {
+  try {
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    const userSnap = await getDoc(userRef);
+    const prestigioActual = userSnap.exists() ? (userSnap.data().prestigio || 0) : 0;
+
+    await updateDoc(userRef, {
+      retosCompletados: arrayUnion(retoId),
+      prestigio: prestigioActual + puntos
+    });
+
+    await cargarYRenderizarRetos();
+  } catch (error) {
+    console.error("Error al marcar como terminado:", error);
   }
 }

@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gremio de Lectura - Retos Mensuales</title>
   <link rel="stylesheet" href="css/retos.css">
 </head>
@@ -11,8 +12,31 @@
     <h1>📜 Cartel de Retos Mensuales</h1>
   </header>
 
-  <main class="retos-container" id="contenedor-retos">
-    <!-- Los carteles de retos se cargarán dinámicamente con JavaScript -->
+  <main class="main-container">
+    
+    <!-- Proclamación Mágica -->
+    <section class="proclamacion-magica">
+      <p class="texto-proclamacion">
+        Por Orden del Gran Bibliotecario y Archimago <strong>Aurelius Vane</strong>, 
+        YO, La Gran Lectora <strong>Lady Elena Astralis</strong>, en nombre de 
+        <span id="proponente-reto" class="proponente-destacado">Cargando...</span> 
+        ANUNCIO la misión RETO de este mes:
+      </p>
+    </section>
+
+    <!-- Reto Actual con Portada y Botones -->
+    <section id="contenedor-reto-actual" class="seccion-reto-actual">
+      <!-- Se cargará la tarjeta del reto actual dinámicamente -->
+    </section>
+
+    <!-- Historial de Retos Pasados -->
+    <section class="seccion-retos-pasados">
+      <h2 class="titulo-pasados">🏛️ Retos Antiguos</h2>
+      <div id="contenedor-retos-pasados" class="grid-retos-pasados">
+        <!-- Se cargará el historial de retos con sellos dinámicamente -->
+      </div>
+    </section>
+
   </main>
 
   <script type="module" src="js/retos.js"></script>

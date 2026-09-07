@@ -1,6 +1,6 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { app } from "./firebase-config.js"; // 👈 Corregida la ruta de importación
+import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -28,17 +28,14 @@ const HUELLAS_POR_GENERO = {
     rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], 
     cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
   },
- 
   ficcion: { 
-    rasgos: ["imaginación", "Pensamiento inocente"], 
+    rasgos: ["Imaginación", "Pensamiento Inocente"], 
     cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
   },
-   
   no_ficcion: { 
-    rasgos: ["conocimiento", "Pensamiento critico"], 
+    rasgos: ["Conocimiento", "Pensamiento Crítico"], 
     cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
   },
-
   filosofia: { 
     rasgos: ["Criterio Propio", "Mente Inquisitiva"], 
     cicatrices: ["Duda Existencial", "Espíritu Inquieto"] 
@@ -124,7 +121,6 @@ async function buscarEnGoogleBooks() {
   divResultadosGB.innerHTML = "<div class='item-resultado'>⏳ Buscando tomos en la gran biblioteca...</div>";
 
   try {
-    // Consulta a Google Books
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=${GOOGLE_BOOKS_API_KEY}`);
     
     if (!response.ok) {
@@ -202,15 +198,18 @@ function seleccionarLibroGB(info, urlImagen) {
     actualizarHuellasPorGenero();
   }
 
-  // Ocultar la lista flotante
   divResultadosGB.style.display = "none";
 }
 
 // 4. Gestión de Rasgos y Cicatrices
-selectGenero.addEventListener("change", actualizarHuellasPorGenero);
+if (selectGenero) {
+  selectGenero.addEventListener("change", actualizarHuellasPorGenero);
+  // Inicializar al cargar
+  actualizarHuellasPorGenero();
+}
 
 function actualizarHuellasPorGenero() {
-  const gen = selectGenero.value;
+  const gen = selectGenero ? selectGenero.value : "";
   if (HUELLAS_POR_GENERO[gen]) {
     listaRasgos = [...HUELLAS_POR_GENERO[gen].rasgos];
     listaCicatrices = [...HUELLAS_POR_GENERO[gen].cicatrices];
@@ -221,34 +220,41 @@ function actualizarHuellasPorGenero() {
   renderizarTags();
 }
 
-document.getElementById("btn-add-huella").addEventListener("click", () => {
-  const input = document.getElementById("nuevo-rasgo-input");
-  const tipo = document.getElementById("tipo-huella-select").value;
-  const texto = input.value.trim();
+const btnAddHuella = document.getElementById("btn-add-huella");
+if (btnAddHuella) {
+  btnAddHuella.addEventListener("click", () => {
+    const input = document.getElementById("nuevo-rasgo-input");
+    const tipo = document.getElementById("tipo-huella-select").value;
+    const texto = input.value.trim();
 
-  if (!texto) return;
+    if (!texto) return;
 
-  if (tipo === "rasgo") {
-    if (!listaRasgos.includes(texto)) listaRasgos.push(texto);
-  } else {
-    if (!listaCicatrices.includes(texto)) listaCicatrices.push(texto);
-  }
+    if (tipo === "rasgo") {
+      if (!listaRasgos.includes(texto)) listaRasgos.push(texto);
+    } else {
+      if (!listaCicatrices.includes(texto)) listaCicatrices.push(texto);
+    }
 
-  input.value = "";
-  renderizarTags();
-});
+    input.value = "";
+    renderizarTags();
+  });
+}
 
 function renderizarTags() {
   const contRasgos = document.getElementById("container-rasgos");
   const contCicatrices = document.getElementById("container-cicatrices");
 
-  contRasgos.innerHTML = listaRasgos.map((r, i) => 
-    `<span class="tag">✨ ${r} <span onclick="eliminarTag('rasgo', ${i})">&times;</span></span>`
-  ).join("");
+  if (contRasgos) {
+    contRasgos.innerHTML = listaRasgos.map((r, i) => 
+      `<span class="tag">✨ ${r} <span onclick="eliminarTag('rasgo', ${i})">&times;</span></span>`
+    ).join("");
+  }
 
-  contCicatrices.innerHTML = listaCicatrices.map((c, i) => 
-    `<span class="tag" style="background:#5a1a1a;">👁️ ${c} <span onclick="eliminarTag('cicatriz', ${i})">&times;</span></span>`
-  ).join("");
+  if (contCicatrices) {
+    contCicatrices.innerHTML = listaCicatrices.map((c, i) => 
+      `<span class="tag" style="background:#5a1a1a;">👁️ ${c} <span onclick="eliminarTag('cicatriz', ${i})">&times;</span></span>`
+    ).join("");
+  }
 }
 
 window.eliminarTag = function(tipo, index) {
@@ -257,8 +263,7 @@ window.eliminarTag = function(tipo, index) {
   renderizarTags();
 };
 
-// 5. FUNCIONES DE SUBIDA A CLOUDINARY (Archivo Local o URL externa)
-
+// 5. FUNCIONES DE SUBIDA A CLOUDINARY
 async function subirArchivoACloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -280,84 +285,93 @@ async function subirUrlACloudinary(urlImagen) {
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
   const respuesta = await fetch(url, { method: "POST", body: formData });
 
-  if (!respuesta.ok) throw new Error("Error alojando la imagen de Google Books en Cloudinary");
+  if (!respuesta.ok) throw new Error("Error alojando la imagen en Cloudinary");
   const data = await respuesta.json();
   return data.secure_url;
 }
 
 // 6. Publicación en Firestore
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-  const titulo = document.getElementById("titulo").value.trim();
-  const autor = document.getElementById("autor").value.trim();
-  const paginas = Number(document.getElementById("paginas").value);
-  const genero = selectGenero.value;
-  const puntosPrestigio = Number(document.getElementById("puntosPrestigio").value);
-  const descripcion = document.getElementById("descripcion").value.trim();
-  const archivoImagen = document.getElementById("portadaFile").files[0];
-  const urlPortadaGB = inputPortadaGB.value;
+    const titulo = document.getElementById("titulo").value.trim();
+    const autor = document.getElementById("autor").value.trim();
+    const paginas = Number(document.getElementById("paginas").value);
+    
+    // 🔴 CORREGIDO: 'proponente' es String (nombre o usuario), NO Number.
+    const proponente = document.getElementById("proponente").value.trim() || "Aventurero Anónimo";
+    
+    const genero = selectGenero.value;
+    const puntosPrestigio = Number(document.getElementById("puntosPrestigio").value);
+    const descripcion = document.getElementById("descripcion").value.trim();
+    const archivoImagen = document.getElementById("portadaFile")?.files[0];
+    const urlPortadaGB = inputPortadaGB.value;
 
-  if (!archivoImagen && !urlPortadaGB) {
-    mensajeEstado.innerText = "⚠️ Selecciona una imagen local o busca una portada con Google Books.";
-    mensajeEstado.style.color = "red";
-    return;
-  }
-
-  try {
-    btnSubmit.disabled = true;
-    mensajeEstado.innerText = "";
-
-    let finalPortadaUrl = "";
-
-    btnSubmit.innerText = "⏳ Procesando y subiendo portada a Cloudinary...";
-
-    if (archivoImagen) {
-      finalPortadaUrl = await subirArchivoACloudinary(archivoImagen);
-    } else if (urlPortadaGB) {
-      finalPortadaUrl = await subirUrlACloudinary(urlPortadaGB);
+    if (!archivoImagen && !urlPortadaGB) {
+      mensajeEstado.innerText = "⚠️ Selecciona una imagen local o busca una portada con Google Books.";
+      mensajeEstado.style.color = "red";
+      return;
     }
 
-    btnSubmit.innerText = "⏳ Guardando reto en Firestore...";
+    try {
+      btnSubmit.disabled = true;
+      mensajeEstado.innerText = "";
 
-    const idHistorico = obtenerIdMesActual();
+      let finalPortadaUrl = "";
+      btnSubmit.innerText = "⏳ Procesando y subiendo portada...";
 
-    const datosDelReto = {
-      titulo,
-      autor,
-      paginas,
-      genero,
-      puntosPrestigio,
-      descripcion,
-      portadaUrl: finalPortadaUrl,
-      rasgosOtorga: listaRasgos,
-      cicatricesOtorga: listaCicatrices,
-      idMes: idHistorico,
-      fechaCreacion: new Date()
-    };
+      if (archivoImagen) {
+        finalPortadaUrl = await subirArchivoACloudinary(archivoImagen);
+      } else if (urlPortadaGB) {
+        finalPortadaUrl = await subirUrlACloudinary(urlPortadaGB);
+      }
 
-    const batch = writeBatch(db);
-    batch.set(doc(db, "retos", "actual"), datosDelReto);
-    batch.set(doc(db, "retos", idHistorico), datosDelReto);
+      btnSubmit.innerText = "⏳ Guardando reto en Firestore...";
 
-    await batch.commit();
+      const idHistorico = obtenerIdMesActual();
 
-    mensajeEstado.innerText = `✅ ¡Reto publicado con éxito en Cloudinary y Firestore!`;
-    mensajeEstado.style.color = "#4CAF50";
-    
-    form.reset();
-    inputPortadaGB.value = "";
-    previewPortada.style.display = "none";
-    listaRasgos = [];
-    listaCicatrices = [];
-    renderizarTags();
+      // Objeto estructurado para Firestore
+      const datosDelReto = {
+        titulo,
+        libro: titulo, // Guardamos también como 'libro' por compatibilidad con la vista
+        autor,
+        paginas,
+        genero,
+        proponente,
+        puntos: puntosPrestigio,
+        puntosPrestigio,
+        descripcion,
+        portada: finalPortadaUrl, // Nombre de propiedad estándar para la vista
+        portadaUrl: finalPortadaUrl,
+        rasgosOtorga: listaRasgos,
+        cicatricesOtorga: listaCicatrices,
+        idMes: idHistorico,
+        fechaCreacion: Date.now()
+      };
 
-  } catch (error) {
-    console.error("Error al publicar:", error);
-    mensajeEstado.innerText = "❌ Error al subir la imagen a Cloudinary o guardar en Firestore.";
-    mensajeEstado.style.color = "red";
-  } finally {
-    btnSubmit.disabled = false;
-    btnSubmit.innerText = "📜 Publicar Reto Mensual";
-  }
-});
+      const batch = writeBatch(db);
+      // Guardar como reto actual y en el histórico
+      batch.set(doc(db, "retos", "actual"), datosDelReto);
+      batch.set(doc(db, "retos", idHistorico), datosDelReto);
+
+      await batch.commit();
+
+      mensajeEstado.innerText = `✅ ¡Reto publicado con éxito!`;
+      mensajeEstado.style.color = "#4CAF50";
+      
+      form.reset();
+      inputPortadaGB.value = "";
+      if (previewPortada) previewPortada.style.display = "none";
+      actualizarHuellasPorGenero();
+
+    } catch (error) {
+      console.error("Error al publicar:", error);
+      mensajeEstado.innerText = "❌ Error al subir la imagen o guardar en Firestore.";
+      mensajeEstado.style.color = "red";
+    } finally {
+      btnSubmit.disabled = false;
+      btnSubmit.innerText = "📜 Publicar Reto Mensual";
+    }
+  });
+}

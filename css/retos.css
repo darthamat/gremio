@@ -1,469 +1,54 @@
-:root {
-  --bg-pergamino: #f3e5ab;
-  --borde-pergamino: #8b5a2b;
-  --texto-pergamino: #3b2219;
-}
-
-body {
-  background-color: #1a1615;
-  color: #fff;
-  font-family: 'Georgia', serif;
-  margin: 0;
-  padding: 20px;
-}
-
-.header-gremio h1 {
-  text-align: center;
-  color: #f1d79e;
-  text-shadow: 2px 2px 4px #000;
-}
-
-/* Grid de Retos */
-.retos-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 25px;
-  justify-content: center;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Cartel Estilo Pergamino */
-.cartel-reto {
-  position: relative;
-  width: 280px;
-  background: var(--bg-pergamino);
-  border: 4px solid var(--borde-pergamino);
-  border-radius: 4px;
-  padding: 20px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.6), inset 0 0 30px rgba(139, 90, 43, 0.3);
-  color: var(--texto-pergamino);
-  text-align: center;
-  transition: transform 0.2s ease;
-}
-
-.cartel-reto:hover {
-  transform: translateY(-5px);
-}
-
-.portada-libro {
-  width: 100%;
-  height: 260px;
-  object-fit: cover;
-  border: 2px solid #5a3a1a;
-  border-radius: 2px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  margin-bottom: 12px;
-}
-
-.cartel-reto h3 {
-  margin: 10px 0 5px 0;
-  font-size: 1.2rem;
-  border-bottom: 1px dashed var(--borde-pergamino);
-  padding-bottom: 5px;
-}
-
-.acciones-reto {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 15px;
-}
-
-.btn-reto {
-  background: #5a3a1a;
-  color: #f3e5ab;
-  border: 1px solid #3b2219;
-  padding: 8px 12px;
-  font-weight: bold;
-  cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.2s;
-}
-
-.btn-reto:hover {
-  background: #7a4a22;
-}
-
-.btn-info {
-  background: #3a5a7a;
-}
-.btn-info:hover {
-  background: #4a7a9a;
-}
-
-/* ESTADO COMPLETADO / TACHADO */
-.cartel-reto.completado {
-  filter: grayscale(60%);
-  opacity: 0.8;
-}
-
-.cartel-reto.completado::after {
-  content: "COMPLETADO";
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-15deg);
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #a81c1c;
-  border: 4px solid #a81c1c;
-  padding: 5px 15px;
-  border-radius: 5px;
-  background-color: rgba(243, 229, 171, 0.85);
-  pointer-events: none;
-  box-shadow: 0 0 10px rgba(0,0,0,0.5);
-}
-
-.cartel-reto.completado .btn-reto {
-  background-color: #777;
-  cursor: not-allowed;
-}
-#contenedor-catalogo-retos {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  padding: 20px;
-}
-
-.tarjeta-reto-historico {
-  background: #2a2421;
-  border: 2px solid #8b5a2b;
-  border-radius: 8px;
-  overflow: hidden;
-  color: #f3e5ab;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  transition: transform 0.2s ease;
-}
-
-.tarjeta-reto-historico:hover {
-  transform: translateY(-5px);
-  border-color: #d4af37;
-}
-
-.portada-wrapper {
-  position: relative;
-  height: 220px;
-}
-
-.portada-wrapper img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.badge-id {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.85);
-  color: #d4af37;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  border: 1px solid #d4af37;
-}
-
-.info-reto {
-  padding: 15px;
-}
-
-.info-reto h3 {
-  margin: 0 0 8px 0;
-  color: #fff;
-}
-
-.puntos {
-  color: #d4af37;
-  font-weight: bold;
-  margin-bottom: 8px;
-}
-
-.descripcion {
-  font-size: 0.9rem;
-  color: #ccc;
-  line-height: 1.4;
-}
-
-.fecha-publicacion {
-  display: block;
-  margin-top: 10px;
-  font-size: 0.75rem;
-  color: #888;
-}
-/* Botón principal de completar */
-.btn-completar-reto {
-  width: 100%;
-  margin-top: 15px;
-  background-color: #8b5a2b;
-  color: #fff;
-  border: 1px solid #d4af37;
-  padding: 10px;
-  border-radius: 5px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-completar-reto:hover:not(:disabled) {
-  background-color: #a66c35;
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.5);
-}
-
-/* Estado cuando el reto ya ha sido completado */
-.btn-completar-reto:disabled {
-  background-color: #3a3835;
-  color: #888;
-  border-color: #555;
-  cursor: not-allowed;
-}
-
-.tarjeta-reto-historico.reto-superado {
-  border-color: #4CAF50; /* Borde verde para destacar victoria */
-  opacity: 0.9;
-}
-
-.badge-completado {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  background: #2e7d32;
-  color: #ffffff;
-  padding: 3px 8px;
-  font-size: 0.75rem;
-  font-weight: bold;
-  border-radius: 4px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.5);
-}
-/* OVERLAY Y MODAL PERGAMINO */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-pergamino {
-  background: #f3e5ab;
-  border: 4px solid #8b5a2b;
-  box-shadow: 0 0 25px rgba(0,0,0,0.8), inset 0 0 30px rgba(139, 90, 43, 0.3);
-  color: #3b2219;
-  width: 90%;
-  max-width: 500px;
-  padding: 25px;
-  border-radius: 4px;
-  text-align: center;
-  font-family: 'Georgia', serif;
-}
-
-.modal-pergamino h2 {
-  margin-top: 0;
-  border-bottom: 2px solid #8b5a2b;
-  padding-bottom: 8px;
-  font-size: 1.5rem;
-}
-
-.subtitulo-modal {
-  font-size: 0.95rem;
-  font-style: italic;
-  margin-bottom: 20px;
-  color: #5a3a1a;
-}
-
-/* LISTA DE GANANCIAS EN MODAL */
-.lista-ganancias {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.tarjeta-ganancia {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: #fff8e7;
-  border: 2px solid #8b5a2b;
-  padding: 10px 12px;
-  border-radius: 4px;
-  text-align: left;
-}
-
-.tarjeta-ganancia.carga {
-  border-color: #7a2a2a;
-  background: #fbebe2;
-}
-
-.icono-ganancia {
-  font-size: 1.8rem;
-  line-height: 1;
-}
-
-.info-ganancia {
-  flex: 1;
-}
-
-.cabecera-ganancia {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.badge-incremento {
-  background: #8b5a2b;
-  color: #fff8e7;
-  font-weight: bold;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-size: 0.85rem;
-}
-
-.tarjeta-ganancia.carga .badge-incremento {
-  background: #7a2a2a;
-}
-
-.info-ganancia p {
-  margin: 4px 0;
-  font-size: 0.85rem;
-  color: #4a2e1b;
-}
-
-.tipo-tag {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  font-weight: bold;
-  color: #8b5a2b;
-}
-
-.tarjeta-ganancia.carga .tipo-tag {
-  color: #7a2a2a;
-}
-
-.btn-cerrar-modal {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.retos-container {
-  max-width: 800px;
-  margin: 30px auto;
-  padding: 0 15px;
-}
-
-.tarjeta-reto {
-  display: flex;
-  gap: 20px;
-  background: #f3e5ab;
-  border: 4px solid #8b5a2b;
-  border-radius: 8px;
-  padding: 20px;
-  color: #3b2219;
-  box-shadow: 0 8px 16px rgba(0,0,0,0.5);
-}
-
-.reto-portada-box {
-  flex-shrink: 0;
-}
-
-.reto-portada {
-  width: 140px;
-  height: 210px;
-  object-fit: cover;
-  border: 2px solid #8b5a2b;
-  border-radius: 4px;
-}
-
-.reto-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.badge-mes {
-  background: #8b5a2b;
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: bold;
-  padding: 3px 8px;
-  border-radius: 4px;
-  align-self: flex-start;
-  margin-bottom: 5px;
-}
-
-.reto-titulo {
-  margin: 0;
-  font-size: 1.6rem;
-  color: #5a3a1a;
-}
-
-.reto-autor {
-  margin: 0 0 10px 0;
-  font-style: italic;
-  color: #7a5229;
-}
-
-.reto-detalles-grid {
-  display: flex;
-  gap: 15px;
-  margin-bottom: 10px;
-  font-size: 0.95rem;
-}
-
-.reto-descripcion {
-  font-size: 0.95rem;
-  line-height: 1.4;
-  margin-bottom: 15px;
-}
-
-.seccion-recompensas {
-  border-top: 2px dashed #8b5a2b;
-  padding-top: 10px;
-  margin-top: auto;
-}
-
-.seccion-recompensas h3 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
-}
-
-.contenedor-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.tag-huella {
-  padding: 3px 8px;
+.proclamacion-magica {
+  background: #fdf6e3;
+  border: 2px solid #c8a251;
   border-radius: 12px;
-  font-size: 0.8rem;
+  padding: 20px 30px;
+  margin: 20px auto;
+  max-width: 850px;
+  box-shadow: 0 0 15px rgba(200, 162, 81, 0.3);
+  text-align: center;
+}
+
+.texto-proclamacion {
+  font-family: 'Georgia', serif;
+  font-size: 1.25rem;
+  color: #3e2723;
+  line-height: 1.8;
+}
+
+.proponente-destacado {
+  color: #8b0000;
   font-weight: bold;
+  text-decoration: underline decoration-style wavy #c8a251;
+  padding: 0 4px;
+}
+
+.card-reto-actual {
+  display: flex;
+  gap: 25px;
+  background: rgba(20, 20, 30, 0.9);
+  border: 2px solid #ffd700;
+  border-radius: 15px;
+  padding: 25px;
+  max-width: 850px;
+  margin: 30px auto;
   color: #fff;
 }
 
-.tag-huella.rasgo {
-  background: #2b5a3b;
+.portada-frame img {
+  width: 220px;
+  height: 320px;
+  object-fit: cover;
+  border-radius: 10px;
 }
 
-.tag-huella.cicatriz {
-  background: #5a1a1a;
-}
-
-/* Responsivo para pantallas pequeñas */
-@media (max-width: 600px) {
-  .tarjeta-reto {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .badge-mes {
-    align-self: center;
-  }
+.sello-completado {
+  border: 2px dashed #2e7d32;
+  color: #2e7d32;
+  font-weight: bold;
+  padding: 6px 16px;
+  border-radius: 5px;
+  transform: rotate(-5deg);
+  display: inline-block;
+  background: rgba(46, 125, 50, 0.1);
 }
