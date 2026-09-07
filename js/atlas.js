@@ -1,14 +1,14 @@
 // js/atlas.js
 
-// 1. Importar la instancia del SDK de Firebase y Firestore de tu proyecto
-import { db } from './firebase-config.js'; // Ajusta la ruta a tu archivo de configuración de Firebase
-import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+// 1. Importaciones optimizadas (Solo getDoc para consumo mínimo)
+import { db } from './firebase-config.js';
+import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
 
-// 🎯 Configuración de Metas del Gremio (Ajusta según la escala de tu comunidad)
+// 🎯 Configuración de Metas del Gremio
 const META_GLOBAL_PAGINAS = 100000;
 const META_REINO_PAGINAS = 25000; // Meta por cada reino individual
 
-//  DOM Elements: Mapa y Etiquetas
+// 🏛️ DOM Elements: Mapa y Etiquetas
 const regiones = {
   fantasia: document.getElementById('region-fantasia'),
   misterio: document.getElementById('region-misterio'),
@@ -23,7 +23,7 @@ const porcentajesTexto = {
   erudito: document.getElementById('porcentaje-erudito')
 };
 
-// DOM Elements: Panel de Barras de Progreso
+// 📊 DOM Elements: Panel de Barras de Progreso
 const elTotalPaginasComunidad = document.getElementById('total-paginas-comunidad');
 const elBarraGlobal = document.getElementById('barra-global');
 const elTextoMetaGlobal = document.getElementById('texto-meta-global');
@@ -45,37 +45,41 @@ const textosPaginas = {
 const listaAportes = document.getElementById('lista-ultimos-aportes');
 
 /**
- * 📡 Escuchar cambios en vivo en la colección del Gremio
+ * 📡 Carga los datos del Atlas una sola vez (1 sola lectura de Firestore por visita)
  */
-function inicializarAtlas() {
+async function cargarAtlasUnaSolaVez() {
   const atlasRef = doc(db, 'gremio', 'atlas');
 
-  onSnapshot(atlasRef, (snapshot) => {
-    if (!snapshot.exists()) {
-      console.warn('El documento de Firestore /gremio/atlas aún no ha sido creado.');
-      renderizarEstadoVacio();
-      return;
-    }
+  try {
+    const snapshot = await getDoc(atlasRef);
 
-    const data = snapshot.data();
-    actualizarPantallaAtlas(data);
-  }, (error) => {
-    console.error('Error al escuchar cambios en el Atlas:', error);
-    listaAportes.innerHTML = `<li class="aporte-item error">⚠️ Error al conectar con el Códice.</li>`;
-  });
+    if (snapshot.exists()) {
+      actualizarPantallaAtlas(snapshot.data());
+    } else {
+      console.warn('El documento /gremio/atlas aún no existe.');
+      renderizarEstadoVacio();
+    }
+  } catch (error) {
+    console.error('Error al consultar el Atlas:', error);
+    if (listaAportes) {
+      listaAportes.innerHTML = `<li class="aporte-item error">⚠️ Error al consultar el Códice.</li>`;
+    }
+  }
 }
 
 /**
- * 🎨 Actualiza los elementos del DOM con los datos sincronizados
+ * 🎨 Actualiza los elementos del DOM con los datos consultados
  */
 function actualizarPantallaAtlas(data) {
   const paginasTotales = data.paginasTotales || 0;
   
   // 1. Contador Global de Páginas y Barra General
-  elTotalPaginasComunidad.innerText = paginasTotales.toLocaleString();
+  if (elTotalPaginasComunidad) elTotalPaginasComunidad.innerText = paginasTotales.toLocaleString();
   const porcentajeGlobal = Math.min((paginasTotales / META_GLOBAL_PAGINAS) * 100, 100);
-  elBarraGlobal.style.width = `${porcentajeGlobal}%`;
-  elTextoMetaGlobal.innerText = `Meta del Gremio: ${paginasTotales.toLocaleString()} / ${META_GLOBAL_PAGINAS.toLocaleString()} págs (${porcentajeGlobal.toFixed(1)}%)`;
+  if (elBarraGlobal) elBarraGlobal.style.width = `${porcentajeGlobal}%`;
+  if (elTextoMetaGlobal) {
+    elTextoMetaGlobal.innerText = `Meta del Gremio: ${paginasTotales.toLocaleString()} / ${META_GLOBAL_PAGINAS.toLocaleString()} págs (${porcentajeGlobal.toFixed(1)}%)`;
+  }
 
   // 2. Progreso por Género / Reino
   const generos = ['fantasia', 'misterio', 'ciencia', 'erudito'];
@@ -105,13 +109,11 @@ function actualizarPantallaAtlas(data) {
 
     // 🌌 Revelar el territorio en el Mapa (Niebla de Guerra)
     if (regiones[genero]) {
-      // La opacidad y brillo aumentan conforme el gremio lee más
       const brillo = 0.3 + (porcentajeReino / 100) * 0.7; // Va de 0.3 a 1.0
       const escalaGris = 100 - porcentajeReino; // Va de 100% (gris) a 0% (color completo)
 
       regiones[genero].style.filter = `grayscale(${escalaGris}%) brightness(${brillo})`;
       
-      // Marca el reino como completado visualmente si llega al 100%
       if (porcentajeReino >= 100) {
         regiones[genero].classList.add('reino-conquistado');
       }
@@ -128,6 +130,8 @@ function actualizarPantallaAtlas(data) {
  * 📜 Imprime el historial de los últimos aportes en el feed lateral
  */
 function renderizarUltimosAportes(aportes) {
+  if (!listaAportes) return;
+
   if (aportes.length === 0) {
     listaAportes.innerHTML = `<li class="aporte-item">Ningún explorador ha registrado lecturas todavía.</li>`;
     return;
@@ -144,9 +148,11 @@ function renderizarUltimosAportes(aportes) {
  * Estado por defecto si aún no existen datos
  */
 function renderizarEstadoVacio() {
-  elTotalPaginasComunidad.innerText = '0';
-  listaAportes.innerHTML = `<li class="aporte-item">El Códice se encuentra a la espera de sus primeros aventureros...</li>`;
+  if (elTotalPaginasComunidad) elTotalPaginasComunidad.innerText = '0';
+  if (listaAportes) {
+    listaAportes.innerHTML = `<li class="aporte-item">El Códice se encuentra a la espera de sus primeros aventureros...</li>`;
+  }
 }
 
-// 🚀 Iniciar la escuchas al cargar el script
-document.addEventListener('DOMContentLoaded', inicializarAtlas);
+// 🚀 Iniciar la consulta única al cargar la página
+document.addEventListener('DOMContentLoaded', cargarAtlasUnaSolaVez);
