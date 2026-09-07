@@ -1,7 +1,7 @@
 import { getAuth, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
-import { generarResumenEvolucion } from "js/sintetizadorPerfil.js";
+import { generarResumenEvolucion } from "./js/sintetizadorPerfil.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
