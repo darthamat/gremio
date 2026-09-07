@@ -1,7 +1,7 @@
 export const CLASES_GREMIO = {
     fantasia: {
         id: "fantasia",
-        nombre: "Bardo Fantástico",
+        nombre: "Mago/a CuentaCuentos",
         icono: "🧙‍♂️",
         descripcion: "Especialista en mundos épicos, magia e historias de alta fantasía."
     },
@@ -164,4 +164,13 @@ export function obtenerClaseAleatoria() {
     const claves = Object.keys(CLASES_GREMIO);
     const claveAzar = claves[Math.floor(Math.random() * claves.length)];
     return CLASES_GREMIO[claveAzar];
+}
+
+/**
+ * Obtiene el objeto completo de una clase por su ID
+ * @param {string} id 
+ * @returns {Object} Objeto de la clase o Fantasía por defecto
+ */
+export function obtenerArquetipoPorId(id) {
+    return CLASES_GREMIO[id] || CLASES_GREMIO.fantasia;
 }

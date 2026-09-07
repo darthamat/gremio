@@ -2,9 +2,9 @@
 import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Importación de la conexión centralizada
+// Importaciones centralizadas con rutas relativas correctas
 import { auth, db } from "./firebase-config.js";
-import { generarNombreAleatorio, obtenerClaseAleatoria } from "js/arquetipos.js";
+import { generarNombreAleatorio, obtenerClaseAleatoria, obtenerArquetipoPorId } from "./arquetipos.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".character-form");
@@ -24,13 +24,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     inputNombre.value = generarNombreAleatorio();
                 }
 
-                // Asigna una clase real de forma transparente
+                // Asigna una clase real al azar y guarda su ID en el dataset
                 const claseAzar = obtenerClaseAleatoria();
-                e.target.dataset.claseAsignada = claseAzar.id;
+                e.target.dataset.claseAsignadaId = claseAzar.id;
             } else {
-                // Si elije otra clase, limpiamos la clase asignada por el azar
-                delete e.target.dataset.claseAsignada;
-                  inputNombre.value = "";
+                // Si selecciona otra clase, se limpia la asignación previa del azar
+                delete e.target.dataset.claseAsignadaId;
             }
         });
     });
@@ -48,20 +47,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const email = document.getElementById("reg-email").value.trim();
         const password = document.getElementById("reg-password").value;
 
-        // Capturar elemento seleccionado
+        // Capturar elemento de clase seleccionado
         const radioSeleccionado = document.querySelector('input[name="class-choice"]:checked');
-        
-        let claseFinal = radioSeleccionado ? radioSeleccionado.value : "fantasia";
+        let idSeleccionada = radioSeleccionado ? radioSeleccionado.value : "fantasia";
 
-        // Si eligió la tarjeta aleatoria, tomar la clase asignada por el azar
-        if (claseFinal === "aleatorio") {
-            claseFinal = radioSeleccionado.dataset.claseAsignada || obtenerClaseAleatoria().id;
+        // Si eligió la tarjeta aleatoria, tomar la ID que generó la tirada al azar
+        if (idSeleccionada === "aleatorio") {
+            idSeleccionada = radioSeleccionado.dataset.claseAsignadaId || obtenerClaseAleatoria().id;
         }
 
-        // Verificación de seguridad
-        if (!claseFinal || claseFinal === "undefined") {
-            claseFinal = "fantasia";
-        }
+        // Buscar los datos de la clase desde CLASES_GREMIO
+        const datosClase = obtenerArquetipoPorId(idSeleccionada);
+        const nombreClaseFinal = datosClase ? datosClase.nombre : "Mago/a CuentaCuentos";
 
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.disabled = true;
@@ -77,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 nombre: username,
                 nombreReal: realname,
                 email: email,
-                clase: claseFinal,
+                clase: nombreClaseFinal,    // 👈 Nombre legible (ej: "Mago/a CuentaCuentos")
+                claseId: idSeleccionada,     // 👈 Identificador de clase (ej: "fantasia")
                 nivel: 1,
                 xp: 0,
                 prestigio: 0,
@@ -94,7 +92,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 mente: 0,
                 corazon: 0,
                 suerte: 0
-
             });
 
             // Redirigir a la pantalla de carga intermedia
