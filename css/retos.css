@@ -52,3 +52,78 @@
   display: inline-block;
   background: rgba(46, 125, 50, 0.1);
 }
+/* css/retos.css */
+
+/* Estilos para el encabezado y el botón volver */
+.header-gremio {
+  background: rgba(10, 10, 15, 0.9);
+  border-bottom: 2px solid var(--gold-primary, #c8a251);
+  padding: 15px 20px;
+  position: relative;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.header-content {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centra el título H1 */
+  position: relative;
+}
+
+.header-gremio h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 2rem;
+  color: var(--gold-primary, #ffd700);
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  margin: 0;
+}
+
+/* El botón volver */
+.btn-volver-gremio {
+  position: absolute;
+  left: 0; /* Lo posiciona a la izquierda dentro del header-content */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(200, 162, 81, 0.1);
+  border: 1px solid var(--gold-primary, #c8a251);
+  color: #e2d1b3;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 5px;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.5);
+}
+
+.btn-volver-gremio:hover {
+  background: rgba(200, 162, 81, 0.2);
+  color: #ffffff;
+  box-shadow: inset 0 0 8px rgba(0,0,0,0.7), 0 0 10px rgba(200, 162, 81, 0.3);
+  transform: translateY(-1px);
+}
+
+.icono-volver {
+  font-size: 1.1rem;
+}
+
+/* Adaptación responsive para el header */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 15px;
+    padding-top: 50px; /* Espacio para el botón absoluto arriba */
+  }
+
+  .btn-volver-gremio {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+  }
+}
