@@ -28,6 +28,17 @@ const HUELLAS_POR_GENERO = {
     rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], 
     cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
   },
+ 
+  ficcion: { 
+    rasgos: ["imaginación", "Pensamiento inocente"], 
+    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
+  },
+   
+  no_ficcion: { 
+    rasgos: ["conocimiento", "Pensamiento critico"], 
+    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
+  },
+
   filosofia: { 
     rasgos: ["Criterio Propio", "Mente Inquisitiva"], 
     cicatrices: ["Duda Existencial", "Espíritu Inquieto"] 
