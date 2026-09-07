@@ -27,53 +27,56 @@ async function cargarOrdenAventureros() {
                 nombre: data.nombre || data.nombreReal || data.email || "Aventurero Anónimo",
                 clase: data.clase || "Iniciado",
                 rol: data.rol || data.tipoUsuario || "Aventurero",
-                nivel: Number(data.nivel) || 1,
                 prestigio: Number(data.prestigio) || 0,
-                // Leemos imagen_avatar, photoURL o avatar de Firestore
                 avatar: data.imagen_avatar || data.photoURL || data.avatar || "/img/default-avatar.jpg",
                 paginasLeidas: Number(data.paginasLeidas) || 0,
                 librosCompletados: Number(data.librosCompletados) || 0
             });
         });
 
-        console.log("Aventureros encontrados en Firestore:", listaAventureros);
+        // 1. Filtrar para excluir al usuario 'admin' (por nombre o rol)
+        listaAventureros = listaAventureros.filter(a => {
+            const nombre = (a.nombre || "").toLowerCase();
+            const rol = (a.rol || "").toLowerCase();
+            return nombre !== "admin" && rol !== "admin";
+        });
+
+        console.log("Aventureros válidos encontrados:", listaAventureros);
 
         if (listaAventureros.length === 0) {
-            console.warn("No se encontró ningún documento en la colección 'aventureros'.");
+            console.warn("No se encontró ningún aventurero válido.");
             return;
         }
 
-        // 1. Extraer Archimago (Si existe por rol o clase)
+        // 2. Extraer Archimago (Si existe por rol o clase)
         const archimagoIndex = listaAventureros.findIndex(
             a => (a.rol && a.rol.toLowerCase() === "archimago") || (a.clase && a.clase.toLowerCase() === "archimago")
         );
         let archimago = null;
         if (archimagoIndex !== -1) {
-            // El Archimago sí lo separamos de la clasificación general
             archimago = listaAventureros.splice(archimagoIndex, 1)[0];
         }
 
-        // 2. Ordenar al resto por Nivel (Desc), Prestigio (Desc) y Nombre (Asc)
+        // 3. Ordenar ÚNICAMENTE por Prestigio (Desc) y Nombre (Asc) como desempate
         listaAventureros.sort((a, b) => {
-            if (b.nivel !== a.nivel) return b.nivel - a.nivel;
             if (b.prestigio !== a.prestigio) return b.prestigio - a.prestigio;
             return a.nombre.localeCompare(b.nombre);
         });
 
-        // 3. Campeón: El #1 de la clasificación
+        // 4. Campeón: El #1 de la clasificación
         const campeon = listaAventureros.length > 0 ? listaAventureros[0] : null;
 
-        // 4. Señores del Gremio: Del puesto #2 al #6 (máximo 5) usando .slice() (NO corta el array)
+        // 5. Señores del Gremio: Del puesto #2 al #6
         let senoresGremio = [];
         if (listaAventureros.length > 1) {
             senoresGremio = listaAventureros.slice(1, 6);
         }
 
-        // 5. Renderizar cada bloque en el DOM
+        // 6. Renderizar cada bloque en el DOM (sin nivel)
         mostrarArchimago(archimago);
         mostrarCampeon(campeon);
         mostrarSenoresGremio(senoresGremio);
-        mostrarRestoAventureros(listaAventureros); // Muestra la lista completa ordenada (#1, #2, #3...)
+        mostrarRestoAventureros(listaAventureros);
 
     } catch (error) {
         console.error("Error al cargar la Orden de Aventureros:", error);
@@ -97,7 +100,7 @@ function mostrarArchimago(archimago) {
                 <img src="${archimago.avatar}" alt="${archimago.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
             </div>
             <h2>${archimago.nombre}</h2>
-            <span class="clase-nivel">${archimago.clase} - Nivel ${archimago.nivel}</span>
+            <span class="clase-nivel">${archimago.clase}</span>
             <div class="stats">
                 <span>✨ Prestigio: <strong>${Math.round(archimago.prestigio)}</strong></span>
                 <span>📖 Páginas: <strong>${archimago.paginasLeidas}</strong></span>
@@ -124,7 +127,7 @@ function mostrarCampeon(campeon) {
                 <img src="${campeon.avatar}" alt="${campeon.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
             </div>
             <h2>${campeon.nombre}</h2>
-            <span class="campeon-clase">${campeon.clase} - Nivel ${campeon.nivel}</span>
+            <span class="campeon-clase">${campeon.clase}</span>
             <div class="campeon-stats">
                 <span>✨ Prestigio: <strong>${Math.round(campeon.prestigio)}</strong></span>
                 <span>📖 Páginas: <strong>${campeon.paginasLeidas}</strong></span>
@@ -154,7 +157,7 @@ function mostrarSenoresGremio(senores) {
             <img class="mini-avatar" src="${senor.avatar}" alt="${senor.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
             <div class="info">
                 <strong>${senor.nombre}</strong>
-                <span>${senor.clase} (Niv. ${senor.nivel})</span>
+                <span>${senor.clase}</span>
             </div>
             <span class="prestigio">✨ ${Math.round(senor.prestigio)}</span>
         `;
@@ -182,7 +185,7 @@ function mostrarRestoAventureros(lista) {
             <img class="mini-avatar" src="${aventurero.avatar}" alt="${aventurero.nombre}" onerror="this.onerror=null; this.src='/img/default-avatar.jpg';">
             <div class="info">
                 <strong>${aventurero.nombre}</strong>
-                <span>${aventurero.clase} (Niv. ${aventurero.nivel})</span>
+                <span>${aventurero.clase}</span>
             </div>
             <span class="prestigio">✨ ${Math.round(aventurero.prestigio)}</span>
         `;
