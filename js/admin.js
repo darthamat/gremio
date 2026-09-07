@@ -8,6 +8,7 @@ const db = getFirestore(app);
 // 🔑 CONFIGURACIÓN
 const CLOUDINARY_CLOUD_NAME = "dwuokewzr";
 const CLOUDINARY_UPLOAD_PRESET = "portadas";
+const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 
 // Configuración predeterminada de rasgos/cicatrices por género
 const HUELLAS_POR_GENERO = {
@@ -113,7 +114,7 @@ async function buscarEnGoogleBooks() {
 
   try {
     // Consulta a Google Books
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=${GOOGLE_BOOKS_API_KEY}`);
     
     if (!response.ok) {
       throw new Error(`Respuesta HTTP no válida: ${response.status}`);
