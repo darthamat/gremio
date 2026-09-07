@@ -76,7 +76,7 @@ async function cargarYRenderizarRetos() {
       contenedorActual.innerHTML = `
         <div class="card-reto-actual">
           <div class="portada-frame">
-            <img src="${retoActual.portada || '/img/default-reto.jpg'}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
+            <img src="${retoActual.portadaUrl || '/img/default-reto.jpg'}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
           </div>
           <div class="info-reto-actual">
             <h2>${retoActual.titulo || "Misión del Mes"}</h2>
@@ -131,7 +131,7 @@ async function cargarYRenderizarRetos() {
         item.className = "card-reto-pasado";
         item.innerHTML = `
           <div class="portada-miniatura">
-            <img src="${reto.portada || '/img/default-reto.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
+            <img src="${reto.portadaUrl || '/img/default-reto.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
             ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-pasado">
