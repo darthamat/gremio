@@ -5,7 +5,7 @@ export function generarResumenEvolucion(huellasMap = {}) {
 
     if (listaHuellas.length === 0) {
         return {
-            tituloArquetipo: "El Lector Neófito",
+            tituloArquetipo: "Aventurero lector Neófito",
             resumenTextual: "Aún no has cruzado suficientes páginas para que los libros dejen marcas profundas en tu carácter. Tu viaje apenas comienza."
         };
     }
