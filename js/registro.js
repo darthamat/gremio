@@ -4,7 +4,7 @@ import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs
 
 // Importaciones de configuración y arquetipos
 import { auth, db } from "./firebase-config.js";
-import { generarNombreAleatorio, obtenerClaseAleatoria, obtenerArquetipoPorId } from "./clases.js";
+import { generarNombreAleatorio, obtenerClaseAleatoria, obtenerArquetipoPorId } from "./arquetipos.js";
 
 document.addEventListener("DOMContentLoaded", () => {
     const form = document.querySelector(".character-form");
