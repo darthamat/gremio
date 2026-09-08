@@ -14,7 +14,8 @@ async function cargarRetoActualGremio() {
       if (imgCover && data.portadaUrl) imgCover.src = data.portadaUrl;
 
       document.getElementById('book-title').textContent = data.titulo || 'Misión Sin Título';
-      document.getElementById('book-author').textContent = data.autor || 'Sin autor.';
+      document.getElementById('book-author').textContent = data.autor || 'Sin cronista.';
+      document.getElementById('book-genero').textContent = data.genero || 'Sin género.';
       document.getElementById('book-description').textContent = data.descripcion || 'Sin descripción.';
       
       const elPuntos = document.getElementById('book-puntos');

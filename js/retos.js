@@ -177,7 +177,7 @@ const mensajeProponente =
 
             <div class="ficha-tecnica">
               <div class="ficha-item">
-                <span>✍️ Autor:</span> 
+                <span>✍️ Cronista:</span> 
                 <div class="ficha-item-autor">
                   <strong class="autor-hover" id="autor-link">${autor}</strong>
                   <div class="tooltip-autor" id="tooltip-autor">
@@ -186,7 +186,7 @@ const mensajeProponente =
                   </div>
                 </div>
               </div>
-              <div class="ficha-item"><span>🏷️ Género:</span> <strong>${genero}</strong></div>
+              <div class="ficha-item"><span>🏷️ Reino:</span> <strong>${genero}</strong></div>
               <div class="ficha-item"><span>📄 Páginas:</span> <strong>${paginas} pág.</strong></div>
               <div class="ficha-item"><span>📅 Publicación:</span> <strong>${fechaPublicacion}</strong></div>
             </div>
