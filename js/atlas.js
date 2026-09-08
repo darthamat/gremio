@@ -1,158 +1,155 @@
-// js/atlas.js
+import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { app } from "./firebase-config.js";
 
-// 1. Importaciones optimizadas (Solo getDoc para consumo mínimo)
-import { db } from './firebase-config.js';
-import { doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+const db = getFirestore(app);
 
-// 🎯 Configuración de Metas del Gremio
-const META_GLOBAL_PAGINAS = 100000;
-const META_REINO_PAGINAS = 25000; // Meta por cada reino individual
+// Dimensiones de la rejilla (7 filas x 9 columnas = 63 casillas)
+const FILAS = 7;
+const COLS = 9;
 
-// 🏛️ DOM Elements: Mapa y Etiquetas
-const regiones = {
-  fantasia: document.getElementById('region-fantasia'),
-  misterio: document.getElementById('region-misterio'),
-  ciencia: document.getElementById('region-ciencia'),
-  erudito: document.getElementById('region-erudito')
+// Semillas iniciales (Donde comienza a crecer cada reino)
+const SEMILLAS_INICIALES = {
+  fantasia: { f: 1, c: 1 },  // Esquina Noroeste
+  misterio: { f: 1, c: 7 },  // Esquina Noreste
+  ciencia:  { f: 5, c: 1 },  // Esquina Suroeste
+  erudito:  { f: 5, c: 7 }   // Esquina Sureste
 };
 
-const porcentajesTexto = {
-  fantasia: document.getElementById('porcentaje-fantasia'),
-  misterio: document.getElementById('porcentaje-misterio'),
-  ciencia: document.getElementById('porcentaje-ciencia'),
-  erudito: document.getElementById('porcentaje-erudito')
-};
-
-// 📊 DOM Elements: Panel de Barras de Progreso
-const elTotalPaginasComunidad = document.getElementById('total-paginas-comunidad');
-const elBarraGlobal = document.getElementById('barra-global');
-const elTextoMetaGlobal = document.getElementById('texto-meta-global');
-
-const barrasProgreso = {
-  fantasia: document.getElementById('barra-fantasia'),
-  misterio: document.getElementById('barra-misterio'),
-  ciencia: document.getElementById('barra-ciencia'),
-  erudito: document.getElementById('barra-erudito')
-};
-
-const textosPaginas = {
-  fantasia: document.getElementById('paginas-fantasia'),
-  misterio: document.getElementById('paginas-misterio'),
-  ciencia: document.getElementById('paginas-ciencia'),
-  erudito: document.getElementById('paginas-erudito')
-};
-
-const listaAportes = document.getElementById('lista-ultimos-aportes');
-
-/**
- * 📡 Carga los datos del Atlas una sola vez (1 sola lectura de Firestore por visita)
- */
-async function cargarAtlasUnaSolaVez() {
-  const atlasRef = doc(db, 'gremio', 'atlas');
-
-  try {
-    const snapshot = await getDoc(atlasRef);
-
-    if (snapshot.exists()) {
-      actualizarPantallaAtlas(snapshot.data());
-    } else {
-      console.warn('El documento /gremio/atlas aún no existe.');
-      renderizarEstadoVacio();
-    }
-  } catch (error) {
-    console.error('Error al consultar el Atlas:', error);
-    if (listaAportes) {
-      listaAportes.innerHTML = `<li class="aporte-item error">⚠️ Error al consultar el Códice.</li>`;
-    }
-  }
+function normalizarGenero(genero = "") {
+  const g = genero.toLowerCase();
+  if (g.includes("fantasía") || g.includes("fantasia")) return "fantasia";
+  if (g.includes("misterio") || g.includes("terror")) return "misterio";
+  if (g.includes("ciencia") || g.includes("ficción")) return "ciencia";
+  return "erudito";
 }
 
-/**
- * 🎨 Actualiza los elementos del DOM con los datos consultados
- */
-function actualizarPantallaAtlas(data) {
-  const paginasTotales = data.paginasTotales || 0;
+// Devuelve los vecinos adyacentes de un hexágono en una rejilla hexagonal
+function obtenerVecinos(f, c) {
+  const esPar = f % 2 === 0;
+  const desplazamientos = esPar ? [
+    [-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]
+  ] : [
+    [-1, 0], [-1, 1], [0, -1], [0, 1], [1, 0], [1, 1]
+  ];
+
+  return desplazamientos
+    .map(([df, dc]) => ({ f: f + df, c: c + dc }))
+    .filter(p => p.f >= 0 && p.f < FILAS && p.c >= 0 && p.c < COLS);
+}
+
+// Encuentra una casilla libre colindante al reino para crecer
+function buscarCasillaCrecimiento(matriz, genero) {
+  const celdasReino = [];
   
-  // 1. Contador Global de Páginas y Barra General
-  if (elTotalPaginasComunidad) elTotalPaginasComunidad.innerText = paginasTotales.toLocaleString();
-  const porcentajeGlobal = Math.min((paginasTotales / META_GLOBAL_PAGINAS) * 100, 100);
-  if (elBarraGlobal) elBarraGlobal.style.width = `${porcentajeGlobal}%`;
-  if (elTextoMetaGlobal) {
-    elTextoMetaGlobal.innerText = `Meta del Gremio: ${paginasTotales.toLocaleString()} / ${META_GLOBAL_PAGINAS.toLocaleString()} págs (${porcentajeGlobal.toFixed(1)}%)`;
-  }
-
-  // 2. Progreso por Género / Reino
-  const generos = ['fantasia', 'misterio', 'ciencia', 'erudito'];
-
-  generos.forEach(genero => {
-    // Convierte el nombre de género a la propiedad de Firestore (ej. puntosFantasia)
-    const claveFirestore = `puntos${genero.charAt(0).toUpperCase() + genero.slice(1)}`;
-    const paginasReino = data[claveFirestore] || 0;
-
-    // Calcular porcentaje respecto a la meta del reino
-    const porcentajeReino = Math.min((paginasReino / META_REINO_PAGINAS) * 100, 100);
-
-    // Actualizar Texto de Páginas
-    if (textosPaginas[genero]) {
-      textosPaginas[genero].innerText = `${paginasReino.toLocaleString()} págs`;
-    }
-
-    // Actualizar Barra de Progreso Lateral
-    if (barrasProgreso[genero]) {
-      barrasProgreso[genero].style.width = `${porcentajeReino}%`;
-    }
-
-    // Actualizar Porcentaje dentro del Mapa
-    if (porcentajesTexto[genero]) {
-      porcentajesTexto[genero].innerText = `${porcentajeReino.toFixed(1)}% Explorado`;
-    }
-
-    // 🌌 Revelar el territorio en el Mapa (Niebla de Guerra)
-    if (regiones[genero]) {
-      const brillo = 0.3 + (porcentajeReino / 100) * 0.7; // Va de 0.3 a 1.0
-      const escalaGris = 100 - porcentajeReino; // Va de 100% (gris) a 0% (color completo)
-
-      regiones[genero].style.filter = `grayscale(${escalaGris}%) brightness(${brillo})`;
-      
-      if (porcentajeReino >= 100) {
-        regiones[genero].classList.add('reino-conquistado');
+  for (let f = 0; f < FILAS; f++) {
+    for (let c = 0; c < COLS; c++) {
+      if (matriz[f][c] && matriz[f][c].generoKey === genero) {
+        celdasReino.push({ f, c });
       }
     }
+  }
+
+  // Buscar vecinos libres de esas celdas
+  let candidatosLibres = [];
+  celdasReino.forEach(celda => {
+    const vecinos = obtenerVecinos(celda.f, celda.c);
+    vecinos.forEach(v => {
+      if (!matriz[v.f][v.c]) {
+        candidatosLibres.push(v);
+      }
+    });
   });
 
-  // 3. Renderizar Últimos Descubrimientos (Feed)
-  if (data.ultimosDescubrimientos && Array.isArray(data.ultimosDescubrimientos)) {
-    renderizarUltimosAportes(data.ultimosDescubrimientos);
+  if (candidatosLibres.length > 0) {
+    // Selección aleatoria entre los candidatos colindantes para variabilidad orgánica
+    return candidatosLibres[Math.floor(Math.random() * candidatosLibres.length)];
+  }
+
+  // Si no hay candidatos contiguos, buscar cualquier casilla libre aleatoria
+  let casillasVacias = [];
+  for (let f = 0; f < FILAS; f++) {
+    for (let c = 0; c < COLS; c++) {
+      if (!matriz[f][c]) casillasVacias.push({ f, c });
+    }
+  }
+  return casillasVacias.length > 0 ? casillasVacias[Math.floor(Math.random() * casillasVacias.length)] : null;
+}
+
+async function renderizarMapaHex() {
+  const contenedor = document.getElementById("hex-grid-contenedor");
+  contenedor.innerHTML = "";
+
+  // Matriz de ocupación [Filas][Columnas]
+  let matriz = Array.from({ length: FILAS }, () => Array(COLS).fill(null));
+
+  try {
+    const q = query(collection(db, "retos"), where("completado", "==", true));
+    const snapshot = await getDocs(q);
+    
+    let libros = [];
+    snapshot.forEach(docSnap => libros.push(docSnap.data()));
+
+    // Colocar las semillas iniciales libres si no hay ocupación previa
+    Object.keys(SEMILLAS_INICIALES).forEach(key => {
+      const sem = SEMILLAS_INICIALES[key];
+      // Se reservan como centros neurálgicos de cada reino
+    });
+
+    // Anexar cada libro de manera contigua al reino de su mismo color
+    libros.forEach(libro => {
+      const generoKey = normalizarGenero(libro.genero);
+      const pos = buscarCasillaCrecimiento(matriz, generoKey);
+
+      if (pos) {
+        matriz[pos.f][pos.c] = {
+          ...libro,
+          generoKey
+        };
+      }
+    });
+
+    // Renderizar la rejilla completa en el HTML
+    for (let f = 0; f < FILAS; f++) {
+      const filaDiv = document.createElement("div");
+      filaDiv.classList.add("hex-fila");
+
+      for (let c = 0; c < COLS; c++) {
+        const hexDiv = document.createElement("div");
+        hexDiv.classList.add("hexagono");
+
+        const datosCelda = matriz[f][c];
+
+        if (datosCelda) {
+          hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
+          
+          const puntoCentro = document.createElement("div");
+          puntoCentro.classList.add("hex-centro-punto");
+          hexDiv.appendChild(puntoCentro);
+
+          const tooltip = document.createElement("div");
+          tooltip.classList.add("tooltip-text");
+          tooltip.innerHTML = `
+            <strong>📖 ${datosCelda.titulo || "Título Códice"}</strong><br>
+            <em>Gén: ${datosCelda.genero || "General"}</em><br>
+            📄 <strong>${datosCelda.paginas || 0} págs</strong> exploradas
+          `;
+          hexDiv.appendChild(tooltip);
+        } else {
+          hexDiv.classList.add("hex-vacio");
+          const tooltip = document.createElement("div");
+          tooltip.classList.add("tooltip-text");
+          tooltip.textContent = "🗺️ Territorio Niebla de Guerra";
+          hexDiv.appendChild(tooltip);
+        }
+
+        filaDiv.appendChild(hexDiv);
+      }
+      contenedor.appendChild(filaDiv);
+    }
+
+  } catch (error) {
+    console.error("Error cargando el Atlas Hexagonal:", error);
   }
 }
 
-/**
- * 📜 Imprime el historial de los últimos aportes en el feed lateral
- */
-function renderizarUltimosAportes(aportes) {
-  if (!listaAportes) return;
-
-  if (aportes.length === 0) {
-    listaAportes.innerHTML = `<li class="aporte-item">Ningún explorador ha registrado lecturas todavía.</li>`;
-    return;
-  }
-
-  listaAportes.innerHTML = aportes.slice(0, 5).map(item => `
-    <li class="aporte-item">
-      <strong>${item.usuario}</strong> sumó <span>${item.paginas} págs</span> al Reino de <em>${item.region}</em> con <i>"${item.libro}"</i>.
-    </li>
-  `).join('');
-}
-
-/**
- * Estado por defecto si aún no existen datos
- */
-function renderizarEstadoVacio() {
-  if (elTotalPaginasComunidad) elTotalPaginasComunidad.innerText = '0';
-  if (listaAportes) {
-    listaAportes.innerHTML = `<li class="aporte-item">El Códice se encuentra a la espera de sus primeros aventureros...</li>`;
-  }
-}
-
-// 🚀 Iniciar la consulta única al cargar la página
-document.addEventListener('DOMContentLoaded', cargarAtlasUnaSolaVez);
+renderizarMapaHex();
