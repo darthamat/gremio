@@ -4,8 +4,8 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 
 // Dimensiones de la rejilla (7 filas x 9 columnas = 63 casillas)
-const FILAS = 7;
-const COLS = 9;
+const FILAS = 3;
+const COLS = 3;
 
 // Semillas iniciales (Donde comienza a crecer cada reino)
 const SEMILLAS_INICIALES = {
