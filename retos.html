@@ -3,59 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gremio de Lectura - Retos Mensuales</title>
-
-  <!-- Google Fonts (Asegura las tipografías temáticas) -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- CSS Base y Variables -->
-  <link rel="stylesheet" href="css/reset.css">
+  <title>Retos y Expediciones - Gremio de Exploradores</title>
   <link rel="stylesheet" href="css/variables.css">
-  
-  <!-- CSS Específico de Retos (AHORA DENTRO DEL HEAD) -->
+  <link rel="stylesheet" href="css/gremio.css">
   <link rel="stylesheet" href="css/retos.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=MedievalSharp&display=swap" rel="stylesheet">
 </head>
-<body>
+<body class="dashboard-body">
 
-  <!-- Encabezado del Gremio con Botón Volver -->
-  <header class="header-gremio">
-    <div class="header-content">
-      <a href="gremio.html" class="btn-volver-gremio">
-        <span class="icono-volver">🏰</span> Volver al Gremio
-      </a>
-      <h1>📜 Cartel de Retos Mensuales</h1>
-    </div>
-  </header>
+  <div class="dashboard-container">
+    <header class="guild-header">
+      <h1 class="guild-title">Cartel de Retos y Misiones</h1>
+      <p class="guild-motto">«Propuesto por <span id="proponente-reto">Cargando...</span>»</p>
+    </header>
 
-  <main class="main-container">
-    
-    <!-- Proclamación Mágica -->
-    <section class="proclamacion-magica">
-      <p class="texto-proclamacion">
-        Por Orden del Gran Bibliotecario y Archimago <strong>Aurelius Vane</strong>, 
-        YO, La Gran Lectora <strong>Lady Elena Astralis</strong>, en nombre de 
-        <span id="proponente-reto" class="proponente-destacado">Cargando...</span> 
-        ANUNCIO la misión RETO de este mes:
-      </p>
-    </section>
+    <main class="retos-main-content">
+      <!-- SECCIÓN DEL RETO DEL MES ACTIVO -->
+      <section class="seccion-reto-activo">
+        <h2 class="header-gremio h1">🗡️ Misión del Mes en Curso</h2>
+        <div id="contenedor-reto-actual">
+          <p class="sin-datos">Cargando misión desde el cónclave...</p>
+        </div>
+      </section>
 
-    <!-- Reto Actual con Portada y Botones -->
-    <section id="contenedor-reto-actual" class="seccion-reto-actual">
-      <!-- Se cargará la tarjeta del reto actual dinámicamente -->
-    </section>
+      <!-- SECCIÓN DE HISTÓRICO DE EXPEDICIONES -->
+      <section class="seccion-retos-historico">
+        <h2 class="header-gremio h1">📜 Histórico de Misiones Pasadas</h2>
+        <div id="contenedor-retos-pasados" class="grid-retos-pasados">
+          <!-- Se inyectarán dinámicamente los retos de meses pasados (ej: reto26_01, reto25_12) -->
+        </div>
+      </section>
+    </main>
 
-    <!-- Historial de Retos Pasados -->
-    <section class="seccion-retos-pasados">
-      <h2 class="titulo-pasados">🏛️ Retos Antiguos</h2>
-      <div id="contenedor-retos-pasados" class="grid-retos-pasados">
-        <!-- Se cargará el historial de retos con sellos dinámicamente -->
-      </div>
-    </section>
+    <footer class="guild-footer">
+      <a href="gremio.html" class="btn-regresar">⬅️ Volver al gremio</a>
+    </footer>
+  </div>
 
-  </main>
-
+  <script type="module" src="js/auth-guard.js"></script>
   <script type="module" src="js/retos.js"></script>
 </body>
 </html>
