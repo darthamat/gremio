@@ -158,6 +158,7 @@
 .hex-misterio { background-color: #6a1b9a; } /* Morado */
 .hex-ciencia  { background-color: #1565c0; } /* Azul */
 .hex-erudito  { background-color: #c5a059; } /* Dorado */
+.hex-ficcion   { background-color: #db2822; } /* rojo */
 
 /* TOOLTIP DESPLEGABLE */
 .hexagono .tooltip-text {

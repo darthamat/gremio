@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 // Si elige una clase manual, limpia la asignación previa del azar
                 delete e.target.dataset.claseAsignadaId;
+                inputNombre.value = "";
             }
         });
     });

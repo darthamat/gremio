@@ -19,7 +19,8 @@ function normalizarGenero(genero = "") {
   const g = genero.toLowerCase();
   if (g.includes("fantasía") || g.includes("fantasia")) return "fantasia";
   if (g.includes("misterio") || g.includes("terror")) return "misterio";
-  if (g.includes("ciencia") || g.includes("ficción")) return "ciencia";
+  if (g.includes("ciencia") || g.includes("ciencia-ficción")) return "ciencia";
+  if (g.includes("ficcion") || g.includes("novela")) return "ficcion";
   return "erudito";
 }
 
