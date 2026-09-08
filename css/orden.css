@@ -99,7 +99,22 @@
     text-align: center;
 }
 
+.section-title {
+    font-size: 0.75rem;
+    color: #a89f91;
+    text-transform: uppercase;
+    text-align: center;
+}
+
 .node-name {
+    font-size: 0.9rem;
+    color: #f4e8c1;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 0.2rem;
+}
+
+.section-subtitle {
     font-size: 0.9rem;
     color: #f4e8c1;
     font-weight: bold;
