@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged, signOut} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { generarResumenEvolucion } from "./sintetizadorPerfil.js";
@@ -71,11 +71,47 @@ async function cargarDatosAventurero(docRef) {
     document.getElementById("attr-corazon").textContent = data.corazon ?? 0;
     document.getElementById("attr-suerte").textContent = data.suerte ?? 0;
 
-    // ⬇️ ¡AQUÍ ESTÁ LA LLAMADA QUE FALTABA! Actualizar la barra de XP en la UI
     actualizarProgresoUI(xpTotal, nivelCalculado);
+
+    // ⬇️ RENDERIZAR LA BIBLIOTECA DEL USUARIO
+    const librosBiblioteca = data.estanteria || data.biblioteca || [];
+    renderizarBiblioteca(librosBiblioteca);
 }
 
-// 2. Lógica para calcular rangos y actualizar la barra de progreso
+// Renderiza los libros guardados en la estantería/biblioteca
+function renderizarBiblioteca(libros) {
+    const contenedorBiblioteca = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
+    if (!contenedorBiblioteca) return;
+
+    if (!libros || libros.length === 0) {
+        contenedorBiblioteca.innerHTML = `<p class="sin-datos">Aún no has añadido ningún tomo a tu estantería personal.</p>`;
+        return;
+    }
+
+    let html = '<div class="grid-biblioteca">';
+    libros.forEach((libro) => {
+        // Manejo en caso de que el elemento guardado sea un String (id) u Objeto
+        const titulo = typeof libro === 'object' ? libro.titulo : "Tomo Leído";
+        const autor = typeof libro === 'object' ? (libro.autor || "Desconocido") : "";
+        const portada = typeof libro === 'object' ? (libro.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
+        const paginas = typeof libro === 'object' ? (libro.paginas || 0) : 0;
+
+        html += `
+            <div class="tarjeta-libro-estanteria">
+                <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
+                <div class="info-libro-estanteria">
+                    <h4>${titulo}</h4>
+                    <p class="autor">${autor}</p>
+                    ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    contenedorBiblioteca.innerHTML = html;
+}
+
 export function obtenerRangoXP(nivelActual) {
     const actual = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual) || { xpRequerida: 0 };
     const siguiente = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual + 1) || { xpRequerida: actual.xpRequerida + 5000 };
@@ -88,20 +124,15 @@ export function obtenerRangoXP(nivelActual) {
 
 export function actualizarProgresoUI(xpTotal, nivelActual) {
     const rango = obtenerRangoXP(nivelActual);
-    
-    // Calcular cuánta XP se ha conseguido dentro del NIVEL ACTUAL
     const xpEnEsteNivel = xpTotal - rango.xpBase;
     const xpNecesariaEnEsteNivel = rango.xpSiguiente - rango.xpBase;
-    
-    // Porcentaje real del tramo del nivel actual
     const porcentaje = Math.min(Math.max((xpEnEsteNivel / xpNecesariaEnEsteNivel) * 100, 0), 100);
 
-    // Actualizar elementos HTML (Muestra XP total y la meta del siguiente nivel)
     const elCurrent = document.getElementById("xp-current");
     const elNext = document.getElementById("xp-next-level");
     
     if (elCurrent) elCurrent.textContent = xpTotal;
-    if (elNext) elNext.textContent = rango.xpSiguiente; // Para Nivel 1 mostrará 300
+    if (elNext) elNext.textContent = rango.xpSiguiente;
     
     const xpFill = document.getElementById("xp-fill");
     if (xpFill) {
@@ -156,7 +187,6 @@ if (avatarContainer && avatarInput) {
 
             if (currentUserDocRef) {
                 await updateDoc(currentUserDocRef, { photoURL: imageUrl });
-                console.log("Avatar actualizado en Firestore");
             }
 
         } catch (err) {
@@ -178,11 +208,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const tabSeleccionada = boton.getAttribute("data-tab");
             const yaEstabaActivo = boton.classList.contains("activo");
 
-            // 1. Desactivar todos los botones y ocultar todos los contenidos
             botones.forEach(b => b.classList.remove("activo"));
             contenidos.forEach(c => c.classList.add("oculto"));
 
-            // 2. Si el botón pulsado NO estaba activo, lo activamos y mostramos su sección
             if (!yaEstabaActivo) {
                 boton.classList.add("activo");
                 panelContenido.classList.remove("oculto");
@@ -192,7 +220,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     contenidoAMostrar.classList.remove("oculto");
                 }
             } else {
-                // Si vuelve a hacer clic en la pestaña abierta, se repliega todo el panel
                 panelContenido.classList.add("oculto");
             }
         });
@@ -206,7 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
         btnLogout.addEventListener("click", async () => {
             try {
                 await signOut(auth);
-                // Redirigir a la página principal tras cerrar sesión
                 window.location.href = "index.html";
             } catch (error) {
                 console.error("Error al cerrar la sesión:", error);
@@ -216,7 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// Función para renderizar el resumen en el DOM
 export function renderizarEspejoDelLector(huellasUsuario) {
     const contenedor = document.getElementById("bloque-espejo-lector");
     if (!contenedor) return;

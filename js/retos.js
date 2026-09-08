@@ -142,14 +142,14 @@ async function cargarYRenderizarRetos() {
     const fechaPublicacion = retoActual.fechaPublicacion || "Desconocida";
     const recompensaPuntos = Number(paginas) || 0;
 
-    // Mensaje de la Lectora en nombre del Proponente
- // DETECCIÓN DEL MENSAJE DE LA LECTORA Y PROPONENTE
-const mensajeProponente = 
-  retoActual.mensajeProponente || 
-  retoActual.mensaje || 
-  retoActual.proclama || 
-  (typeof retoActual.proponente === 'object' ? retoActual.proponente.mensaje : null) ||
-  `Por orden del Archimago y gran Bibliotecario Aurelius Vane, yo la gran Lectora Lady Elena Astralis en nombre de ${proponenteNombre}, convoco a todos los miembros del Gremio a explorar el portal mágico que esconde esta obra.`;
+    // DETECCIÓN DEL MENSAJE DE LA LECTORA Y PROPONENTE
+    const mensajeProponente = 
+      retoActual.mensajeProponente || 
+      retoActual.mensaje || 
+      retoActual.proclama || 
+      (typeof retoActual.proponente === 'object' ? retoActual.proponente.mensaje : null) ||
+      `Por orden del Archimago y gran Bibliotecario Aurelius Vane, yo la gran Lectora Lady Elena Astralis en nombre de ${proponenteNombre}, convoco a todos los miembros del Gremio a explorar el portal mágico que esconde esta obra.`;
+
     // Proclama/Indicaciones del Archimago
     const objetivoAdmin = retoActual.objetivoAdmin || 
       `Completar la lectura íntegra del tomo antes de que termine el ciclo mensual y compartir vuestras reflexiones en la Taberna de la Tinta para recibir vuestra justa recompensa de prestigio.`;
@@ -318,19 +318,51 @@ async function aceptarReto(retoId) {
   }
 }
 
+// FUNCIÓN ACTUALIZADA: Marca la misión como completada y añade el tomo a la biblioteca del aventurero
 async function terminarReto(retoId, puntos) {
   try {
+    // 1. Obtener los datos del reto/libro desde Firestore
+    const retoRef = doc(db, "retos", retoId);
+    const retoSnap = await getDoc(retoRef);
+    
+    let datosLibro = {
+      id: retoId,
+      titulo: "Tomo Desconocido",
+      autor: "Desconocido",
+      portadaUrl: "img/placeholder-book.jpg",
+      paginas: puntos || 0,
+      genero: "General",
+      fechaCompletado: new Date().toISOString()
+    };
+
+    if (retoSnap.exists()) {
+      const data = retoSnap.data();
+      datosLibro = {
+        id: retoId,
+        titulo: data.titulo || data.libro || "Tomo Desconocido",
+        autor: data.autor || "Desconocido",
+        portadaUrl: data.portadaUrl || "img/placeholder-book.jpg",
+        paginas: Number(data.paginas) || puntos || 0,
+        genero: data.genero || "General",
+        fechaCompletado: new Date().toISOString()
+      };
+    }
+
+    // 2. Obtener datos actuales del usuario
     const userRef = doc(db, "aventureros", usuarioSesionId);
     const userSnap = await getDoc(userRef);
     const prestigioActual = userSnap.exists() ? (userSnap.data().prestigio || 0) : 0;
 
+    // 3. Actualizar el documento agregando prestigio, reto completado y la ficha del libro a su biblioteca/estantería
     await updateDoc(userRef, {
       retosCompletados: arrayUnion(retoId),
-      prestigio: prestigioActual + puntos
+      prestigio: prestigioActual + puntos,
+      estanteria: arrayUnion(datosLibro),    // Agrega el objeto del libro a 'estanteria'
+      biblioteca: arrayUnion(datosLibro)     // Soporte alternativo por si usas el nombre 'biblioteca'
     });
 
     await cargarYRenderizarRetos();
   } catch (error) {
-    console.error("Error al marcar la misión como completada:", error);
+    console.error("Error al marcar la misión como completada y añadirlo a la estantería:", error);
   }
 }
