@@ -31,8 +31,9 @@ async function cargarYRenderizarRetos() {
     const userSnap = await getDoc(userRef);
     const usuarioData = userSnap.exists() ? userSnap.data() : {};
 
-    const retosAceptados = usuarioData.retosAceptados || [];
-    const retosCompletados = usuarioData.retosCompletados || [];
+    // Normalizamos los arrays convirtiendo todos los IDs a String sin espacios
+    const retosAceptados = (usuarioData.retosAceptados || []).map(id => String(id).trim());
+    const retosCompletados = (usuarioData.retosCompletados || []).map(id => String(id).trim());
 
     // 2. Obtener la colección de retos desde Firestore
     const snapshot = await getDocs(collection(db, "retos"));
@@ -40,7 +41,7 @@ async function cargarYRenderizarRetos() {
 
     snapshot.forEach((docSnap) => {
       listaRetos.push({
-        id: docSnap.id,
+        id: String(docSnap.id).trim(), // Aseguramos que el ID sea String
         ...docSnap.data()
       });
     });
@@ -67,9 +68,9 @@ async function cargarYRenderizarRetos() {
       elProponente.textContent = retoActual.proponente || "un aventurero anónimo";
     }
 
-    // Estado del reto actual para el usuario que inició sesión
-    const esAceptado = retosAceptados.includes(retoActual.id);
-    const esCompletado = retosCompletados.includes(retoActual.id);
+    // Estado del reto actual
+    const esAceptadoActual = retosAceptados.includes(retoActual.id);
+    const esCompletadoActual = retosCompletados.includes(retoActual.id);
 
     // Renderizar tarjeta del Reto Actual
     if (contenedorActual) {
@@ -77,6 +78,7 @@ async function cargarYRenderizarRetos() {
         <div class="card-reto-actual">
           <div class="portada-frame">
             <img src="${retoActual.portadaUrl || '/img/default-reto.jpg'}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='/img/default-reto.jpg';">
+            ${esCompletadoActual ? `<div class="sello-cera-css">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-actual">
             <h2>${retoActual.titulo || "Misión del Mes"}</h2>
@@ -87,13 +89,13 @@ async function cargarYRenderizarRetos() {
             </div>
 
             <div class="acciones-reto">
-              ${esCompletado ? `
-                <div class="sello-completado grande">📜 RETO COMPLETADO</div>
+              ${esCompletadoActual ? `
+                <div class="sello-completado">📜 RETO COMPLETADO CON ÉXITO</div>
               ` : `
-                <button id="btn-aceptar" class="btn-magico ${esAceptado ? 'aceptado' : ''}" ${esAceptado ? 'disabled' : ''}>
-                  ${esAceptado ? '⚔️ Reto Aceptado' : '🗡️ Aceptar Reto'}
+                <button id="btn-aceptar" class="btn-magico ${esAceptadoActual ? 'aceptado' : ''}" ${esAceptadoActual ? 'disabled' : ''}>
+                  ${esAceptadoActual ? '⚔️ Reto Aceptado' : '🗡️ Aceptar Reto'}
                 </button>
-                <button id="btn-terminar" class="btn-magico exito" ${!esAceptado ? 'disabled' : ''}>
+                <button id="btn-terminar" class="btn-magico exito" ${!esAceptadoActual ? 'disabled' : ''}>
                   ✨ Marcar como Terminado
                 </button>
               `}
@@ -102,21 +104,21 @@ async function cargarYRenderizarRetos() {
         </div>
       `;
 
-      // Eventos de interacción
-      if (!esCompletado) {
+      // Eventos de interacción para el reto actual
+      if (!esCompletadoActual) {
         const btnAceptar = document.getElementById("btn-aceptar");
         const btnTerminar = document.getElementById("btn-terminar");
 
-        if (btnAceptar && !esAceptado) {
+        if (btnAceptar && !esAceptadoActual) {
           btnAceptar.addEventListener("click", () => aceptarReto(retoActual.id));
         }
-        if (btnTerminar && esAceptado) {
+        if (btnTerminar && esAceptadoActual) {
           btnTerminar.addEventListener("click", () => terminarReto(retoActual.id, retoActual.puntos || 0));
         }
       }
     }
 
-    // 4. RETOS PASADOS
+    // 4. RETOS PASADOS (Historial)
     if (contenedorPasados) {
       contenedorPasados.innerHTML = "";
 
@@ -126,7 +128,9 @@ async function cargarYRenderizarRetos() {
       }
 
       retosPasados.forEach((reto) => {
-        const fueCompletado = retosCompletados.includes(reto.id);
+        // Comprobación flexible utilizando String(id).trim()
+        const fueCompletado = retosCompletados.some(id => id === String(reto.id).trim());
+
         const item = document.createElement("div");
         item.className = "card-reto-pasado";
         item.innerHTML = `
@@ -135,7 +139,7 @@ async function cargarYRenderizarRetos() {
             ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-pasado">
-            <h3>${reto.titulo}</h3>
+            <h3>${reto.titulo || 'Reto Antiguo'}</h3>
             <span class="proponente-pasado">Propuesto por: <strong>${reto.proponente || 'Anónimo'}</strong></span>
             <span class="estado-texto ${fueCompletado ? 'exito' : 'pendiente'}">
               ${fueCompletado ? '✅ Misión Cumplida' : '❌ No Logrado'}
