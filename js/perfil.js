@@ -73,45 +73,12 @@ async function cargarDatosAventurero(docRef) {
 
     actualizarProgresoUI(xpTotal, nivelCalculado);
 
-    // ⬇️ RENDERIZAR LA BIBLIOTECA DEL USUARIO
-    const librosBiblioteca = data.estanteria || data.biblioteca || [];
-    renderizarBiblioteca(librosBiblioteca);
+    // ⬇️ RENDERIZAR LA BIBLIOTECA DEL USUARIO (DENTRO DE LA FUNCIÓN)
+    const lecturasUsuario = data.lecturas || data.estanteria || data.biblioteca || [];
+    renderizarBiblioteca(lecturasUsuario);
 }
 
-// Renderiza los libros guardados en la estantería/biblioteca
-// function renderizarBiblioteca(libros) {
-//     const contenedorBiblioteca = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
-//     if (!contenedorBiblioteca) return;
-
-//     if (!libros || libros.length === 0) {
-//         contenedorBiblioteca.innerHTML = `<p class="sin-datos">Aún no has añadido ningún tomo a tu estantería personal.</p>`;
-//         return;
-//     }
-
-//     let html = '<div class="grid-biblioteca">';
-//     libros.forEach((libro) => {
-//         // Manejo en caso de que el elemento guardado sea un String (id) u Objeto
-//         const titulo = typeof libro === 'object' ? libro.titulo : "Tomo Leído";
-//         const autor = typeof libro === 'object' ? (libro.autor || "Desconocido") : "";
-//         const portada = typeof libro === 'object' ? (libro.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
-//         const paginas = typeof libro === 'object' ? (libro.paginas || 0) : 0;
-
-//         html += `
-//             <div class="tarjeta-libro-estanteria">
-//                 <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
-//                 <div class="info-libro-estanteria">
-//                     <h4>${titulo}</h4>
-//                     <p class="autor">${autor}</p>
-//                     ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
-//                 </div>
-//             </div>
-//         `;
-//     });
-//     html += '</div>';
-
-//     contenedorBiblioteca.innerHTML = html;
-// }
-
+// 2. Funciones auxiliares de XP y Nivel
 export function obtenerRangoXP(nivelActual) {
     const actual = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual) || { xpRequerida: 0 };
     const siguiente = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual + 1) || { xpRequerida: actual.xpRequerida + 5000 };
@@ -197,7 +164,7 @@ if (avatarContainer && avatarInput) {
     });
 }
 
-// Lógica para el sistema de acordeón / pestañas
+// 4. Lógica para el sistema de acordeón / pestañas
 document.addEventListener("DOMContentLoaded", () => {
     const botones = document.querySelectorAll(".btn-tab");
     const panelContenido = document.getElementById("panel-contenido");
@@ -224,11 +191,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     });
-});
 
-document.addEventListener("DOMContentLoaded", () => {
     const btnLogout = document.getElementById("btn-logout");
-
     if (btnLogout) {
         btnLogout.addEventListener("click", async () => {
             try {
@@ -242,6 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+// 5. Espejo del Lector
 export function renderizarEspejoDelLector(huellasUsuario) {
     const contenedor = document.getElementById("bloque-espejo-lector");
     if (!contenedor) return;
@@ -257,36 +222,38 @@ export function renderizarEspejoDelLector(huellasUsuario) {
     `;
 }
 
-// En cargarDatosAventurero(docRef) dentro de perfil.js:
-const lecturasUsuario = data.lecturas || [];
-renderizarBiblioteca(lecturasUsuario);
-
+// 6. Renderizar Biblioteca
 function renderizarBiblioteca(lecturas) {
-  const contenedor = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
-  if (!contenedor) return;
+    const contenedor = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
+    if (!contenedor) return;
 
-  if (lecturas.length === 0) {
-    contenedor.innerHTML = `<p class="sin-datos">Aún no has completado ninguna lectura ni reto.</p>`;
-    return;
-  }
+    if (!lecturas || lecturas.length === 0) {
+        contenedor.innerHTML = `<p class="sin-datos">Aún no has completado ninguna lectura ni reto.</p>`;
+        return;
+    }
 
-  let html = '<div class="grid-biblioteca">';
-  lecturas.forEach(item => {
-    html += `
-      <div class="tarjeta-libro-estanteria ${item.esReto ? 'es-reto' : ''}">
-        <img src="${item.portadaUrl}" alt="${item.titulo}" onerror="this.src='img/placeholder-book.jpg';">
-        <div class="info-libro-estanteria">
-          <h4>${item.titulo}</h4>
-          <p class="autor">${item.autor}</p>
-          <div class="badges-libro">
-            <span class="paginas">📖 ${item.paginas} pág.</span>
-            ${item.esReto ? '<span class="badge-reto">🛡️ Reto</span>' : '<span class="badge-libre">📜 Libre</span>'}
-          </div>
-        </div>
-      </div>
-    `;
-  });
-  html += '</div>';
+    let html = '<div class="grid-biblioteca">';
+    lecturas.forEach(item => {
+        const titulo = typeof item === 'object' ? (item.titulo || "Tomo Leído") : "Tomo Leído";
+        const autor = typeof item === 'object' ? (item.autor || "Desconocido") : "";
+        const portada = typeof item === 'object' ? (item.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
+        const paginas = typeof item === 'object' ? (item.paginas || 0) : 0;
 
-  contenedor.innerHTML = html;
+        html += `
+            <div class="tarjeta-libro-estanteria ${item.esReto ? 'es-reto' : ''}">
+                <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
+                <div class="info-libro-estanteria">
+                    <h4>${titulo}</h4>
+                    <p class="autor">${autor}</p>
+                    <div class="badges-libro">
+                        ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
+                        ${item.esReto ? '<span class="badge-reto">🛡️ Reto</span>' : '<span class="badge-libre">📜 Libre</span>'}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+
+    contenedor.innerHTML = html;
 }
