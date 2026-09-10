@@ -1,4 +1,4 @@
-import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
@@ -154,8 +154,6 @@ async function renderizarMapaHex() {
 }
 
 renderizarMapaHex();
-
-import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // Obtener los libros para dibujarlos en el Atlas por su Género o Popularidad:
 async function obtenerDatosParaElAtlas() {

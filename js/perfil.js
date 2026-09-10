@@ -79,38 +79,38 @@ async function cargarDatosAventurero(docRef) {
 }
 
 // Renderiza los libros guardados en la estantería/biblioteca
-function renderizarBiblioteca(libros) {
-    const contenedorBiblioteca = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
-    if (!contenedorBiblioteca) return;
+// function renderizarBiblioteca(libros) {
+//     const contenedorBiblioteca = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
+//     if (!contenedorBiblioteca) return;
 
-    if (!libros || libros.length === 0) {
-        contenedorBiblioteca.innerHTML = `<p class="sin-datos">Aún no has añadido ningún tomo a tu estantería personal.</p>`;
-        return;
-    }
+//     if (!libros || libros.length === 0) {
+//         contenedorBiblioteca.innerHTML = `<p class="sin-datos">Aún no has añadido ningún tomo a tu estantería personal.</p>`;
+//         return;
+//     }
 
-    let html = '<div class="grid-biblioteca">';
-    libros.forEach((libro) => {
-        // Manejo en caso de que el elemento guardado sea un String (id) u Objeto
-        const titulo = typeof libro === 'object' ? libro.titulo : "Tomo Leído";
-        const autor = typeof libro === 'object' ? (libro.autor || "Desconocido") : "";
-        const portada = typeof libro === 'object' ? (libro.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
-        const paginas = typeof libro === 'object' ? (libro.paginas || 0) : 0;
+//     let html = '<div class="grid-biblioteca">';
+//     libros.forEach((libro) => {
+//         // Manejo en caso de que el elemento guardado sea un String (id) u Objeto
+//         const titulo = typeof libro === 'object' ? libro.titulo : "Tomo Leído";
+//         const autor = typeof libro === 'object' ? (libro.autor || "Desconocido") : "";
+//         const portada = typeof libro === 'object' ? (libro.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
+//         const paginas = typeof libro === 'object' ? (libro.paginas || 0) : 0;
 
-        html += `
-            <div class="tarjeta-libro-estanteria">
-                <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
-                <div class="info-libro-estanteria">
-                    <h4>${titulo}</h4>
-                    <p class="autor">${autor}</p>
-                    ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
-                </div>
-            </div>
-        `;
-    });
-    html += '</div>';
+//         html += `
+//             <div class="tarjeta-libro-estanteria">
+//                 <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
+//                 <div class="info-libro-estanteria">
+//                     <h4>${titulo}</h4>
+//                     <p class="autor">${autor}</p>
+//                     ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
+//                 </div>
+//             </div>
+//         `;
+//     });
+//     html += '</div>';
 
-    contenedorBiblioteca.innerHTML = html;
-}
+//     contenedorBiblioteca.innerHTML = html;
+// }
 
 export function obtenerRangoXP(nivelActual) {
     const actual = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual) || { xpRequerida: 0 };
