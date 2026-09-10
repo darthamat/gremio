@@ -256,3 +256,37 @@ export function renderizarEspejoDelLector(huellasUsuario) {
         </div>
     `;
 }
+
+// En cargarDatosAventurero(docRef) dentro de perfil.js:
+const lecturasUsuario = data.lecturas || [];
+renderizarBiblioteca(lecturasUsuario);
+
+function renderizarBiblioteca(lecturas) {
+  const contenedor = document.getElementById("contenedor-biblioteca") || document.getElementById("tab-biblioteca");
+  if (!contenedor) return;
+
+  if (lecturas.length === 0) {
+    contenedor.innerHTML = `<p class="sin-datos">Aún no has completado ninguna lectura ni reto.</p>`;
+    return;
+  }
+
+  let html = '<div class="grid-biblioteca">';
+  lecturas.forEach(item => {
+    html += `
+      <div class="tarjeta-libro-estanteria ${item.esReto ? 'es-reto' : ''}">
+        <img src="${item.portadaUrl}" alt="${item.titulo}" onerror="this.src='img/placeholder-book.jpg';">
+        <div class="info-libro-estanteria">
+          <h4>${item.titulo}</h4>
+          <p class="autor">${item.autor}</p>
+          <div class="badges-libro">
+            <span class="paginas">📖 ${item.paginas} pág.</span>
+            ${item.esReto ? '<span class="badge-reto">🛡️ Reto</span>' : '<span class="badge-libre">📜 Libre</span>'}
+          </div>
+        </div>
+      </div>
+    `;
+  });
+  html += '</div>';
+
+  contenedor.innerHTML = html;
+}

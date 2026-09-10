@@ -9,6 +9,7 @@ import {
   arrayUnion 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
+import { completarRetoGremio } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -319,50 +320,39 @@ async function aceptarReto(retoId) {
 }
 
 // FUNCIÓN ACTUALIZADA: Marca la misión como completada y añade el tomo a la biblioteca del aventurero
-async function terminarReto(retoId, puntos) {
+async function terminarReto(retoId, puntos) {async function terminarReto(retoId, puntos) {
   try {
-    // 1. Obtener los datos del reto/libro desde Firestore
     const retoRef = doc(db, "retos", retoId);
     const retoSnap = await getDoc(retoRef);
     
-    let datosLibro = {
+    let datosReto = {
       id: retoId,
-      titulo: "Tomo Desconocido",
+      titulo: "Misión del Gremio",
       autor: "Desconocido",
       portadaUrl: "img/placeholder-book.jpg",
       paginas: puntos || 0,
-      genero: "General",
-      fechaCompletado: new Date().toISOString()
+      genero: "Fantasía"
     };
 
     if (retoSnap.exists()) {
       const data = retoSnap.data();
-      datosLibro = {
+      datosReto = {
         id: retoId,
-        titulo: data.titulo || data.libro || "Tomo Desconocido",
+        titulo: data.titulo || data.libro || "Misión del Gremio",
         autor: data.autor || "Desconocido",
         portadaUrl: data.portadaUrl || "img/placeholder-book.jpg",
         paginas: Number(data.paginas) || puntos || 0,
-        genero: data.genero || "General",
-        fechaCompletado: new Date().toISOString()
+        genero: data.genero || "Fantasía"
       };
     }
 
-    // 2. Obtener datos actuales del usuario
-    const userRef = doc(db, "aventureros", usuarioSesionId);
-    const userSnap = await getDoc(userRef);
-    const prestigioActual = userSnap.exists() ? (userSnap.data().prestigio || 0) : 0;
+    // Llamamos al gestor central
+    const resultado = await completarRetoGremio(usuarioSesionId, datosReto);
 
-    // 3. Actualizar el documento agregando prestigio, reto completado y la ficha del libro a su biblioteca/estantería
-    await updateDoc(userRef, {
-      retosCompletados: arrayUnion(retoId),
-      prestigio: prestigioActual + puntos,
-      estanteria: arrayUnion(datosLibro),    // Agrega el objeto del libro a 'estanteria'
-      biblioteca: arrayUnion(datosLibro)     // Soporte alternativo por si usas el nombre 'biblioteca'
-    });
-
-    await cargarYRenderizarRetos();
+    if (resultado.exito) {
+      await cargarYRenderizarRetos();
+    }
   } catch (error) {
-    console.error("Error al marcar la misión como completada y añadirlo a la estantería:", error);
+    console.error("Error al marcar la misión como completada:", error);
   }
-}
+}}

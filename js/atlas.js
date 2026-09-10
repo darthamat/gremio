@@ -154,3 +154,18 @@ async function renderizarMapaHex() {
 }
 
 renderizarMapaHex();
+
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+// Obtener los libros para dibujarlos en el Atlas por su Género o Popularidad:
+async function obtenerDatosParaElAtlas() {
+  const db = getFirestore();
+  const librosRef = collection(db, "libros");
+  const snapshot = await getDocs(librosRef);
+
+  snapshot.forEach(docSnap => {
+    const libro = docSnap.data();
+    console.log(`Libro: ${libro.titulo} | Género: ${libro.genero} | Lectores totales: ${libro.totalLectores}`);
+    // Aquí puedes asignar automáticamente qué hexágono del mapa ocupa según su género.
+  });
+}
