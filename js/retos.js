@@ -142,6 +142,7 @@ async function cargarYRenderizarRetos() {
     const paginas = retoActual.paginas || "N/A";
     const fechaPublicacion = retoActual.fechaPublicacion || "Desconocida";
     const recompensaPuntos = Number(paginas) || 0;
+    const portadaImagen = retoActual.portadaUrl || retoActual.portada || 'img/placeholder-book.jpg';
 
     // DETECCIÓN DEL MENSAJE DE LA LECTORA Y PROPONENTE
     const mensajeProponente = 
@@ -165,7 +166,7 @@ async function cargarYRenderizarRetos() {
 
         <div class="card-reto-actual">
           <div class="portada-frame">
-            <img src="${retoActual.portadaUrl || 'img/placeholder-book.jpg'}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
+            <img src="${portadaImagen}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
             ${esCompletadoActual ? `<div class="sello-cera-css">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-actual">
@@ -215,7 +216,7 @@ async function cargarYRenderizarRetos() {
                 <button id="btn-aceptar" class="btn-magico ${esAceptadoActual ? 'aceptado' : ''}" ${esAceptadoActual ? 'disabled' : ''}>
                   ${esAceptadoActual ? '⚔️ Misión Aceptada' : '🗡️ Aceptar Misión'}
                 </button>
-                <button id="btn-terminar" class="btn-magico exito" ${!esAceptadoActual ? 'disabled' : ''}>
+                <button id="btn-terminar" class="btn-magico exito">
                   ✨ Marcar Misión Completada
                 </button>
               `}
@@ -245,7 +246,7 @@ async function cargarYRenderizarRetos() {
         if (btnAceptar && !esAceptadoActual) {
           btnAceptar.addEventListener("click", () => aceptarReto(retoActual.id));
         }
-        if (btnTerminar && esAceptadoActual) {
+        if (btnTerminar) {
           btnTerminar.addEventListener("click", () => terminarReto(retoActual.id, recompensaPuntos));
         }
       }
@@ -269,7 +270,7 @@ async function cargarYRenderizarRetos() {
         item.className = "card-reto-pasado";
         item.innerHTML = `
           <div class="portada-miniatura">
-            <img src="${reto.portadaUrl || 'img/placeholder-book.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
+            <img src="${reto.portadaUrl || reto.portada || 'img/placeholder-book.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
             ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-pasado">
@@ -319,8 +320,8 @@ async function aceptarReto(retoId) {
   }
 }
 
-// FUNCIÓN ACTUALIZADA: Marca la misión como completada y añade el tomo a la biblioteca del aventurero
-async function terminarReto(retoId, puntos) {async function terminarReto(retoId, puntos) {
+// Marca la misión como completada y añade el tomo a la biblioteca del aventurero
+async function terminarReto(retoId, puntos) {
   try {
     const retoRef = doc(db, "retos", retoId);
     const retoSnap = await getDoc(retoRef);
@@ -340,19 +341,19 @@ async function terminarReto(retoId, puntos) {async function terminarReto(retoId,
         id: retoId,
         titulo: data.titulo || data.libro || "Misión del Gremio",
         autor: data.autor || "Desconocido",
-        portadaUrl: data.portadaUrl || "img/placeholder-book.jpg",
+        portadaUrl: data.portadaUrl || data.portada || "img/placeholder-book.jpg",
         paginas: Number(data.paginas) || puntos || 0,
         genero: data.genero || "Fantasía"
       };
     }
 
-    // Llamamos al gestor central
+    // Llamamos al gestor central para actualizar Firestore y otorgar recompensas
     const resultado = await completarRetoGremio(usuarioSesionId, datosReto);
 
-    if (resultado.exito) {
+    if (resultado && resultado.exito) {
       await cargarYRenderizarRetos();
     }
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
   }
-}}
+}
