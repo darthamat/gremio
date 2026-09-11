@@ -404,19 +404,27 @@ async function obtenerUrlPortadaValida(archivo, urlGB) {
 }
 
 // 7. Enviar Formulario a Firestore
+// 7. Enviar Formulario a Firestore
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const titulo = document.getElementById("titulo").value.trim();
-    const autor = document.getElementById("autor").value.trim();
-    const paginas = Number(document.getElementById("paginas").value);
-    const proponente = document.getElementById("proponente").value.trim() || "Aventurero Anónimo";
-    const puntosPrestigio = Number(document.getElementById("puntosPrestigio").value);
+    const titulo = document.getElementById("titulo")?.value.trim() || "";
+    const autor = document.getElementById("autor")?.value.trim() || "";
+    const paginas = Number(document.getElementById("paginas")?.value) || 0;
+    
+    // Proponente (Busca proponente o reto-proponente según lo tengas en HTML)
+    const elemProponente = document.getElementById("proponente") || document.getElementById("reto-proponente");
+    const proponente = elemProponente ? elemProponente.value.trim() : "Aventurero Anónimo";
+
+    const puntosPrestigio = Number(document.getElementById("puntosPrestigio")?.value) || 0;
     const descripcion = document.getElementById("descripcion") ? document.getElementById("descripcion").value.trim() : "";
     const archivoImagen = inputPortadaFile?.files[0];
     const urlPortadaGB = inputPortadaGB ? inputPortadaGB.value : "";
-    const fechaPublicacion = document.getElementById("reto-fecha-publicacion").value.trim(); // NUEVO
+    
+    // Año de publicación con comprobación de existencia
+    const elemFecha = document.getElementById("reto-fecha-publicacion") || document.getElementById("fecha-publicacion");
+    const fechaPublicacion = elemFecha ? elemFecha.value.trim() : "";
 
     const arrayGeneros = Array.from(generosSeleccionados);
     if (arrayGeneros.length === 0) {
