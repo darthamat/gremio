@@ -4,8 +4,7 @@ import {
   doc, 
   getDoc, 
   setDoc, 
-  writeBatch, 
-  arrayUnion 
+  writeBatch 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
@@ -17,7 +16,7 @@ const CLOUDINARY_CLOUD_NAME = "dwuokewzr";
 const CLOUDINARY_UPLOAD_PRESET = "portadas";
 const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 
-// Configuración predeterminada de rasgos/cicatrices por género
+// Configuración predeterminada de rasgos/cicatrices por género base (Padre)
 const HUELLAS_POR_GENERO = {
   fantasia: { 
     rasgos: ["Mente Imaginativa", "Aura Maravillosa"], 
@@ -54,6 +53,10 @@ const HUELLAS_POR_GENERO = {
   ciencia_ficcion: { 
     rasgos: ["Visión Futurista", "Curiosidad Cósmica"], 
     cicatrices: ["Desconexión Humana", "Vértigo Digital"] 
+  },
+  romance: {
+    rasgos: ["Empatía Profunda", "Lazos Affectivos"],
+    cicatrices: ["Corazón Frágil", "Melancolía Amarga"]
   }
 };
 
@@ -67,10 +70,11 @@ const divResultadosGB = document.getElementById("resultados-busqueda");
 const previewPortada = document.getElementById("preview-portada");
 const inputPortadaGB = document.getElementById("portadaUrlGB");
 
-// Estado global para Géneros, Rasgos y Cicatrices
+// Estado global
 let generosSeleccionados = new Set();
 let listaRasgos = [];
 let listaCicatrices = [];
+let mapaGenerosGlobal = {};
 
 // Helper ID mes
 function obtenerIdMesActual() {
@@ -80,7 +84,7 @@ function obtenerIdMesActual() {
   return `reto${yy}_${mm}`;
 }
 
-// 1. Verificación de Seguridad e Inicialización
+// 1. Verificación de Seguridad
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -96,98 +100,102 @@ onAuthStateChanged(auth, async (user) => {
     }
   }
   
-  // Cargar selector dinámico de géneros
   await inicializarSelectorGeneros();
 });
 
-// 2. Gestión Global y Dinámica de Géneros
+// 2. Gestión Global y Jerárquica de Géneros
 async function obtenerGenerosGuardados() {
   try {
     const docRef = doc(db, "configuracion", "generos");
     const snap = await getDoc(docRef);
-    if (snap.exists()) {
-      return snap.data().lista || Object.keys(HUELLAS_POR_GENERO);
+    if (snap.exists() && snap.data().mapaGeneros) {
+      return snap.data().mapaGeneros;
     } else {
-      const listaBase = ["fantasia", "terror", "poesia", "clasicos", "ficcion", "no_ficcion", "filosofia", "historica", "ciencia_ficcion"];
-      await setDoc(docRef, { lista: listaBase });
-      return listaBase;
+      const mapaBase = {
+        fantasia: { nombre: "Fantasía", padre: "fantasia" },
+        terror: { nombre: "Terror", padre: "terror" },
+        poesia: { nombre: "Poesía", padre: "poesia" },
+        clasicos: { nombre: "Clásicos", padre: "clasicos" },
+        ficcion: { nombre: "Ficción", padre: "ficcion" },
+        no_ficcion: { nombre: "No Ficción", padre: "no_ficcion" },
+        filosofia: { nombre: "Filosofía", padre: "filosofia" },
+        historica: { nombre: "Histórica", padre: "historica" },
+        ciencia_ficcion: { nombre: "Ciencia Ficción", padre: "ciencia_ficcion" },
+        romance: { nombre: "Romance", padre: "romance" }
+      };
+      await setDoc(docRef, { mapaGeneros: mapaBase }, { merge: true });
+      return mapaBase;
     }
   } catch (error) {
-    console.error("Error al cargar lista de géneros:", error);
-    return Object.keys(HUELLAS_POR_GENERO);
-  }
-}
-
-async function guardarGenerosNuevos(nuevosGenerosArray) {
-  if (!nuevosGenerosArray || nuevosGenerosArray.length === 0) return;
-  try {
-    const docRef = doc(db, "configuracion", "generos");
-    for (const g of nuevosGenerosArray) {
-      const generoFormateado = g.trim().toLowerCase();
-      if (generoFormateado) {
-        await setDoc(docRef, {
-          lista: arrayUnion(generoFormateado)
-        }, { merge: true });
-      }
-    }
-  } catch (error) {
-    console.error("Error al guardar géneros en Firestore:", error);
+    console.error("Error al cargar mapa de géneros:", error);
+    return {};
   }
 }
 
 async function inicializarSelectorGeneros() {
   const selectDisponibles = document.getElementById("select-generos-disponibles");
   const inputNuevoGenero = document.getElementById("input-nuevo-genero");
+  const selectPadre = document.getElementById("select-genero-padre");
   const btnAgregarGenero = document.getElementById("btn-agregar-genero");
 
   if (!selectDisponibles) return;
 
-  const generosGuardados = await obtenerGenerosGuardados();
+  mapaGenerosGlobal = await obtenerGenerosGuardados();
 
   selectDisponibles.innerHTML = '<option value="">-- Selecciona un género existente --</option>';
-  generosGuardados.forEach(g => {
+  Object.keys(mapaGenerosGlobal).forEach(key => {
+    const gen = mapaGenerosGlobal[key];
     const opt = document.createElement("option");
-    opt.value = g.toLowerCase();
-    opt.textContent = g.charAt(0).toUpperCase() + g.slice(1).replace("_", " ");
+    opt.value = key;
+    opt.textContent = `${gen.nombre} (Padre: ${gen.padre})`;
     selectDisponibles.appendChild(opt);
   });
 
-  selectDisponibles.addEventListener("change", (e) => {
+  selectDisponibles.onchange = (e) => {
     const val = e.target.value;
     if (val) {
       agregarGeneroASeleccion(val);
       e.target.value = "";
     }
-  });
+  };
 
   const procesarNuevoGenero = () => {
-    if (!inputNuevoGenero) return;
-    const val = inputNuevoGenero.value.trim().toLowerCase();
-    if (val) {
-      agregarGeneroASeleccion(val);
-      inputNuevoGenero.value = "";
+    const nombreNuevo = inputNuevoGenero.value.trim();
+    const idPadre = selectPadre ? selectPadre.value : "";
+
+    if (!nombreNuevo) {
+      alert("Por favor, escribe el nombre del nuevo género.");
+      return;
     }
+
+    if (!idPadre) {
+      alert("Por favor, selecciona una Categoría Padre.");
+      return;
+    }
+
+    const idKey = nombreNuevo.toLowerCase().replace(/\s+/g, "_");
+
+    mapaGenerosGlobal[idKey] = {
+      nombre: nombreNuevo,
+      padre: idPadre
+    };
+
+    agregarGeneroASeleccion(idKey);
+
+    inputNuevoGenero.value = "";
+    if (selectPadre) selectPadre.value = "";
   };
 
   if (btnAgregarGenero) {
-    btnAgregarGenero.onclick = (e) => {
-      e.preventDefault();
-      procesarNuevoGenero();
-    };
-  }
-
-  if (inputNuevoGenero) {
-    inputNuevoGenero.onkeypress = (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        procesarNuevoGenero();
-      }
+    btnAgregarGenero.onclick = (e) => { 
+      e.preventDefault(); 
+      procesarNuevoGenero(); 
     };
   }
 }
 
-function agregarGeneroASeleccion(genero) {
-  generosSeleccionados.add(genero);
+function agregarGeneroASeleccion(keyGenero) {
+  generosSeleccionados.add(keyGenero);
   renderizarTagsGeneros();
   actualizarHuellasPorGeneros();
 }
@@ -197,16 +205,16 @@ function renderizarTagsGeneros() {
   if (!contenedorTags) return;
 
   contenedorTags.innerHTML = "";
-  generosSeleccionados.forEach(genero => {
+  generosSeleccionados.forEach(key => {
+    const info = mapaGenerosGlobal[key] || { nombre: key, padre: key };
     const tag = document.createElement("span");
     tag.className = "tag";
-    tag.style.cssText = "background: #2a2d3d; color: #fff; padding: 4px 10px; border-radius: 16px; margin: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;";
+    tag.style.cssText = "background: #3b2219; color: #f3e5ab; padding: 4px 10px; border-radius: 15px; margin: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;";
     
-    const nombreFormateado = genero.charAt(0).toUpperCase() + genero.slice(1).replace("_", " ");
-    tag.innerHTML = `📚 ${nombreFormateado} <span style="cursor:pointer; color:#ff5555; font-weight:bold;">&times;</span>`;
+    tag.innerHTML = `📚 ${info.nombre} <small style="opacity: 0.7;">(${info.padre})</small> <span style="cursor:pointer; color:#ff6b6b; font-weight:bold;">&times;</span>`;
 
     tag.querySelector("span").onclick = () => {
-      generosSeleccionados.delete(genero);
+      generosSeleccionados.delete(key);
       renderizarTagsGeneros();
       actualizarHuellasPorGeneros();
     };
@@ -219,18 +227,30 @@ function actualizarHuellasPorGeneros() {
   listaRasgos = [];
   listaCicatrices = [];
 
-  generosSeleccionados.forEach(gen => {
-    if (HUELLAS_POR_GENERO[gen]) {
-      HUELLAS_POR_GENERO[gen].rasgos.forEach(r => {
+  generosSeleccionados.forEach(key => {
+    const info = mapaGenerosGlobal[key];
+    const keyPadre = info ? info.padre : key;
+
+    if (HUELLAS_POR_GENERO[keyPadre]) {
+      HUELLAS_POR_GENERO[keyPadre].rasgos.forEach(r => {
         if (!listaRasgos.includes(r)) listaRasgos.push(r);
       });
-      HUELLAS_POR_GENERO[gen].cicatrices.forEach(c => {
+      HUELLAS_POR_GENERO[keyPadre].cicatrices.forEach(c => {
         if (!listaCicatrices.includes(c)) listaCicatrices.push(c);
       });
     }
   });
 
   renderizarTags();
+}
+
+async function guardarGenerosEnFirestore() {
+  try {
+    const docRef = doc(db, "configuracion", "generos");
+    await setDoc(docRef, { mapaGeneros: mapaGenerosGlobal }, { merge: true });
+  } catch (error) {
+    console.error("Error al guardar géneros en Firestore:", error);
+  }
 }
 
 // 3. Buscador de Google Books API
@@ -404,7 +424,7 @@ async function subirUrlACloudinary(urlImagen) {
   return data.secure_url;
 }
 
-// 6. Publicación en Firestore
+// 6. Publicación del Reto en Firestore
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -445,7 +465,7 @@ if (form) {
       }
 
       btnSubmit.innerText = "⏳ Guardando géneros en la biblioteca...";
-      await guardarGenerosNuevos(arrayGeneros);
+      await guardarGenerosEnFirestore();
 
       btnSubmit.innerText = "⏳ Guardando reto en Firestore...";
 
@@ -457,7 +477,7 @@ if (form) {
         autor,
         paginas,
         generos: arrayGeneros,
-        genero: arrayGeneros[0], // Compatibilidad con vistas previas
+        genero: arrayGeneros[0], // Para compatibilidad
         proponente,
         puntos: puntosPrestigio,
         puntosPrestigio,

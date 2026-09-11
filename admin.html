@@ -186,26 +186,39 @@
         </div>
       </div>
 
-      <!-- SECCIÓN MULTIGÉNERO DINÁMICO -->
-      <div class="form-group">
-        <label>Géneros del Libro (Múltiples):</label>
-        
-        <div id="generos-tags-contenedor" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7;"></div>
+     <!-- SECCIÓN MULTIGÉNERO CON HERENCIA / CATEGORÍA PADRE -->
+<div class="form-group">
+  <label>Géneros del Libro (Múltiples):</label>
+  
+  <!-- Contenedor dinámico de etiquetas elegidas -->
+  <div id="generos-tags-contenedor" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7;"></div>
 
-        <select id="select-generos-disponibles" style="width: 100%; margin-bottom: 8px;">
-          <option value="">Cargando géneros...</option>
-        </select>
+  <!-- Selector de géneros ya existentes -->
+  <select id="select-generos-disponibles" style="width: 100%; margin-bottom: 8px;">
+    <option value="">Cargando géneros...</option>
+  </select>
 
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="input-nuevo-genero" placeholder="O escribe un nuevo género..." style="flex: 1;">
-          <button type="button" id="btn-agregar-genero" class="btn-secundario">+ Añadir</button>
-        </div>
-      </div>
+  <!-- Formulario para registrar género nuevo con Padre -->
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; background: rgba(139, 90, 43, 0.1); padding: 8px; border-radius: 4px; border: 1px dashed #8b5a2b;">
+    <input type="text" id="input-nuevo-genero" placeholder="Nuevo género (ej: Romantasy)" style="flex: 2; min-width: 150px;">
+    
+    <select id="select-genero-padre" style="flex: 2; min-width: 150px;">
+      <option value="">-- Asignar Categoria Padre --</option>
+      <option value="fantasia">Fantasía</option>
+      <option value="terror">Terror / Horror</option>
+      <option value="poesia">Poesía</option>
+      <option value="clasicos">Clásicos</option>
+      <option value="ficcion">Ficción</option>
+      <option value="no_ficcion">No Ficción</option>
+      <option value="filosofia">Filosofía</option>
+      <option value="historica">Novela Histórica</option>
+      <option value="ciencia_ficcion">Ciencia Ficción</option>
+      <option value="romance">Romance</option>
+    </select>
 
-      <div class="form-group">
-        <label for="descripcion">Descripción / Requisitos del Reto:</label>
-        <textarea id="descripcion" rows="3" placeholder="Ej: Leer antes de fin de mes..." required></textarea>
-      </div>
+    <button type="button" id="btn-agregar-genero" class="btn-secundario" style="flex: 1;">+ Añadir</button>
+  </div>
+</div>
 
       <!-- PORTADA Y SUBIDA -->
       <div class="form-group">
