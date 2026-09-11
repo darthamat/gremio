@@ -42,9 +42,19 @@ async function cargarDatosAventurero(docRef) {
 
     const data = snap.data();
 
-    const xpTotal = data.xp || 0;
+    // 🔗 COMBINAR TODAS LAS FUENTES DE LECTURAS (Retos y Lecturas Libres)
+    const lecturasLibres = data.lecturas || data.estanteria || data.biblioteca || [];
+    const retosCompletados = data.retosCompletados || data.retos || [];
     
-    // Comprobar el nivel según la XP acumulada
+    // Unificamos todo en una sola lista asegurando el flag 'esReto'
+    const todasLasLecturas = [
+        ...lecturasLibres.map(l => typeof l === 'object' ? { ...l, esReto: false } : { titulo: l, esReto: false }),
+        ...retosCompletados.map(r => typeof r === 'object' ? { ...r, esReto: true } : { titulo: r, esReto: true })
+    ];
+
+    // 📊 CÁLCULO DINÁMICO DE PUNTOS (Si no existen directos en la BD)
+    const xpTotal = data.xp ?? calcularXpTotal(todasLasLecturas);
+    const prestigioTotal = data.prestigio ?? calcularPrestigio(todasLasLecturas);
     const nivelCalculado = comprobarSubidaNivel(xpTotal);
 
     // Información general
@@ -52,10 +62,10 @@ async function cargarDatosAventurero(docRef) {
     document.getElementById("char-class").textContent = `Clase: ${data.clase || "Iniciado"}`;
     document.getElementById("char-level").textContent = nivelCalculado;
     document.getElementById("char-xp").textContent = `${xpTotal} XP`;
-    document.getElementById("char-prestige").textContent = data.prestigio || 0;
+    document.getElementById("char-prestige").textContent = prestigioTotal;
     document.getElementById("char-gold-bookmarks").textContent = data.marcapaginasOro || 0;
-    document.getElementById("char-pages").textContent = data.paginasLeidas || 0;
-    document.getElementById("char-books").textContent = data.librosCompletados || 0;
+    document.getElementById("char-pages").textContent = data.paginasLeidas || calcularPaginasTotal(todasLasLecturas);
+    document.getElementById("char-books").textContent = data.librosCompletados || todasLasLecturas.length;
 
     if (data.photoURL) {
         document.getElementById("avatar-img").src = data.photoURL;
@@ -73,12 +83,31 @@ async function cargarDatosAventurero(docRef) {
 
     actualizarProgresoUI(xpTotal, nivelCalculado);
 
-    // ⬇️ RENDERIZAR LA BIBLIOTECA DEL USUARIO (DENTRO DE LA FUNCIÓN)
-    const lecturasUsuario = data.lecturas || data.estanteria || data.biblioteca || [];
-    renderizarBiblioteca(lecturasUsuario);
+    // ⬇️ RENDERIZAR BIBLIOTECA Y ESPEJO DEL LECTOR
+    renderizarBiblioteca(todasLasLecturas);
+    renderizarEspejoDelLector(data.huellas || todasLasLecturas);
 }
 
-// 2. Funciones auxiliares de XP y Nivel
+// 🧮 FUNCIONES AUXILIARES DE CÁLCULO AUTOMÁTICO
+function calcularXpTotal(lecturas) {
+    return lecturas.reduce((acc, item) => {
+        const paginas = item.paginas || 0;
+        // Los retos otorgan un 50% extra de XP por página
+        const multiplicador = item.esReto ? 1.5 : 1.0; 
+        return acc + Math.round(paginas * multiplicador);
+    }, 0);
+}
+
+function calcularPrestigio(lecturas) {
+    // 10 puntos de prestigio por cada reto completado
+    return lecturas.filter(item => item.esReto).length * 10;
+}
+
+function calcularPaginasTotal(lecturas) {
+    return lecturas.reduce((acc, item) => acc + (item.paginas || 0), 0);
+}
+
+// 2. Funciones de XP y Nivel
 export function obtenerRangoXP(nivelActual) {
     const actual = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual) || { xpRequerida: 0 };
     const siguiente = TABLA_NIVELES_DD.find(n => n.nivel === nivelActual + 1) || { xpRequerida: actual.xpRequerida + 5000 };
@@ -120,7 +149,7 @@ export function comprobarSubidaNivel(xpTotalActual) {
     return nivelCalculado;
 }
 
-// 3. Gestionar subida de avatar a Cloudinary
+// 3. Subida de Avatar
 const avatarContainer = document.getElementById("avatar-container");
 const avatarInput = document.getElementById("avatar-input");
 const avatarImg = document.getElementById("avatar-img");
@@ -164,7 +193,7 @@ if (avatarContainer && avatarInput) {
     });
 }
 
-// 4. Lógica para el sistema de acordeón / pestañas
+// 4. UI: Acordeón y Logout
 document.addEventListener("DOMContentLoaded", () => {
     const botones = document.querySelectorAll(".btn-tab");
     const panelContenido = document.getElementById("panel-contenido");
@@ -206,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// 5. Espejo del Lector
+// 5. Renderizar Espejo del Lector
 export function renderizarEspejoDelLector(huellasUsuario) {
     const contenedor = document.getElementById("bloque-espejo-lector");
     if (!contenedor) return;
@@ -238,16 +267,17 @@ function renderizarBiblioteca(lecturas) {
         const autor = typeof item === 'object' ? (item.autor || "Desconocido") : "";
         const portada = typeof item === 'object' ? (item.portadaUrl || "img/placeholder-book.jpg") : "img/placeholder-book.jpg";
         const paginas = typeof item === 'object' ? (item.paginas || 0) : 0;
+        const esReto = item.esReto || false;
 
         html += `
-            <div class="tarjeta-libro-estanteria ${item.esReto ? 'es-reto' : ''}">
+            <div class="tarjeta-libro-estanteria ${esReto ? 'es-reto' : ''}">
                 <img src="${portada}" alt="${titulo}" onerror="this.src='img/placeholder-book.jpg';">
                 <div class="info-libro-estanteria">
                     <h4>${titulo}</h4>
                     <p class="autor">${autor}</p>
                     <div class="badges-libro">
                         ${paginas ? `<span class="paginas">📖 ${paginas} pág.</span>` : ''}
-                        ${item.esReto ? '<span class="badge-reto">🛡️ Reto</span>' : '<span class="badge-libre">📜 Libre</span>'}
+                        ${esReto ? '<span class="badge-reto">🛡️ Reto</span>' : '<span class="badge-libre">📜 Libre</span>'}
                     </div>
                 </div>
             </div>

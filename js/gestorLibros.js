@@ -11,23 +11,18 @@ import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 
-/**
- * Normaliza un texto para generar un ID limpio en Firestore
- * Ej: "El Nombre del Viento" -> "el-nombre-del-viento"
- */
 export function generarLibroId(titulo) {
   return titulo
     .toLowerCase()
     .trim()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // Elimina acentos
-    .replace(/[^a-z0-9]/g, "-")      // Sustituye caracteres especiales por guiones
-    .replace(/-+/g, "-");             // Elimina guiones dobles
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "-")
+    .replace(/-+/g, "-");
 }
 
 /**
  * 1. REGISTRAR O VINCULAR LECTURA LIBRE
- * Añade un libro que el usuario leyó por su cuenta.
  */
 export async function registrarLecturaLibre(usuarioUid, datosLibro) {
   try {
@@ -35,7 +30,6 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
     const libroRef = doc(db, "libros", libroId);
     const libroSnap = await getDoc(libroRef);
 
-    // A. Si el libro NO existe en la biblioteca global, lo creamos
     if (!libroSnap.exists()) {
       await setDoc(libroRef, {
         id: libroId,
@@ -43,27 +37,28 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
         autor: datosLibro.autor || "Desconocido",
         portadaUrl: datosLibro.portadaUrl || "img/placeholder-book.jpg",
         paginas: Number(datosLibro.paginas) || 0,
-        genero: datosLibro.genero || "No Ficción / Erudito",
+        genero: datosLibro.genero || "Ficción",
         esReto: false,
         lectores: [usuarioUid],
         totalLectores: 1,
         fechaRegistro: new Date().toISOString()
       });
     } else {
-      // B. Si ya existe, añadimos al usuario al array de lectores e incrementamos el contador
-      await updateDoc(libroRef, {
-        lectores: arrayUnion(usuarioUid),
-        totalLectores: increment(1)
-      });
+      const dataLibro = libroSnap.data();
+      const yaEsLector = dataLibro.lectores?.includes(usuarioUid);
+
+      if (!yaEsLector) {
+        await updateDoc(libroRef, {
+          lectores: arrayUnion(usuarioUid),
+          totalLectores: increment(1)
+        });
+      }
     }
 
-    // C. Actualizamos el expediente del aventurero
     const paginas = Number(datosLibro.paginas) || 0;
     const userRef = doc(db, "aventureros", usuarioUid);
     const userSnap = await getDoc(userRef);
-    const xpActual = userSnap.exists() ? (userSnap.data().xp || 0) : 0;
-    const paginasActuales = userSnap.exists() ? (userSnap.data().paginasLeidas || 0) : 0;
-    const librosCompletadosActuales = userSnap.exists() ? (userSnap.data().librosCompletados || 0) : 0;
+    const userData = userSnap.exists() ? userSnap.data() : {};
 
     const nuevaLecturaUsuario = {
       libroId: libroId,
@@ -71,7 +66,7 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
       autor: datosLibro.autor || "Desconocido",
       portadaUrl: datosLibro.portadaUrl || "img/placeholder-book.jpg",
       paginas: paginas,
-      genero: datosLibro.genero || "General",
+      genero: datosLibro.genero || "Ficción",
       estado: "completado",
       esReto: false,
       fechaFin: new Date().toISOString()
@@ -79,12 +74,11 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
 
     await updateDoc(userRef, {
       lecturas: arrayUnion(nuevaLecturaUsuario),
-      xp: xpActual + paginas,
-      paginasLeidas: paginasActuales + paginas,
-      librosCompletados: librosCompletadosActuales + 1
+      xp: (userData.xp || 0) + paginas,
+      paginasLeidas: (userData.paginasLeidas || 0) + paginas,
+      librosCompletados: (userData.librosCompletados || 0) + 1
     });
 
-    console.log(`✨ Lectura libre "${datosLibro.titulo}" registrada con éxito.`);
     return { exito: true, libroId };
 
   } catch (error) {
@@ -95,7 +89,6 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
 
 /**
  * 2. COMPLETAR UN RETO DEL GREMIO
- * Sincroniza la finalización del reto con la biblioteca global y el aventurero.
  */
 export async function completarRetoGremio(usuarioUid, retoData) {
   try {
@@ -105,7 +98,6 @@ export async function completarRetoGremio(usuarioUid, retoData) {
 
     const puntosRecompensa = Number(retoData.paginas) || 0;
 
-    // A. Aseguramos la ficha en la colección global `/libros`
     if (!libroSnap.exists()) {
       await setDoc(libroRef, {
         id: libroId,
@@ -121,13 +113,17 @@ export async function completarRetoGremio(usuarioUid, retoData) {
         fechaRegistro: new Date().toISOString()
       });
     } else {
-      await updateDoc(libroRef, {
-        lectores: arrayUnion(usuarioUid),
-        totalLectores: increment(1)
-      });
+      const dataLibro = libroSnap.data();
+      const yaEsLector = dataLibro.lectores?.includes(usuarioUid);
+
+      if (!yaEsLector) {
+        await updateDoc(libroRef, {
+          lectores: arrayUnion(usuarioUid),
+          totalLectores: increment(1)
+        });
+      }
     }
 
-    // B. Actualizamos al aventurero (Prestigio, XP, Lecturas y Misión Completada)
     const userRef = doc(db, "aventureros", usuarioUid);
     const userSnap = await getDoc(userRef);
     const usuarioData = userSnap.exists() ? userSnap.data() : {};
@@ -146,15 +142,14 @@ export async function completarRetoGremio(usuarioUid, retoData) {
     };
 
     await updateDoc(userRef, {
-      retosCompletados: arrayUnion(retoData.id),
+      retosCompletados: arrayUnion(retoData.id), // Array de IDs para validar si completó la misión
       prestigio: (usuarioData.prestigio || 0) + puntosRecompensa,
       xp: (usuarioData.xp || 0) + puntosRecompensa,
       paginasLeidas: (usuarioData.paginasLeidas || 0) + puntosRecompensa,
       librosCompletados: (usuarioData.librosCompletados || 0) + 1,
-      lecturas: arrayUnion(nuevaLectura)
+      lecturas: arrayUnion(nuevaLectura) // Toda la metadata va al array 'lecturas'
     });
 
-    console.log(`🏆 Reto "${retoData.titulo}" completado y sincronizado en la Biblioteca Global.`);
     return { exito: true };
 
   } catch (error) {

@@ -1,30 +1,30 @@
-import { getFirestore, collection, getDocs, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
+const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Dimensiones de la rejilla (7 filas x 9 columnas = 63 casillas)
-const FILAS = 3;
-const COLS = 3;
+const FILAS = 7;
+const COLS = 9;
 
-// Semillas iniciales (Donde comienza a crecer cada reino)
 const SEMILLAS_INICIALES = {
-  fantasia: { f: 1, c: 1 },  // Esquina Noroeste
-  misterio: { f: 1, c: 7 },  // Esquina Noreste
-  ciencia:  { f: 5, c: 1 },  // Esquina Suroeste
-  erudito:  { f: 5, c: 7 }   // Esquina Sureste
+  fantasia: { f: 1, c: 1 },
+  misterio: { f: 1, c: 7 },
+  ciencia:  { f: 5, c: 1 },
+  erudito:  { f: 5, c: 7 },
+  ficcion:  { f: 3, c: 4 }
 };
 
 function normalizarGenero(genero = "") {
   const g = genero.toLowerCase();
   if (g.includes("fantasía") || g.includes("fantasia")) return "fantasia";
-  if (g.includes("misterio") || g.includes("terror")) return "misterio";
-  if (g.includes("ciencia") || g.includes("ciencia-ficción")) return "ciencia";
-  if (g.includes("ficcion") || g.includes("novela")) return "ficcion";
+  if (g.includes("misterio") || g.includes("terror") || g.includes("thriller")) return "misterio";
+  if (g.includes("ciencia") || g.includes("ciencia-ficción") || g.includes("sci-fi")) return "ciencia";
+  if (g.includes("ficcion") || g.includes("ficción") || g.includes("novela")) return "ficcion";
   return "erudito";
 }
 
-// Devuelve los vecinos adyacentes de un hexágono en una rejilla hexagonal
 function obtenerVecinos(f, c) {
   const esPar = f % 2 === 0;
   const desplazamientos = esPar ? [
@@ -38,10 +38,9 @@ function obtenerVecinos(f, c) {
     .filter(p => p.f >= 0 && p.f < FILAS && p.c >= 0 && p.c < COLS);
 }
 
-// Encuentra una casilla libre colindante al reino para crecer
 function buscarCasillaCrecimiento(matriz, genero) {
   const celdasReino = [];
-  
+
   for (let f = 0; f < FILAS; f++) {
     for (let c = 0; c < COLS; c++) {
       if (matriz[f][c] && matriz[f][c].generoKey === genero) {
@@ -50,7 +49,13 @@ function buscarCasillaCrecimiento(matriz, genero) {
     }
   }
 
-  // Buscar vecinos libres de esas celdas
+  if (celdasReino.length === 0) {
+    const semilla = SEMILLAS_INICIALES[genero] || SEMILLAS_INICIALES.ficcion;
+    if (!matriz[semilla.f][semilla.c]) {
+      return semilla;
+    }
+  }
+
   let candidatosLibres = [];
   celdasReino.forEach(celda => {
     const vecinos = obtenerVecinos(celda.f, celda.c);
@@ -62,11 +67,9 @@ function buscarCasillaCrecimiento(matriz, genero) {
   });
 
   if (candidatosLibres.length > 0) {
-    // Selección aleatoria entre los candidatos colindantes para variabilidad orgánica
     return candidatosLibres[Math.floor(Math.random() * candidatosLibres.length)];
   }
 
-  // Si no hay candidatos contiguos, buscar cualquier casilla libre aleatoria
   let casillasVacias = [];
   for (let f = 0; f < FILAS; f++) {
     for (let c = 0; c < COLS; c++) {
@@ -76,40 +79,44 @@ function buscarCasillaCrecimiento(matriz, genero) {
   return casillasVacias.length > 0 ? casillasVacias[Math.floor(Math.random() * casillasVacias.length)] : null;
 }
 
-async function renderizarMapaHex() {
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    await renderizarMapaHex(user.uid);
+  }
+});
+
+async function renderizarMapaHex(uid) {
   const contenedor = document.getElementById("hex-grid-contenedor");
+  if (!contenedor) return;
   contenedor.innerHTML = "";
 
-  // Matriz de ocupación [Filas][Columnas]
   let matriz = Array.from({ length: FILAS }, () => Array(COLS).fill(null));
 
   try {
-    const q = query(collection(db, "retos"), where("completado", "==", true));
-    const snapshot = await getDocs(q);
-    
-    let libros = [];
-    snapshot.forEach(docSnap => libros.push(docSnap.data()));
+    const userDocRef = doc(db, "aventureros", uid);
+    const snap = await getDoc(userDocRef);
 
-    // Colocar las semillas iniciales libres si no hay ocupación previa
-    Object.keys(SEMILLAS_INICIALES).forEach(key => {
-      const sem = SEMILLAS_INICIALES[key];
-      // Se reservan como centros neurálgicos de cada reino
-    });
+    if (!snap.exists()) return;
 
-    // Anexar cada libro de manera contigua al reino de su mismo color
-    libros.forEach(libro => {
-      const generoKey = normalizarGenero(libro.genero);
+    // 🎯 LEER SOLAMENTE EL ARRAY 'lecturas'
+    const lecturas = snap.data().lecturas || [];
+
+    lecturas.forEach(libro => {
+      const generoTexto = libro.genero || "Ficción";
+      const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
 
       if (pos) {
         matriz[pos.f][pos.c] = {
-          ...libro,
-          generoKey
+          titulo: libro.titulo || "Tomo Leído",
+          genero: generoTexto,
+          generoKey,
+          paginas: libro.paginas || 0,
+          esReto: libro.esReto || false
         };
       }
     });
 
-    // Renderizar la rejilla completa en el HTML
     for (let f = 0; f < FILAS; f++) {
       const filaDiv = document.createElement("div");
       filaDiv.classList.add("hex-fila");
@@ -122,6 +129,7 @@ async function renderizarMapaHex() {
 
         if (datosCelda) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
+          if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
           const puntoCentro = document.createElement("div");
           puntoCentro.classList.add("hex-centro-punto");
@@ -130,9 +138,9 @@ async function renderizarMapaHex() {
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
-            <strong>📖 ${datosCelda.titulo || "Título Códice"}</strong><br>
-            <em>Gén: ${datosCelda.genero || "General"}</em><br>
-            📄 <strong>${datosCelda.paginas || 0} págs</strong> exploradas
+            <strong>📖 ${datosCelda.titulo}</strong> ${datosCelda.esReto ? '🛡️' : ''}<br>
+            <em>Gén: ${datosCelda.genero}</em><br>
+            📄 <strong>${datosCelda.paginas} págs</strong>
           `;
           hexDiv.appendChild(tooltip);
         } else {
@@ -149,21 +157,6 @@ async function renderizarMapaHex() {
     }
 
   } catch (error) {
-    console.error("Error cargando el Atlas Hexagonal:", error);
+    console.error("Error al cargar el Atlas Hexagonal:", error);
   }
-}
-
-renderizarMapaHex();
-
-// Obtener los libros para dibujarlos en el Atlas por su Género o Popularidad:
-async function obtenerDatosParaElAtlas() {
-  const db = getFirestore();
-  const librosRef = collection(db, "libros");
-  const snapshot = await getDocs(librosRef);
-
-  snapshot.forEach(docSnap => {
-    const libro = docSnap.data();
-    console.log(`Libro: ${libro.titulo} | Género: ${libro.genero} | Lectores totales: ${libro.totalLectores}`);
-    // Aquí puedes asignar automáticamente qué hexágono del mapa ocupa según su género.
-  });
 }
