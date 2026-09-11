@@ -416,6 +416,7 @@ if (form) {
     const descripcion = document.getElementById("descripcion") ? document.getElementById("descripcion").value.trim() : "";
     const archivoImagen = inputPortadaFile?.files[0];
     const urlPortadaGB = inputPortadaGB ? inputPortadaGB.value : "";
+    const fechaPublicacion = document.getElementById("reto-fecha-publicacion").value.trim(); // NUEVO
 
     const arrayGeneros = Array.from(generosSeleccionados);
     if (arrayGeneros.length === 0) {
@@ -443,6 +444,7 @@ if (form) {
         libro: titulo,
         autor,
         paginas,
+        fechaPublicacion: fechaPublicacion || "Desconocida",
         generos: arrayGeneros,
         genero: arrayGeneros[0] || "general",
         proponente,
