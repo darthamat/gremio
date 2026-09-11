@@ -15,49 +15,20 @@ const db = getFirestore(app);
 const CLOUDINARY_CLOUD_NAME = "dwuokewzr";
 const CLOUDINARY_UPLOAD_PRESET = "portadas";
 const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
+const PORTADA_DEFAULT = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400"; // Imagen por defecto si falla la subida
 
-// Configuración predeterminada de rasgos/cicatrices por género base (Padre)
+// Configuración de rasgos/cicatrices por género base
 const HUELLAS_POR_GENERO = {
-  fantasia: { 
-    rasgos: ["Mente Imaginativa", "Aura Maravillosa"], 
-    cicatrices: ["Evasionista", "Voz de Leyenda"] 
-  },
-  terror: { 
-    rasgos: ["Valentia Inquebrantable", "Sentidos Alerta"], 
-    cicatrices: ["Trauma Oscuro", "Sombras Persistentes"] 
-  },
-  poesia: { 
-    rasgos: ["Sensibilidad Profunda", "Espíritu Poético"], 
-    cicatrices: ["Corazón Melancólico", "Anhelo Inconsolable"] 
-  },
-  clasicos: { 
-    rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], 
-    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
-  },
-  ficcion: { 
-    rasgos: ["Imaginación", "Pensamiento Inocente"], 
-    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
-  },
-  no_ficcion: { 
-    rasgos: ["Conocimiento", "Pensamiento Crítico"], 
-    cicatrices: ["Carga del Pasado", "Rigidez Moral"] 
-  },
-  filosofia: { 
-    rasgos: ["Criterio Propio", "Mente Inquisitiva"], 
-    cicatrices: ["Duda Existencial", "Espíritu Inquieto"] 
-  },
-  historica: { 
-    rasgos: ["Perspectiva Épica", "Conciencia del Tiempo"], 
-    cicatrices: ["Memoria Pesada", "Cicatriz de Eras"] 
-  },
-  ciencia_ficcion: { 
-    rasgos: ["Visión Futurista", "Curiosidad Cósmica"], 
-    cicatrices: ["Desconexión Humana", "Vértigo Digital"] 
-  },
-  romance: {
-    rasgos: ["Empatía Profunda", "Lazos Affectivos"],
-    cicatrices: ["Corazón Frágil", "Melancolía Amarga"]
-  }
+  fantasia: { rasgos: ["Mente Imaginativa", "Aura Maravillosa"], cicatrices: ["Evasionista", "Voz de Leyenda"] },
+  terror: { rasgos: ["Valentia Inquebrantable", "Sentidos Alerta"], cicatrices: ["Trauma Oscuro", "Sombras Persistentes"] },
+  poesia: { rasgos: ["Sensibilidad Profunda", "Espíritu Poético"], cicatrices: ["Corazón Melancólico", "Anhelo Inconsolable"] },
+  clasicos: { rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
+  ficcion: { rasgos: ["Imaginación", "Pensamiento Inocente"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
+  no_ficcion: { rasgos: ["Conocimiento", "Pensamiento Crítico"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
+  filosofia: { rasgos: ["Criterio Propio", "Mente Inquisitiva"], cicatrices: ["Duda Existencial", "Espíritu Inquieto"] },
+  historica: { rasgos: ["Perspectiva Épica", "Conciencia del Tiempo"], cicatrices: ["Memoria Pesada", "Cicatriz de Eras"] },
+  ciencia_ficcion: { rasgos: ["Visión Futurista", "Curiosidad Cósmica"], cicatrices: ["Desconexión Humana", "Vértigo Digital"] },
+  romance: { rasgos: ["Empatía Profunda", "Lazos Affectivos"], cicatrices: ["Corazón Frágil", "Melancolía Amarga"] }
 };
 
 // Elementos DOM
@@ -69,6 +40,7 @@ const btnBuscarGB = document.getElementById("btn-buscar-gb");
 const divResultadosGB = document.getElementById("resultados-busqueda");
 const previewPortada = document.getElementById("preview-portada");
 const inputPortadaGB = document.getElementById("portadaUrlGB");
+const inputPortadaFile = document.getElementById("portadaFile");
 
 // Estado global
 let generosSeleccionados = new Set();
@@ -76,7 +48,6 @@ let listaRasgos = [];
 let listaCicatrices = [];
 let mapaGenerosGlobal = {};
 
-// Helper ID mes
 function obtenerIdMesActual() {
   const fecha = new Date();
   const yy = String(fecha.getFullYear()).slice(-2);
@@ -99,11 +70,28 @@ onAuthStateChanged(auth, async (user) => {
       return;
     }
   }
-  
   await inicializarSelectorGeneros();
 });
 
-// 2. Gestión Global y Jerárquica de Géneros
+// 2. Previsualización de archivo local
+if (inputPortadaFile) {
+  inputPortadaFile.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        previewPortada.src = event.target.result;
+        previewPortada.style.display = "block";
+        if (inputPortadaGB) inputPortadaGB.value = ""; // Limpiar URL de Google Books si sube archivo
+      };
+      reader.readAsDataURL(file);
+    } else {
+      previewPortada.style.display = "none";
+    }
+  });
+}
+
+// 3. Gestión de Géneros
 async function obtenerGenerosGuardados() {
   try {
     const docRef = doc(db, "configuracion", "generos");
@@ -167,21 +155,15 @@ async function inicializarSelectorGeneros() {
       alert("Por favor, escribe el nombre del nuevo género.");
       return;
     }
-
     if (!idPadre) {
       alert("Por favor, selecciona una Categoría Padre.");
       return;
     }
 
     const idKey = nombreNuevo.toLowerCase().replace(/\s+/g, "_");
-
-    mapaGenerosGlobal[idKey] = {
-      nombre: nombreNuevo,
-      padre: idPadre
-    };
+    mapaGenerosGlobal[idKey] = { nombre: nombreNuevo, padre: idPadre };
 
     agregarGeneroASeleccion(idKey);
-
     inputNuevoGenero.value = "";
     if (selectPadre) selectPadre.value = "";
   };
@@ -253,7 +235,7 @@ async function guardarGenerosEnFirestore() {
   }
 }
 
-// 3. Buscador de Google Books API
+// 4. Buscador de Google Books API
 if (btnBuscarGB) {
   btnBuscarGB.addEventListener("click", (e) => {
     e.preventDefault();
@@ -317,7 +299,7 @@ async function buscarEnGoogleBooks() {
       divResultadosGB.appendChild(div);
     });
   } catch (error) {
-    console.error("Error al consultar Google Books API:", error);
+    console.error("Error al conectar con Google Books:", error);
     divResultadosGB.innerHTML = "<div class='item-resultado'>❌ Error al conectar con Google Books.</div>";
   }
 }
@@ -327,33 +309,25 @@ function seleccionarLibroGB(info, urlImagen) {
   document.getElementById("autor").value = info.authors ? info.authors.join(", ") : "";
   document.getElementById("paginas").value = info.pageCount || 100;
   
-  if (info.description) {
-    document.getElementById("descripcion").value = info.description.slice(0, 300) + "...";
+  const descElem = document.getElementById("descripcion");
+  if (descElem && info.description) {
+    descElem.value = info.description.slice(0, 300) + "...";
   }
 
   if (urlImagen) {
     inputPortadaGB.value = urlImagen;
     previewPortada.src = urlImagen;
     previewPortada.style.display = "block";
+    if (inputPortadaFile) inputPortadaFile.value = ""; // Limpiar input file
   } else {
     inputPortadaGB.value = "";
     previewPortada.style.display = "none";
   }
 
-  if (info.categories && info.categories.length > 0) {
-    const cat = info.categories[0].toLowerCase();
-    if (cat.includes("fiction") || cat.includes("fantasy")) agregarGeneroASeleccion("fantasia");
-    else if (cat.includes("horror")) agregarGeneroASeleccion("terror");
-    else if (cat.includes("history")) agregarGeneroASeleccion("historica");
-    else if (cat.includes("philosophy")) agregarGeneroASeleccion("filosofia");
-    else if (cat.includes("science fiction")) agregarGeneroASeleccion("ciencia_ficcion");
-    else agregarGeneroASeleccion("clasicos");
-  }
-
   divResultadosGB.style.display = "none";
 }
 
-// 4. Gestión Manual de Rasgos y Cicatrices
+// 5. Gestión de Rasgos y Cicatrices
 const btnAddHuella = document.getElementById("btn-add-huella");
 if (btnAddHuella) {
   btnAddHuella.addEventListener("click", () => {
@@ -397,7 +371,7 @@ window.eliminarTag = function(tipo, index) {
   renderizarTags();
 };
 
-// 5. Funciones de subida a Cloudinary
+// 6. Subida de Imágenes
 async function subirArchivoACloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -406,25 +380,30 @@ async function subirArchivoACloudinary(file) {
   const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
   const respuesta = await fetch(url, { method: "POST", body: formData });
 
-  if (!respuesta.ok) throw new Error("Error subiendo el archivo a Cloudinary");
+  if (!respuesta.ok) throw new Error("Error subiendo el archivo local a Cloudinary");
   const data = await respuesta.json();
   return data.secure_url;
 }
 
-async function subirUrlACloudinary(urlImagen) {
-  const formData = new FormData();
-  formData.append("file", urlImagen);
-  formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+async function obtenerUrlPortadaValida(archivo, urlGB) {
+  if (archivo) {
+    try {
+      return await subirArchivoACloudinary(archivo);
+    } catch (err) {
+      console.warn("Fallo al subir archivo local a Cloudinary, usando fallback:", err);
+      return PORTADA_DEFAULT;
+    }
+  }
 
-  const url = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-  const respuesta = await fetch(url, { method: "POST", body: formData });
+  if (urlGB) {
+    // Para imágenes de Google Books, usamos directamente la URL HTTPS limpia
+    return urlGB;
+  }
 
-  if (!respuesta.ok) throw new Error("Error alojando la imagen en Cloudinary");
-  const data = await respuesta.json();
-  return data.secure_url;
+  return PORTADA_DEFAULT;
 }
 
-// 6. Publicación del Reto en Firestore
+// 7. Enviar Formulario a Firestore
 if (form) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -434,9 +413,9 @@ if (form) {
     const paginas = Number(document.getElementById("paginas").value);
     const proponente = document.getElementById("proponente").value.trim() || "Aventurero Anónimo";
     const puntosPrestigio = Number(document.getElementById("puntosPrestigio").value);
-    const descripcion = document.getElementById("descripcion").value.trim();
-    const archivoImagen = document.getElementById("portadaFile")?.files[0];
-    const urlPortadaGB = inputPortadaGB.value;
+    const descripcion = document.getElementById("descripcion") ? document.getElementById("descripcion").value.trim() : "";
+    const archivoImagen = inputPortadaFile?.files[0];
+    const urlPortadaGB = inputPortadaGB ? inputPortadaGB.value : "";
 
     const arrayGeneros = Array.from(generosSeleccionados);
     if (arrayGeneros.length === 0) {
@@ -445,24 +424,12 @@ if (form) {
       return;
     }
 
-    if (!archivoImagen && !urlPortadaGB) {
-      mensajeEstado.innerText = "⚠️ Selecciona una imagen local o busca una portada con Google Books.";
-      mensajeEstado.style.color = "red";
-      return;
-    }
-
     try {
       btnSubmit.disabled = true;
       mensajeEstado.innerText = "";
+      btnSubmit.innerText = "⏳ Procesando portada del libro...";
 
-      let finalPortadaUrl = "";
-      btnSubmit.innerText = "⏳ Procesando y subiendo portada...";
-
-      if (archivoImagen) {
-        finalPortadaUrl = await subirArchivoACloudinary(archivoImagen);
-      } else if (urlPortadaGB) {
-        finalPortadaUrl = await subirUrlACloudinary(urlPortadaGB);
-      }
+      const finalPortadaUrl = await obtenerUrlPortadaValida(archivoImagen, urlPortadaGB);
 
       btnSubmit.innerText = "⏳ Guardando géneros en la biblioteca...";
       await guardarGenerosEnFirestore();
@@ -477,7 +444,7 @@ if (form) {
         autor,
         paginas,
         generos: arrayGeneros,
-        genero: arrayGeneros[0], // Para compatibilidad
+        genero: arrayGeneros[0] || "general",
         proponente,
         puntos: puntosPrestigio,
         puntosPrestigio,
@@ -500,7 +467,7 @@ if (form) {
       mensajeEstado.style.color = "#4CAF50";
       
       form.reset();
-      inputPortadaGB.value = "";
+      if (inputPortadaGB) inputPortadaGB.value = "";
       if (previewPortada) previewPortada.style.display = "none";
       
       generosSeleccionados.clear();
@@ -509,7 +476,7 @@ if (form) {
 
     } catch (error) {
       console.error("Error al publicar:", error);
-      mensajeEstado.innerText = "❌ Error al subir la imagen o guardar en Firestore.";
+      mensajeEstado.innerText = "❌ Error al publicar el reto en Firestore.";
       mensajeEstado.style.color = "red";
     } finally {
       btnSubmit.disabled = false;
