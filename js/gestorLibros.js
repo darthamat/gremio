@@ -3,7 +3,6 @@ import {
   collection, 
   addDoc, 
   doc, 
-  getDoc, 
   updateDoc, 
   arrayUnion, 
   increment, 
@@ -20,20 +19,20 @@ const COLORES_GENERO_LOMO = {
   "ciencia ficción": "#2980b9",
   "historia": "#d35400",
   "misterio": "#8e44ad",
-  "terror": "#4e2c2c",
+  "terror": "#000000",
   "default": "#8b263e"
 };
 
 /**
  * 1. REGISTRAR LECTURA LIBRE
- * Guarda el libro en 'biblioteca' con ID única y actualiza las estadísticas del usuario.
+ * Crea un documento único en la colección global 'biblioteca' y actualiza las estadísticas del aventurero.
  */
 export async function registrarLecturaLibre(usuarioUid, datosLibro) {
   try {
     const paginas = Number(datosLibro.paginas) || 0;
     const portada = datosLibro.portadaUrl || datosLibro.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
 
-    // A. Guardar en la colección global 'biblioteca' con ID única automática
+    // A. Guardar en la colección principal 'biblioteca' (ID aleatoria única)
     const docRef = await addDoc(collection(db, "biblioteca"), {
       titulo: datosLibro.titulo || "Libro sin título",
       autor: datosLibro.autor || "Desconocido",
@@ -47,13 +46,13 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
       tipoOrigen: "LECTURA_LIBRE",
       retoId: null,
 
-      // Control de Usuario
+      // Control de Usuario y Fecha
       usuarioId: usuarioUid,
       fechaAgregado: serverTimestamp(),
       estadoLectura: datosLibro.estadoLectura || "COMPLETADO"
     });
 
-    // B. Actualizar estadísticas en el documento del aventurero
+    // B. Actualizar las estadísticas en la ficha del aventurero
     const userRef = doc(db, "aventureros", usuarioUid);
     await updateDoc(userRef, {
       xp: increment(paginas),
@@ -61,18 +60,18 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
       librosCompletados: increment(1)
     });
 
-    console.log("Lectura libre registrada con ID:", docRef.id);
+    console.log("✅ Lectura libre guardada en 'biblioteca' con ID:", docRef.id);
     return { exito: true, libroId: docRef.id };
 
   } catch (error) {
-    console.error("Error al registrar lectura libre:", error);
+    console.error("❌ Error al registrar lectura libre:", error);
     return { exito: false, error };
   }
 }
 
 /**
  * 2. COMPLETAR RETO DEL GREMIO
- * Guarda el libro del reto en 'biblioteca' con ID única y otorga recompensas de prestigio y XP.
+ * Guarda el tomo del reto en la colección 'biblioteca' con ID única y otorga recompensas.
  */
 export async function completarRetoGremio(usuarioUid, datosReto) {
   try {
@@ -81,7 +80,7 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
     const colorLomo = COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
     const portada = datosReto.portadaUrl || datosReto.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
 
-    // A. Guardar entrada única en la colección 'biblioteca'
+    // A. Guardar en la colección principal 'biblioteca' (ID aleatoria única)
     const docBibliotecaRef = await addDoc(collection(db, "biblioteca"), {
       titulo: datosReto.titulo || datosReto.libro || "Misión del Gremio",
       autor: datosReto.autor || "Desconocido",
@@ -96,13 +95,13 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       tipoOrigen: "RETO_GREMIO",
       retoId: datosReto.id || null,
 
-      // Control de Usuario
+      // Control de Usuario y Fecha
       usuarioId: usuarioUid,
       fechaAgregado: serverTimestamp(),
       estadoLectura: "COMPLETADO"
     });
 
-    // B. Actualizar estadísticas y retos del Aventurero
+    // B. Actualizar recompensas y listas del Aventurero
     const userRef = doc(db, "aventureros", usuarioUid);
     await updateDoc(userRef, {
       retosCompletados: arrayUnion(datosReto.id),
@@ -113,7 +112,7 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       prestigio: increment(paginas)
     });
 
-    // C. Registrar al usuario dentro de la colección del reto (para rankings / Atlas)
+    // C. Vincular al aventurero con el documento del reto
     if (datosReto.id) {
       const retoRef = doc(db, "retos", datosReto.id);
       await updateDoc(retoRef, {
@@ -121,11 +120,11 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       });
     }
 
-    console.log("Reto del Gremio completado y registrado con ID:", docBibliotecaRef.id);
+    console.log("✅ Reto completado guardado en 'biblioteca' con ID:", docBibliotecaRef.id);
     return { exito: true, libroId: docBibliotecaRef.id };
 
   } catch (error) {
-    console.error("Error al completar el reto en gestorLibros:", error);
+    console.error("❌ Error al completar reto en gestorLibros:", error);
     return { exito: false, error };
   }
 }
