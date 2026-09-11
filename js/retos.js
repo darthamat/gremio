@@ -142,7 +142,7 @@ async function cargarYRenderizarRetos() {
     const paginas = retoActual.paginas || "N/A";
     const fechaPublicacion = retoActual.fechaPublicacion || "Desconocida";
     const recompensaPuntos = Number(paginas) || 0;
-    const portadaImagen = retoActual.portadaUrl || retoActual.portada || 'img/placeholder-book.jpg';
+    const portadaImagen = retoActual.portadaUrl || retoActual.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada';
 
     // DETECCIÓN DEL MENSAJE DE LA LECTORA Y PROPONENTE
     const mensajeProponente = 
@@ -166,7 +166,9 @@ async function cargarYRenderizarRetos() {
 
         <div class="card-reto-actual">
           <div class="portada-frame">
-            <img src="${portadaImagen}" alt="${retoActual.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
+            <img src="${portadaImagen}" 
+                 alt="${retoActual.titulo}" 
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=Sin+Portada';">
             ${esCompletadoActual ? `<div class="sello-cera-css">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-actual">
@@ -270,7 +272,9 @@ async function cargarYRenderizarRetos() {
         item.className = "card-reto-pasado";
         item.innerHTML = `
           <div class="portada-miniatura">
-            <img src="${reto.portadaUrl || reto.portada || 'img/placeholder-book.jpg'}" alt="${reto.titulo}" onerror="this.onerror=null; this.src='img/placeholder-book.jpg';">
+            <img src="${reto.portadaUrl || reto.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" 
+                 alt="${reto.titulo}" 
+                 onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=Sin+Portada';">
             ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
           </div>
           <div class="info-reto-pasado">
@@ -330,7 +334,7 @@ async function terminarReto(retoId, puntos) {
       id: retoId,
       titulo: "Misión del Gremio",
       autor: "Desconocido",
-      portadaUrl: "img/placeholder-book.jpg",
+      portadaUrl: "https://via.placeholder.com/150x220?text=Sin+Portada",
       paginas: puntos || 0,
       genero: "Fantasía"
     };
@@ -341,7 +345,7 @@ async function terminarReto(retoId, puntos) {
         id: retoId,
         titulo: data.titulo || data.libro || "Misión del Gremio",
         autor: data.autor || "Desconocido",
-        portadaUrl: data.portadaUrl || data.portada || "img/placeholder-book.jpg",
+        portadaUrl: data.portadaUrl || data.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
         paginas: Number(data.paginas) || puntos || 0,
         genero: data.genero || "Fantasía"
       };
