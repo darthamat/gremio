@@ -1,5 +1,12 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  writeBatch, 
+  arrayUnion 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -59,9 +66,9 @@ const btnBuscarGB = document.getElementById("btn-buscar-gb");
 const divResultadosGB = document.getElementById("resultados-busqueda");
 const previewPortada = document.getElementById("preview-portada");
 const inputPortadaGB = document.getElementById("portadaUrlGB");
-const selectGenero = document.getElementById("genero");
 
-// Arreglos de estado para rasgos/cicatrices
+// Estado global para Géneros, Rasgos y Cicatrices
+let generosSeleccionados = new Set();
 let listaRasgos = [];
 let listaCicatrices = [];
 
@@ -73,7 +80,7 @@ function obtenerIdMesActual() {
   return `reto${yy}_${mm}`;
 }
 
-// 1. Verificación de Seguridad
+// 1. Verificación de Seguridad e Inicialización
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -85,11 +92,148 @@ onAuthStateChanged(auth, async (user) => {
     if (userData.rol !== "admin" && userData.rol !== "Archimago") {
       alert("No tienes permisos de administrador.");
       window.location.href = "retos.html";
+      return;
     }
   }
+  
+  // Cargar selector dinámico de géneros
+  await inicializarSelectorGeneros();
 });
 
-// 2. Buscador de Google Books API
+// 2. Gestión Global y Dinámica de Géneros
+async function obtenerGenerosGuardados() {
+  try {
+    const docRef = doc(db, "configuracion", "generos");
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      return snap.data().lista || Object.keys(HUELLAS_POR_GENERO);
+    } else {
+      const listaBase = ["fantasia", "terror", "poesia", "clasicos", "ficcion", "no_ficcion", "filosofia", "historica", "ciencia_ficcion"];
+      await setDoc(docRef, { lista: listaBase });
+      return listaBase;
+    }
+  } catch (error) {
+    console.error("Error al cargar lista de géneros:", error);
+    return Object.keys(HUELLAS_POR_GENERO);
+  }
+}
+
+async function guardarGenerosNuevos(nuevosGenerosArray) {
+  if (!nuevosGenerosArray || nuevosGenerosArray.length === 0) return;
+  try {
+    const docRef = doc(db, "configuracion", "generos");
+    for (const g of nuevosGenerosArray) {
+      const generoFormateado = g.trim().toLowerCase();
+      if (generoFormateado) {
+        await setDoc(docRef, {
+          lista: arrayUnion(generoFormateado)
+        }, { merge: true });
+      }
+    }
+  } catch (error) {
+    console.error("Error al guardar géneros en Firestore:", error);
+  }
+}
+
+async function inicializarSelectorGeneros() {
+  const selectDisponibles = document.getElementById("select-generos-disponibles");
+  const inputNuevoGenero = document.getElementById("input-nuevo-genero");
+  const btnAgregarGenero = document.getElementById("btn-agregar-genero");
+
+  if (!selectDisponibles) return;
+
+  const generosGuardados = await obtenerGenerosGuardados();
+
+  selectDisponibles.innerHTML = '<option value="">-- Selecciona un género existente --</option>';
+  generosGuardados.forEach(g => {
+    const opt = document.createElement("option");
+    opt.value = g.toLowerCase();
+    opt.textContent = g.charAt(0).toUpperCase() + g.slice(1).replace("_", " ");
+    selectDisponibles.appendChild(opt);
+  });
+
+  selectDisponibles.addEventListener("change", (e) => {
+    const val = e.target.value;
+    if (val) {
+      agregarGeneroASeleccion(val);
+      e.target.value = "";
+    }
+  });
+
+  const procesarNuevoGenero = () => {
+    if (!inputNuevoGenero) return;
+    const val = inputNuevoGenero.value.trim().toLowerCase();
+    if (val) {
+      agregarGeneroASeleccion(val);
+      inputNuevoGenero.value = "";
+    }
+  };
+
+  if (btnAgregarGenero) {
+    btnAgregarGenero.onclick = (e) => {
+      e.preventDefault();
+      procesarNuevoGenero();
+    };
+  }
+
+  if (inputNuevoGenero) {
+    inputNuevoGenero.onkeypress = (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        procesarNuevoGenero();
+      }
+    };
+  }
+}
+
+function agregarGeneroASeleccion(genero) {
+  generosSeleccionados.add(genero);
+  renderizarTagsGeneros();
+  actualizarHuellasPorGeneros();
+}
+
+function renderizarTagsGeneros() {
+  const contenedorTags = document.getElementById("generos-tags-contenedor");
+  if (!contenedorTags) return;
+
+  contenedorTags.innerHTML = "";
+  generosSeleccionados.forEach(genero => {
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.style.cssText = "background: #2a2d3d; color: #fff; padding: 4px 10px; border-radius: 16px; margin: 3px; display: inline-flex; align-items: center; gap: 6px; font-size: 0.85rem;";
+    
+    const nombreFormateado = genero.charAt(0).toUpperCase() + genero.slice(1).replace("_", " ");
+    tag.innerHTML = `📚 ${nombreFormateado} <span style="cursor:pointer; color:#ff5555; font-weight:bold;">&times;</span>`;
+
+    tag.querySelector("span").onclick = () => {
+      generosSeleccionados.delete(genero);
+      renderizarTagsGeneros();
+      actualizarHuellasPorGeneros();
+    };
+
+    contenedorTags.appendChild(tag);
+  });
+}
+
+function actualizarHuellasPorGeneros() {
+  listaRasgos = [];
+  listaCicatrices = [];
+
+  generosSeleccionados.forEach(gen => {
+    if (HUELLAS_POR_GENERO[gen]) {
+      HUELLAS_POR_GENERO[gen].rasgos.forEach(r => {
+        if (!listaRasgos.includes(r)) listaRasgos.push(r);
+      });
+      HUELLAS_POR_GENERO[gen].cicatrices.forEach(c => {
+        if (!listaCicatrices.includes(c)) listaCicatrices.push(c);
+      });
+    }
+  });
+
+  renderizarTags();
+}
+
+// 3. Buscador de Google Books API
 if (btnBuscarGB) {
   btnBuscarGB.addEventListener("click", (e) => {
     e.preventDefault();
@@ -106,7 +250,6 @@ if (inputBuscarGB) {
   });
 }
 
-// Cerrar desplegable si se hace clic fuera de él
 document.addEventListener("click", (e) => {
   if (divResultadosGB && !divResultadosGB.contains(e.target) && e.target !== inputBuscarGB && e.target !== btnBuscarGB) {
     divResultadosGB.style.display = "none";
@@ -122,20 +265,15 @@ async function buscarEnGoogleBooks() {
 
   try {
     const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=5&key=${GOOGLE_BOOKS_API_KEY}`);
-    
-    if (!response.ok) {
-      throw new Error(`Respuesta HTTP no válida: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Respuesta HTTP no válida: ${response.status}`);
 
     const data = await response.json();
-
     if (!data.items || data.items.length === 0) {
       divResultadosGB.innerHTML = "<div class='item-resultado'>No se encontraron libros.</div>";
       return;
     }
 
     divResultadosGB.innerHTML = "";
-    
     data.items.forEach(item => {
       const info = item.volumeInfo;
       const autores = info.authors ? info.authors.join(", ") : "Autor desconocido";
@@ -158,14 +296,12 @@ async function buscarEnGoogleBooks() {
       div.addEventListener("click", () => seleccionarLibroGB(info, imagenUrl));
       divResultadosGB.appendChild(div);
     });
-
   } catch (error) {
     console.error("Error al consultar Google Books API:", error);
     divResultadosGB.innerHTML = "<div class='item-resultado'>❌ Error al conectar con Google Books.</div>";
   }
 }
 
-// 3. Autocompletar Formulario desde Google Books
 function seleccionarLibroGB(info, urlImagen) {
   document.getElementById("titulo").value = info.title || "";
   document.getElementById("autor").value = info.authors ? info.authors.join(", ") : "";
@@ -175,7 +311,6 @@ function seleccionarLibroGB(info, urlImagen) {
     document.getElementById("descripcion").value = info.description.slice(0, 300) + "...";
   }
 
-  // Cargar Portada de Google Books
   if (urlImagen) {
     inputPortadaGB.value = urlImagen;
     previewPortada.src = urlImagen;
@@ -185,41 +320,20 @@ function seleccionarLibroGB(info, urlImagen) {
     previewPortada.style.display = "none";
   }
 
-  // Detección aproximada de género
   if (info.categories && info.categories.length > 0) {
     const cat = info.categories[0].toLowerCase();
-    if (cat.includes("fiction") || cat.includes("fantasy")) selectGenero.value = "fantasia";
-    else if (cat.includes("horror")) selectGenero.value = "terror";
-    else if (cat.includes("history")) selectGenero.value = "historica";
-    else if (cat.includes("philosophy")) selectGenero.value = "filosofia";
-    else if (cat.includes("science fiction")) selectGenero.value = "ciencia_ficcion";
-    else selectGenero.value = "clasicos";
-    
-    actualizarHuellasPorGenero();
+    if (cat.includes("fiction") || cat.includes("fantasy")) agregarGeneroASeleccion("fantasia");
+    else if (cat.includes("horror")) agregarGeneroASeleccion("terror");
+    else if (cat.includes("history")) agregarGeneroASeleccion("historica");
+    else if (cat.includes("philosophy")) agregarGeneroASeleccion("filosofia");
+    else if (cat.includes("science fiction")) agregarGeneroASeleccion("ciencia_ficcion");
+    else agregarGeneroASeleccion("clasicos");
   }
 
   divResultadosGB.style.display = "none";
 }
 
-// 4. Gestión de Rasgos y Cicatrices
-if (selectGenero) {
-  selectGenero.addEventListener("change", actualizarHuellasPorGenero);
-  // Inicializar al cargar
-  actualizarHuellasPorGenero();
-}
-
-function actualizarHuellasPorGenero() {
-  const gen = selectGenero ? selectGenero.value : "";
-  if (HUELLAS_POR_GENERO[gen]) {
-    listaRasgos = [...HUELLAS_POR_GENERO[gen].rasgos];
-    listaCicatrices = [...HUELLAS_POR_GENERO[gen].cicatrices];
-  } else {
-    listaRasgos = [];
-    listaCicatrices = [];
-  }
-  renderizarTags();
-}
-
+// 4. Gestión Manual de Rasgos y Cicatrices
 const btnAddHuella = document.getElementById("btn-add-huella");
 if (btnAddHuella) {
   btnAddHuella.addEventListener("click", () => {
@@ -263,7 +377,7 @@ window.eliminarTag = function(tipo, index) {
   renderizarTags();
 };
 
-// 5. FUNCIONES DE SUBIDA A CLOUDINARY
+// 5. Funciones de subida a Cloudinary
 async function subirArchivoACloudinary(file) {
   const formData = new FormData();
   formData.append("file", file);
@@ -298,15 +412,18 @@ if (form) {
     const titulo = document.getElementById("titulo").value.trim();
     const autor = document.getElementById("autor").value.trim();
     const paginas = Number(document.getElementById("paginas").value);
-    
-    // 🔴 CORREGIDO: 'proponente' es String (nombre o usuario), NO Number.
     const proponente = document.getElementById("proponente").value.trim() || "Aventurero Anónimo";
-    
-    const genero = selectGenero.value;
     const puntosPrestigio = Number(document.getElementById("puntosPrestigio").value);
     const descripcion = document.getElementById("descripcion").value.trim();
     const archivoImagen = document.getElementById("portadaFile")?.files[0];
     const urlPortadaGB = inputPortadaGB.value;
+
+    const arrayGeneros = Array.from(generosSeleccionados);
+    if (arrayGeneros.length === 0) {
+      mensajeEstado.innerText = "⚠️ Por favor selecciona o añade al menos un género.";
+      mensajeEstado.style.color = "red";
+      return;
+    }
 
     if (!archivoImagen && !urlPortadaGB) {
       mensajeEstado.innerText = "⚠️ Selecciona una imagen local o busca una portada con Google Books.";
@@ -327,22 +444,25 @@ if (form) {
         finalPortadaUrl = await subirUrlACloudinary(urlPortadaGB);
       }
 
+      btnSubmit.innerText = "⏳ Guardando géneros en la biblioteca...";
+      await guardarGenerosNuevos(arrayGeneros);
+
       btnSubmit.innerText = "⏳ Guardando reto en Firestore...";
 
       const idHistorico = obtenerIdMesActual();
 
-      // Objeto estructurado para Firestore
       const datosDelReto = {
         titulo,
-        libro: titulo, // Guardamos también como 'libro' por compatibilidad con la vista
+        libro: titulo,
         autor,
         paginas,
-        genero,
+        generos: arrayGeneros,
+        genero: arrayGeneros[0], // Compatibilidad con vistas previas
         proponente,
         puntos: puntosPrestigio,
         puntosPrestigio,
         descripcion,
-        portada: finalPortadaUrl, // Nombre de propiedad estándar para la vista
+        portada: finalPortadaUrl,
         portadaUrl: finalPortadaUrl,
         rasgosOtorga: listaRasgos,
         cicatricesOtorga: listaCicatrices,
@@ -351,7 +471,6 @@ if (form) {
       };
 
       const batch = writeBatch(db);
-      // Guardar como reto actual y en el histórico
       batch.set(doc(db, "retos", "actual"), datosDelReto);
       batch.set(doc(db, "retos", idHistorico), datosDelReto);
 
@@ -363,7 +482,10 @@ if (form) {
       form.reset();
       inputPortadaGB.value = "";
       if (previewPortada) previewPortada.style.display = "none";
-      actualizarHuellasPorGenero();
+      
+      generosSeleccionados.clear();
+      renderizarTagsGeneros();
+      await inicializarSelectorGeneros();
 
     } catch (error) {
       console.error("Error al publicar:", error);

@@ -22,7 +22,6 @@
       flex-direction: column;
       text-align: left;
     }
-    /* Estilo para que el contenedor del buscador posicione el desplegable flotante */
     .buscador-container {
       position: relative;
     }
@@ -65,8 +64,6 @@
     .buscador-box input {
       flex: 1;
     }
-
-    /* 👇 AJUSTE CLAVE: Transforma la lista en un menú flotante superpuesto */
     .resultados-busqueda {
       display: none;
       position: absolute;
@@ -82,7 +79,6 @@
       z-index: 1000;
       box-shadow: 0 8px 16px rgba(0,0,0,0.5);
     }
-
     .item-resultado {
       padding: 8px 12px;
       border-bottom: 1px solid #443224;
@@ -144,8 +140,8 @@
 
   <main class="admin-container">
 
-    <!-- BARRA SUPERIOR CON BOTÓN DE VOLVER -->
-    <div class="header-acciones">
+    <!-- BOTÓN VOLVER -->
+    <div class="header-acciones" style="margin-bottom: 15px;">
       <a href="gremio.html" class="btn-secundario">⬅️ Volver al Gremio</a>
     </div>
     
@@ -156,7 +152,6 @@
         <input type="text" id="buscarLibro" placeholder="Escribe el nombre del libro o autor...">
         <button type="button" id="btn-buscar-gb" class="btn-secundario">Buscar</button>
       </div>
-      <!-- Menú Flotante de Resultados -->
       <div id="resultados-busqueda" class="resultados-busqueda"></div>
     </div>
 
@@ -179,22 +174,32 @@
         </div>
       </div>
 
+      <!-- PUNTOS Y PROPONENTE (Añadidos para sincronizar con JS) -->
       <div class="form-row">
         <div class="form-group">
-          <label for="genero">Género Literario:</label>
-          <select id="genero" required>
-            <option value="">Selecciona un género...</option>
-            <option value="fantasia">Fantasía</option>
-            <option value="terror">Terror / Horror</option>
-            <option value="clasicos">Clásicos</option>
-            <option value="ficcion">Narrativa ficción</option>
-            <option value="no_ficcion">Narrativa no ficción</option>
-            <option value="filosofia">Filosofía / Ensayo</option>
-            <option value="historica">Novela Histórica</option>
-            <option value="ciencia_ficcion">Ciencia Ficción</option>
-          </select>
+          <label for="puntosPrestigio">Puntos de Prestigio:</label>
+          <input type="number" id="puntosPrestigio" min="0" value="100" required>
         </div>
-       
+        <div class="form-group">
+          <label for="proponente">Proponente del Reto:</label>
+          <input type="text" id="proponente" placeholder="Ej: Gremio Literario">
+        </div>
+      </div>
+
+      <!-- SECCIÓN MULTIGÉNERO DINÁMICO -->
+      <div class="form-group">
+        <label>Géneros del Libro (Múltiples):</label>
+        
+        <div id="generos-tags-contenedor" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7;"></div>
+
+        <select id="select-generos-disponibles" style="width: 100%; margin-bottom: 8px;">
+          <option value="">Cargando géneros...</option>
+        </select>
+
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="input-nuevo-genero" placeholder="O escribe un nuevo género..." style="flex: 1;">
+          <button type="button" id="btn-agregar-genero" class="btn-secundario">+ Añadir</button>
+        </div>
       </div>
 
       <div class="form-group">
@@ -202,15 +207,15 @@
         <textarea id="descripcion" rows="3" placeholder="Ej: Leer antes de fin de mes..." required></textarea>
       </div>
 
-      <!-- PORTADA CON PREVISUALIZACIÓN Y OPCIÓN DE CLOUDINARY -->
+      <!-- PORTADA Y SUBIDA -->
       <div class="form-group">
-        <label for="portadaFile">Portada (Selecciona archivo para subir a Cloudinary o usa la de Google Books):</label>
+        <label for="portadaFile">Portada (Selecciona archivo para subir o usa la de Google Books):</label>
         <input type="file" id="portadaFile" accept="image/*">
-        <input type="hidden" id="portadaUrlGB"> <!-- Contiene la URL traída de Google Books -->
+        <input type="hidden" id="portadaUrlGB">
         <img id="preview-portada" class="preview-portada" alt="Previsualización de Portada">
       </div>
 
-      <!-- SECCIÓN DINÁMICA DE RASGOS Y CICATRICES -->
+      <!-- RASGOS Y CICATRICES -->
       <div class="seccion-huellas">
         <label>🎭 Rasgos y Cicatrices que se obtendrán al completar:</label>
         
