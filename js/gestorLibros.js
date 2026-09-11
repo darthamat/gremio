@@ -10,6 +10,18 @@ import { registrarEnBibliotecaGlobal } from "./bibliotecaService.js";
 
 const db = getFirestore(app);
 
+// Colores por defecto para los lomos de retos del gremio según su género
+const COLORES_GENERO_LOMO = {
+  "ficción": "#c0392b",
+  "fantasía": "#27ae60",
+  
+  "ciencia ficción": "#2980b9",
+  "historia": "#d35400",
+  "misterio": "#8e44ad",
+  "terror": "#000000",
+  "default": "#8b263e"
+};
+
 /**
  * 1. REGISTRAR LECTURA LIBRE
  */
@@ -54,43 +66,47 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
 /**
  * 2. COMPLETAR RETO DEL GREMIO
  */
-export async function completarRetoGremio(usuarioUid, retoData) {
+export async function completarRetoGremio(userId, datosReto) {
   try {
-    // A. Asegura la ficha en la colección global 'biblioteca'
-    const libroId = await registrarEnBibliotecaGlobal(usuarioUid, retoData, true);
-    const puntosRecompensa = Number(retoData.paginas) || 0;
+    const paginas = Number(datosReto.paginas) || 0;
+    const generoNorm = (datosReto.genero || "ficción").toLowerCase().trim();
+    const colorLomo = COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
 
-    // B. Actualiza al aventurero
-    const userRef = doc(db, "aventureros", usuarioUid);
-    const userSnap = await getDoc(userRef);
-    const usuarioData = userSnap.exists() ? userSnap.data() : {};
+    // 1. Añadir el libro a la estantería personal del Aventurero
+    const bibliotecaRef = collection(db, "aventureros", userId, "biblioteca");
+    await addDoc(bibliotecaRef, {
+      titulo: datosReto.titulo || "Misión del Gremio",
+      autor: datosReto.autor || "Desconocido",
+      paginas: paginas,
+      genero: datosReto.genero || "Fantasía",
+      color: colorLomo,
+      portadaUrl: datosReto.portadaUrl || datosReto.portada || "img/placeholder-book.jpg",
+      prestigioGanado: paginas,
+      esRetoGremio: true,
+      retoId: datosReto.id,
+      completadoEn: new Date()
+    });
 
-    const nuevaLectura = {
-      libroId: libroId,
-      titulo: retoData.titulo,
-      autor: retoData.autor || "Desconocido",
-      portadaUrl: retoData.portadaUrl || "img/placeholder-book.jpg",
-      paginas: puntosRecompensa,
-      genero: retoData.genero || "Fantasía",
-      estado: "completado",
-      esReto: true,
-      retoId: retoData.id,
-      fechaFin: new Date().toISOString()
-    };
+    // 2. Actualizar las estadísticas del Aventurero (XP, Páginas, Prestigio y Retos Completados)
+    const userRef = doc(db, "aventureros", userId);
+    await updateDoc(userRef, {
+      retosCompletados: arrayUnion(datosReto.id),
+      retosAceptados: arrayUnion(datosReto.id), // Se asegura que quede en ambos arrays
+      xp: increment(paginas),
+      paginasLeidas: increment(paginas),
+      librosCompletados: increment(1),
+      prestigio: increment(paginas)
+    });
 
-    // Usamos setDoc con { merge: true } para seguridad absoluta
-    await setDoc(userRef, {
-      retosCompletados: arrayUnion(retoData.id),
-      prestigio: (usuarioData.prestigio || 0) + puntosRecompensa,
-      xp: (usuarioData.xp || 0) + puntosRecompensa,
-      paginasLeidas: (usuarioData.paginasLeidas || 0) + puntosRecompensa,
-      librosCompletados: (usuarioData.librosCompletados || 0) + 1,
-      lecturas: arrayUnion(nuevaLectura)
-    }, { merge: true });
+    // 3. Registrar al usuario en el Reto como uno de los completadores (para el Atlas)
+    const retoRef = doc(db, "retos", datosReto.id);
+    await updateDoc(retoRef, {
+      completadoPor: arrayUnion(userId)
+    });
 
     return { exito: true };
-  } catch (error) {
-    console.error("Error al completar el reto:", error);
-    return { exito: false, error };
+  } catch (err) {
+    console.error("Error al completar el reto en gestorLibros:", err);
+    return { exito: false, error: err };
   }
 }

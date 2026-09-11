@@ -16,120 +16,155 @@ onAuthStateChanged(auth, async (user) => {
     await cargarBiblioteca();
 });
 
-// Cargar libros guardados desde Firestore
+// Cargar libros guardados desde Firestore (subcolección del usuario)
 async function cargarBiblioteca() {
-    const librosRef = collection(db, "aventureros", currentUser.uid, "biblioteca");
-    const snapshot = await getDocs(librosRef);
+    try {
+        const librosRef = collection(db, "aventureros", currentUser.uid, "biblioteca");
+        const snapshot = await getDocs(librosRef);
 
-    const estante = document.getElementById("estante-libros");
-    estante.innerHTML = "";
+        const estante = document.getElementById("estante-libros");
+        if (!estante) return;
+        
+        estante.innerHTML = "";
 
-    let totalPaginas = 0;
-    let totalLibros = 0;
-    let totalPrestigio = 0;
+        let totalPaginas = 0;
+        let totalLibros = 0;
+        let totalPrestigio = 0;
 
-    snapshot.forEach(docSnap => {
-        const libro = docSnap.data();
-        totalLibros++;
-        totalPaginas += Number(libro.paginas || 0);
-        totalPrestigio += Number(libro.prestigioGanado || 0);
-        renderizarLomoLibro(libro);
-    });
+        if (snapshot.empty) {
+            estante.innerHTML = `<p class="sin-datos" style="color: #bbb; padding: 20px;">Tu estantería está vacía. Completa retos o añade libros para llenar tus pergaminos.</p>`;
+        }
 
-    // Actualizar Estadísticas en pantalla
-    document.getElementById("total-libros").textContent = totalLibros;
-    document.getElementById("total-paginas").textContent = totalPaginas;
-    document.getElementById("total-xp").textContent = `${totalPaginas} XP`;
-    
-    // Si tienes un elemento para el Prestigio Total en la biblioteca:
-    const elemPrestigio = document.getElementById("total-prestigio");
-    if (elemPrestigio) {
-        elemPrestigio.textContent = totalPrestigio;
+        snapshot.forEach(docSnap => {
+            const libro = docSnap.data();
+            totalLibros++;
+            const paginasNum = Number(libro.paginas || 0);
+            const prestigioNum = Number(libro.prestigioGanado || paginasNum);
+
+            totalPaginas += paginasNum;
+            totalPrestigio += prestigioNum;
+            
+            renderizarLomoLibro(libro);
+        });
+
+        // Actualizar Estadísticas en pantalla si los elementos existen
+        const elemLibros = document.getElementById("total-libros");
+        const elemPaginas = document.getElementById("total-paginas");
+        const elemXp = document.getElementById("total-xp");
+        const elemPrestigio = document.getElementById("total-prestigio");
+
+        if (elemLibros) elemLibros.textContent = totalLibros;
+        if (elemPaginas) elemPaginas.textContent = totalPaginas;
+        if (elemXp) elemXp.textContent = `${totalPaginas} XP`;
+        if (elemPrestigio) elemPrestigio.textContent = totalPrestigio;
+
+    } catch (error) {
+        console.error("Error al cargar la biblioteca:", error);
     }
 }
 
 // Renderizar un lomo individual en la estantería
 function renderizarLomoLibro(libro) {
     const estante = document.getElementById("estante-libros");
+    if (!estante) return;
 
     const lomo = document.createElement("div");
     lomo.className = "lomo-libro";
     
+    const paginasNum = Number(libro.paginas) || 100;
+
     // El grosor escala con las páginas (mínimo 28px, máximo 65px)
-    const ancho = Math.min(Math.max(libro.paginas / 12, 28), 65);
+    const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
     // La altura también escala ligeramente (mínimo 190px, máximo 240px)
-    const alto = Math.min(Math.max(180 + (libro.paginas / 10), 190), 240);
+    const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
+
+    const colorFondo = libro.color || (libro.esRetoGremio ? "#8e44ad" : "#8b263e");
 
     lomo.style.width = `${ancho}px`;
     lomo.style.height = `${alto}px`;
-    lomo.style.backgroundColor = libro.color || "#8b263e";
+    lomo.style.backgroundColor = colorFondo;
+
+    // Distintivo especial si es un reto del gremio completado
+    const insigniaGremio = libro.esRetoGremio ? `<span style="font-size: 10px; display: block;">📜 GREMIO</span>` : '';
 
     lomo.innerHTML = `
-        <span class="lomo-titulo" title="${libro.titulo} - ${libro.autor}">${libro.titulo}</span>
-        <span class="lomo-paginas">📖 ${libro.paginas}p</span>
+        <span class="lomo-titulo" title="${libro.titulo || 'Sin título'} - ${libro.autor || 'Autor desconocido'}">
+            ${libro.titulo || 'Sin título'}
+        </span>
+        <span class="lomo-paginas">
+            ${insigniaGremio}
+            📖 ${paginasNum}p
+        </span>
     `;
 
     estante.appendChild(lomo);
 }
 
-// Lógica del Modal
+// Control seguro del Modal (solo si los botones existen en la vista HTML)
 const modal = document.getElementById("modal-libro");
-document.getElementById("btn-abrir-modal").addEventListener("click", () => modal.classList.remove("oculto"));
-document.getElementById("btn-cerrar-modal").addEventListener("click", () => modal.classList.add("oculto"));
+const btnAbrirModal = document.getElementById("btn-abrir-modal");
+const btnCerrarModal = document.getElementById("btn-cerrar-modal");
+const formLibro = document.getElementById("form-libro");
 
+if (btnAbrirModal && modal) {
+    btnAbrirModal.addEventListener("click", () => modal.classList.remove("oculto"));
+}
 
-// Guardar un nuevo libro en Firestore con tirada de Prestigio
-document.getElementById("form-libro").addEventListener("submit", async (e) => {
-    e.preventDefault();
+if (btnCerrarModal && modal) {
+    btnCerrarModal.addEventListener("click", () => modal.classList.add("oculto"));
+}
 
-    const titulo = document.getElementById("titulo").value;
-    const autor = document.getElementById("autor").value;
-    const paginas = Number(document.getElementById("paginas").value);
-    const color = document.getElementById("color").value;
+// Guardar un libro manual en Firestore con tirada de Prestigio
+if (formLibro) {
+    formLibro.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-    // 🎲 Tirada virtual de dado de 100 (número entre 1 y 100)
-    const tiradaDado100 = Math.floor(Math.random() * 100) + 1;
+        const titulo = document.getElementById("titulo").value;
+        const autor = document.getElementById("autor").value;
+        const paginas = Number(document.getElementById("paginas").value);
+        const color = document.getElementById("color").value;
 
-    // 🏆 Cálculo del Prestigio: Páginas + (Páginas entre Tirada d100)
-    const prestigioGanado = paginas + (paginas / tiradaDado100);
+        // 🎲 Tirada virtual de d100
+        const tiradaDado100 = Math.floor(Math.random() * 100) + 1;
 
-    const nuevoLibro = {
-        titulo,
-        autor,
-        paginas,
-        color,
-        prestigioGanado,
-        tiradaDado: tiradaDado100,
-        completadoEn: new Date()
-    };
+        // 🏆 Cálculo del Prestigio
+        const prestigioGanado = Math.round(paginas + (paginas / tiradaDado100));
 
-    try {
-        // 1. Guardar el libro en la subcolección del usuario
-        const librosRef = collection(db, "aventureros", currentUser.uid, "biblioteca");
-        await addDoc(librosRef, nuevoLibro);
+        const nuevoLibro = {
+            titulo,
+            autor,
+            paginas,
+            color,
+            prestigioGanado,
+            tiradaDado: tiradaDado100,
+            completadoEn: new Date()
+        };
 
-        // 2. Actualizar XP, Páginas, Libros y el nuevo Prestigio en el usuario
-        const userDocRef = doc(db, "aventureros", currentUser.uid);
-        await updateDoc(userDocRef, {
-            xp: increment(paginas),
-            paginasLeidas: increment(paginas),
-            librosCompletados: increment(1),
-            prestigio: increment(prestigioGanado) // ⬅️ Se suma el prestigio acumulado
-        });
+        try {
+            // 1. Guardar en la subcolección del usuario
+            const librosRef = collection(db, "aventureros", currentUser.uid, "biblioteca");
+            await addDoc(librosRef, nuevoLibro);
 
-        // Notificación épica al jugador indicando la tirada
-        alert(`🎲 ¡Tirada de d100: Sacaste un ${tiradaDado100}!\n✨ Has ganado ${prestigioGanado} Puntos de Prestigio.`);
+            // 2. Actualizar las estadísticas en el documento principal del aventurero
+            const userDocRef = doc(db, "aventureros", currentUser.uid);
+            await updateDoc(userDocRef, {
+                xp: increment(paginas),
+                paginasLeidas: increment(paginas),
+                librosCompletados: increment(1),
+                prestigio: increment(prestigioGanado)
+            });
 
-        // 3. Renderizar y cerrar modal
-        renderizarLomoLibro(nuevoLibro);
-        modal.classList.add("oculto");
-        document.getElementById("form-libro").reset();
-        
-        // Recargar contadores
-        cargarBiblioteca();
+            alert(`🎲 ¡Tirada de d100: Sacaste un ${tiradaDado100}!\n✨ Has ganado ${prestigioGanado} Puntos de Prestigio.`);
 
-    } catch (error) {
-        console.error("Error al guardar el libro:", error);
-        alert("Ocurrió un error al registrar el libro.");
-    }
-});
+            if (modal) modal.classList.add("oculto");
+            formLibro.reset();
+            
+            // Recargar biblioteca completa
+            await cargarBiblioteca();
+
+        } catch (error) {
+            console.error("Error al guardar el libro manual:", error);
+            alert("Ocurrió un error al registrar el libro.");
+        }
+    });
+}
