@@ -172,6 +172,15 @@
           <label for="paginas">Número de Páginas:</label>
           <input type="number" id="paginas" min="1" placeholder="Ej: 576" required>
         </div>
+        <div class="form-group">
+    <label for="reto-proponente">👤 Proponente del Reto *</label>
+    <input 
+      type="text" 
+      id="reto-proponente" 
+      placeholder="Ej. Lady Elena Astralis" 
+      required
+    />
+  </div>
       </div>
 
       <!-- PUNTOS Y PROPONENTE -->
@@ -179,11 +188,18 @@
         <div class="form-group">
           <label for="puntosPrestigio">Puntos de Prestigio:</label>
           <input type="number" id="puntosPrestigio" min="0" value="100" required>
-        </div>
-        <div class="form-group">
-          <label for="proponente">Proponente del Reto:</label>
-          <input type="text" id="proponente" placeholder="Ej: Gremio Literario">
-        </div>
+       
+      </div>
+      <div class="form-group">
+    <label for="reto-fecha-publicacion">📅 Año de Publicación</label>
+    <input 
+      type="number" 
+      id="reto-fecha-publicacion" 
+      placeholder="Ej. 1937" 
+      min="1000" 
+      max="2030" 
+    />
+  </div>
       </div>
 
       <!-- SINOPSIS / DESCRIPCIÓN (CAMPO AÑADIDO PARA RESOLVER LOS ERRORES DE JS) -->
