@@ -17,7 +17,7 @@ const SEMILLAS_INICIALES = {
 };
 
 function normalizarGenero(genero = "") {
-  const g = genero.toLowerCase();
+  const g = String(genero).toLowerCase();
   if (g.includes("fantasía") || g.includes("fantasia")) return "fantasia";
   if (g.includes("misterio") || g.includes("terror") || g.includes("thriller")) return "misterio";
   if (g.includes("ciencia") || g.includes("ciencia-ficción") || g.includes("sci-fi")) return "ciencia";
@@ -98,20 +98,42 @@ async function renderizarMapaHex(uid) {
 
     if (!snap.exists()) return;
 
-    // 🎯 LEER SOLAMENTE EL ARRAY 'lecturas'
-    const lecturas = snap.data().lecturas || [];
+    const data = snap.data();
 
+    // 🎯 RECOPILAR DESDE TODAS LAS FUENTES POSIBLES DE LIBROS LEÍDOS
+    let lecturas = [];
+
+    if (Array.isArray(data.lecturas)) {
+      lecturas = lecturas.concat(data.lecturas);
+    }
+    if (Array.isArray(data.librosLeidos)) {
+      lecturas = lecturas.concat(data.librosLeidos);
+    }
+    if (Array.isArray(data.biblioteca)) {
+      lecturas = lecturas.concat(data.biblioteca);
+    }
+
+    // Desduplicar libros por ID o Título
+    const mapaUnico = new Map();
     lecturas.forEach(libro => {
+      const clave = libro.id || libro.titulo;
+      if (clave && !mapaUnico.has(clave)) {
+        mapaUnico.set(clave, libro);
+      }
+    });
+    const listaFinalLecturas = Array.from(mapaUnico.values());
+
+    listaFinalLecturas.forEach(libro => {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
 
       if (pos) {
         matriz[pos.f][pos.c] = {
-          titulo: libro.titulo || "Tomo Leído",
+          titulo: libro.titulo || libro.nombre || "Tomo Leído",
           genero: generoTexto,
           generoKey,
-          paginas: libro.paginas || 0,
+          paginas: libro.paginas || libro.puntos || 0,
           esReto: libro.esReto || false
         };
       }
@@ -137,18 +159,36 @@ async function renderizarMapaHex(uid) {
 
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
+          tooltip.style.display = "none"; // Ocultar inicialmente
           tooltip.innerHTML = `
             <strong>📖 ${datosCelda.titulo}</strong> ${datosCelda.esReto ? '🛡️' : ''}<br>
             <em>Gén: ${datosCelda.genero}</em><br>
             📄 <strong>${datosCelda.paginas} págs</strong>
           `;
           hexDiv.appendChild(tooltip);
+
+          // 🖱️ MOSTRAR TOOLTIP AL PASAR EL RATÓN
+          hexDiv.addEventListener("mouseenter", () => {
+            tooltip.style.display = "block";
+          });
+          hexDiv.addEventListener("mouseleave", () => {
+            tooltip.style.display = "none";
+          });
+
         } else {
           hexDiv.classList.add("hex-vacio");
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
+          tooltip.style.display = "none";
           tooltip.textContent = "🗺️ Territorio Niebla de Guerra";
           hexDiv.appendChild(tooltip);
+
+          hexDiv.addEventListener("mouseenter", () => {
+            tooltip.style.display = "block";
+          });
+          hexDiv.addEventListener("mouseleave", () => {
+            tooltip.style.display = "none";
+          });
         }
 
         filaDiv.appendChild(hexDiv);
