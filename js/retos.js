@@ -249,7 +249,7 @@ async function cargarYRenderizarRetos() {
           btnAceptar.addEventListener("click", () => aceptarReto(retoActual.id));
         }
         if (btnTerminar) {
-          btnTerminar.addEventListener("click", () => terminarReto(retoActual.id, recompensaPuntos));
+          btnTerminar.addEventListener("click", (e) => terminarReto(retoActual.id, recompensaPuntos, e.target));
         }
       }
     }
@@ -302,9 +302,10 @@ async function cargarYRenderizarRetos() {
       // Delegación de eventos para completar retos antiguos
       contenedorPasados.querySelectorAll(".btn-completar-pasado").forEach(btn => {
         btn.addEventListener("click", async (e) => {
-          const idReto = e.currentTarget.getAttribute("data-id");
-          const puntos = Number(e.currentTarget.getAttribute("data-puntos")) || 0;
-          await terminarReto(idReto, puntos);
+          const boton = e.currentTarget;
+          const idReto = boton.getAttribute("data-id");
+          const puntos = Number(boton.getAttribute("data-puntos")) || 0;
+          await terminarReto(idReto, puntos, boton);
         });
       });
     }
@@ -325,7 +326,15 @@ async function aceptarReto(retoId) {
 }
 
 // Marca la misión como completada y añade el tomo a la biblioteca del aventurero
-async function terminarReto(retoId, puntos) {
+async function terminarReto(retoId, puntos, elementoBoton = null) {
+  // 🛡️ Prevenir clics múltiples deshabilitando el botón inmediatamente
+  if (elementoBoton) {
+    if (elementoBoton.disabled) return; // Si ya estaba deshabilitado, ignorar el clic
+    elementoBoton.disabled = true;
+    elementoBoton.dataset.textoOriginal = elementoBoton.textContent;
+    elementoBoton.textContent = "⌛ Guardando en los pergaminos...";
+  }
+
   try {
     const retoRef = doc(db, "retos", retoId);
     const retoSnap = await getDoc(retoRef);
@@ -352,12 +361,19 @@ async function terminarReto(retoId, puntos) {
     }
 
     // Llamamos al gestor central para actualizar Firestore y otorgar recompensas
-    const resultado = await completarRetoGremio(usuarioSesionId, datosReto);
+    await completarRetoGremio(usuarioSesionId, datosReto);
 
-    if (resultado && resultado.exito) {
-      await cargarYRenderizarRetos();
-    }
+    // 🔄 Refrescar la interfaz incondicionalmente
+    await cargarYRenderizarRetos();
+
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
+    alert("Ocurrió un error al completar la misión. Inténtalo de nuevo.");
+    
+    // Si falla, rehabilitar el botón
+    if (elementoBoton) {
+      elementoBoton.disabled = false;
+      elementoBoton.textContent = elementoBoton.dataset.textoOriginal || "✨ Marcar Misión Completada";
+    }
   }
 }
