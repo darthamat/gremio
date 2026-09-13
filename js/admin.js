@@ -55,6 +55,17 @@ function obtenerIdMesActual() {
   return `reto${yy}_${mm}`;
 }
 
+// Genera un ID limpio para la colección 'biblioteca' a partir del título
+function generarLibroId(titulo) {
+  return titulo
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 // 1. Verificación de Seguridad
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -396,14 +407,12 @@ async function obtenerUrlPortadaValida(archivo, urlGB) {
   }
 
   if (urlGB) {
-    // Para imágenes de Google Books, usamos directamente la URL HTTPS limpia
     return urlGB;
   }
 
   return PORTADA_DEFAULT;
 }
 
-// 7. Enviar Formulario a Firestore
 // 7. Enviar Formulario a Firestore
 if (form) {
   form.addEventListener("submit", async (e) => {
@@ -413,7 +422,6 @@ if (form) {
     const autor = document.getElementById("autor")?.value.trim() || "";
     const paginas = Number(document.getElementById("paginas")?.value) || 0;
     
-    // Proponente (Busca proponente o reto-proponente según lo tengas en HTML)
     const elemProponente = document.getElementById("proponente") || document.getElementById("reto-proponente");
     const proponente = elemProponente ? elemProponente.value.trim() : "Aventurero Anónimo";
 
@@ -422,7 +430,6 @@ if (form) {
     const archivoImagen = inputPortadaFile?.files[0];
     const urlPortadaGB = inputPortadaGB ? inputPortadaGB.value : "";
     
-    // Año de publicación con comprobación de existencia
     const elemFecha = document.getElementById("reto-fecha-publicacion") || document.getElementById("fecha-publicacion");
     const fechaPublicacion = elemFecha ? elemFecha.value.trim() : "";
 
@@ -443,10 +450,12 @@ if (form) {
       btnSubmit.innerText = "⏳ Guardando géneros en la biblioteca...";
       await guardarGenerosEnFirestore();
 
-      btnSubmit.innerText = "⏳ Guardando reto en Firestore...";
+      btnSubmit.innerText = "⏳ Guardando reto y catálogo en Firestore...";
 
       const idHistorico = obtenerIdMesActual();
+      const libroId = generarLibroId(titulo);
 
+      // Estructura para el documento del Reto
       const datosDelReto = {
         titulo,
         libro: titulo,
@@ -467,13 +476,30 @@ if (form) {
         fechaCreacion: Date.now()
       };
 
+      // Estructura para la Colección Biblioteca (Global)
+      const datosBiblioteca = {
+        titulo,
+        autor,
+        paginas,
+        fechaPublicacion: fechaPublicacion || "Desconocida",
+        genero: arrayGeneros[0] || "general",
+        generos: arrayGeneros,
+        portadaUrl: finalPortadaUrl,
+        portada: finalPortadaUrl,
+        descripcion,
+        esReto: true,
+        lectores: []
+      };
+
+      // Guardado atómico en retos y biblioteca
       const batch = writeBatch(db);
       batch.set(doc(db, "retos", "actual"), datosDelReto);
       batch.set(doc(db, "retos", idHistorico), datosDelReto);
+      batch.set(doc(db, "biblioteca", libroId), datosBiblioteca, { merge: true });
 
       await batch.commit();
 
-      mensajeEstado.innerText = `✅ ¡Reto publicado con éxito!`;
+      mensajeEstado.innerText = `✅ ¡Reto y libro publicados con éxito!`;
       mensajeEstado.style.color = "#4CAF50";
       
       form.reset();
