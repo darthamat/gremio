@@ -1,5 +1,11 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  getFirestore, 
+  collection, 
+  getDocs, 
+  query, 
+  where 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
 const auth = getAuth(app);
@@ -93,52 +99,35 @@ async function renderizarMapaHex(uid) {
   let matriz = Array.from({ length: FILAS }, () => Array(COLS).fill(null));
 
   try {
-    const userDocRef = doc(db, "aventureros", uid);
-    const snap = await getDoc(userDocRef);
+    // 🎯 CONSULTAR LA COLECCIÓN GLOBAL 'biblioteca' BUSCANDO LIBROS DONDE EL USUARIO SEA LECTOR
+    const bibliotecaRef = collection(db, "biblioteca");
+    const q = query(bibliotecaRef, where("lectores", "array-contains", uid));
+    const snapshot = await getDocs(q);
 
-    if (!snap.exists()) return;
-
-    const data = snap.data();
-
-    // 🎯 RECOPILAR DESDE TODAS LAS FUENTES POSIBLES DE LIBROS LEÍDOS
-    let lecturas = [];
-
-    if (Array.isArray(data.lecturas)) {
-      lecturas = lecturas.concat(data.lecturas);
-    }
-    if (Array.isArray(data.librosLeidos)) {
-      lecturas = lecturas.concat(data.librosLeidos);
-    }
-    if (Array.isArray(data.biblioteca)) {
-      lecturas = lecturas.concat(data.biblioteca);
-    }
-
-    // Desduplicar libros por ID o Título
-    const mapaUnico = new Map();
-    lecturas.forEach(libro => {
-      const clave = libro.id || libro.titulo;
-      if (clave && !mapaUnico.has(clave)) {
-        mapaUnico.set(clave, libro);
-      }
+    let misLecturasGlobales = [];
+    snapshot.forEach(docSnap => {
+      misLecturasGlobales.push(docSnap.data());
     });
-    const listaFinalLecturas = Array.from(mapaUnico.values());
 
-    listaFinalLecturas.forEach(libro => {
+    // Ubicar los libros leídos en el mapa de hexágonos
+    misLecturasGlobales.forEach(libro => {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
 
       if (pos) {
         matriz[pos.f][pos.c] = {
-          titulo: libro.titulo || libro.nombre || "Tomo Leído",
+          titulo: libro.titulo || "Tomo Leído",
           genero: generoTexto,
           generoKey,
-          paginas: libro.paginas || libro.puntos || 0,
-          esReto: libro.esReto || false
+          paginas: libro.paginas || 0,
+          esReto: libro.esReto || false,
+          autor: libro.autor || "Desconocido"
         };
       }
     });
 
+    // Renderizado del Grid
     for (let f = 0; f < FILAS; f++) {
       const filaDiv = document.createElement("div");
       filaDiv.classList.add("hex-fila");
@@ -159,36 +148,20 @@ async function renderizarMapaHex(uid) {
 
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
-          tooltip.style.display = "none"; // Ocultar inicialmente
           tooltip.innerHTML = `
             <strong>📖 ${datosCelda.titulo}</strong> ${datosCelda.esReto ? '🛡️' : ''}<br>
+            <em>Autor: ${datosCelda.autor}</em><br>
             <em>Gén: ${datosCelda.genero}</em><br>
             📄 <strong>${datosCelda.paginas} págs</strong>
           `;
           hexDiv.appendChild(tooltip);
 
-          // 🖱️ MOSTRAR TOOLTIP AL PASAR EL RATÓN
-          hexDiv.addEventListener("mouseenter", () => {
-            tooltip.style.display = "block";
-          });
-          hexDiv.addEventListener("mouseleave", () => {
-            tooltip.style.display = "none";
-          });
-
         } else {
           hexDiv.classList.add("hex-vacio");
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
-          tooltip.style.display = "none";
           tooltip.textContent = "🗺️ Territorio Niebla de Guerra";
           hexDiv.appendChild(tooltip);
-
-          hexDiv.addEventListener("mouseenter", () => {
-            tooltip.style.display = "block";
-          });
-          hexDiv.addEventListener("mouseleave", () => {
-            tooltip.style.display = "none";
-          });
         }
 
         filaDiv.appendChild(hexDiv);
