@@ -1,3 +1,5 @@
+/* css/atlas.css */
+
 /* ==========================================================================
    1. ESTILOS GENERALES Y CONTENEDOR
    ========================================================================== */
@@ -40,7 +42,7 @@
 }
 
 /* ==========================================================================
-   2. PANEL SUPERIOR: LEYENDA
+   2. LEYENDA
    ========================================================================== */
 .panel-leyenda-superior {
   width: 100%;
@@ -92,18 +94,18 @@
 }
 
 /* ==========================================================================
-   3. MAPA HEXAGONAL / TABLERO
+   3. TABLERO HEXAGONAL (SIN RECORTE OVERFLOW)
    ========================================================================== */
 .mapa-hex-card {
   background: #0d0c0a;
   border: 2px solid #8c6d3b;
   border-radius: 8px;
-  padding: 40px 20px;
+  padding: 50px 20px;
   min-height: 480px;
   display: flex;
   justify-content: center;
   align-items: center;
-  overflow-x: auto;
+  overflow: visible !important;
   box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9);
 }
 
@@ -111,55 +113,75 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  position: relative;
+  overflow: visible !important;
 }
 
 .hex-fila {
   display: flex;
-  margin-bottom: -14px; /* Solape vertical para entrelazado */
+  margin-bottom: -14px;
+  position: relative;
+  z-index: 1;
 }
 
-/* Desplazamiento alterno para formar el panal */
+/* Eleva la fila activa para que su tooltip vuele por encima de la fila superior */
+.hex-fila:hover {
+  z-index: 200;
+}
+
 .hex-fila:nth-child(even) {
   transform: translateX(27px);
 }
 
-/* Figura Base del Hexágono */
+/* Contenedor del hexágono (Sin clip-path para permitir tooltips) */
 .hexagono {
   width: 54px;
   height: 60px;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  display: flex;
-  justify-content: center;
-  align-items: center;
   position: relative;
   margin: 0 1px;
-  transition: transform 0.2s ease, filter 0.2s ease;
+  transition: transform 0.2s ease;
   cursor: pointer;
+  z-index: 2;
+  overflow: visible !important;
+}
+
+/* El pseudo-elemento es quien dibuja la forma del hexágono */
+.hexagono::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  transition: filter 0.2s ease;
+  z-index: 1;
 }
 
 .hexagono:hover {
   transform: scale(1.2);
-  z-index: 50;
-  filter: brightness(1.2);
+  z-index: 500;
 }
 
-/* Colores de Terrenos y Reinos */
-.hex-vacio     { background-color: #1c1a17; }
-.hex-fantasia  { background-color: #2e7d32; } /* Verde */
-.hex-misterio  { background-color: #6a1b9a; } /* Morado */
-.hex-ciencia   { background-color: #1565c0; } /* Azul */
-.hex-erudito   { background-color: #c5a059; } /* Dorado */
-.hex-ficcion   { background-color: #db2822; } /* Rojo */
+.hexagono:hover::before {
+  filter: brightness(1.25);
+}
 
-/* Borde o distintivo para Reto del Gremio */
-.hex-es-reto {
+/* Colores de Fondo para el ::before */
+.hex-vacio::before     { background-color: #1c1a17; }
+.hex-fantasia::before  { background-color: #2e7d32; }
+.hex-misterio::before  { background-color: #6a1b9a; }
+.hex-ciencia::before   { background-color: #1565c0; }
+.hex-erudito::before   { background-color: #c5a059; }
+.hex-ficcion::before   { background-color: #db2822; }
+
+.hex-es-reto::before {
   filter: drop-shadow(0 0 4px #d4af37);
 }
 
 /* ==========================================================================
-   4. NODO CENTRAL BRILLANTE Y TOOLTIP
+   4. NODO Y TOOLTIP
    ========================================================================== */
-/* Punto blanco interactivo en el centro del hexágono */
 .hex-nodo-central {
   position: absolute;
   top: 50%;
@@ -171,7 +193,7 @@
   border-radius: 50%;
   box-shadow: 0 0 8px rgba(255, 255, 255, 0.9);
   cursor: pointer;
-  z-index: 5;
+  z-index: 10;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -181,32 +203,31 @@
   box-shadow: 0 0 14px rgba(255, 255, 255, 1);
 }
 
-/* Tooltip Flotante */
 .tooltip-text {
   visibility: hidden;
   opacity: 0;
-  width: 190px;
-  background-color: rgba(13, 11, 9, 0.96);
+  width: 200px;
+  background-color: rgba(13, 11, 9, 0.98);
   color: #f3e5ab;
   text-align: center;
   border-radius: 6px;
   padding: 10px;
   border: 1px solid #d4af37;
   position: absolute;
-  z-index: 100;
-  bottom: 125%;
+  z-index: 9999;
+  bottom: 115%;
   left: 50%;
   transform: translateX(-50%);
-  transition: opacity 0.25s ease, visibility 0.25s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none;
   font-size: 0.8rem;
   line-height: 1.4;
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.95);
+  white-space: normal;
 }
 
-/* Mostrar tooltip al pasar el cursor sobre el hexágono o su nodo */
-.hexagono:hover .tooltip-text,
-.hex-nodo-central:hover .tooltip-text {
+/* Mostrar tooltip al pasar por encima */
+.hexagono:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
 }

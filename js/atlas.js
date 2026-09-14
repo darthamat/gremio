@@ -1,3 +1,4 @@
+// js/atlas.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -171,11 +172,11 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
           if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
-          // PUNTO CENTRAL DENTRO DEL HEXÁGONO CON TOOLTIP
+          // PUNTO CENTRAL DENTRO DEL HEXÁGONO
           const nodoCentral = document.createElement("div");
           nodoCentral.classList.add("hex-nodo-central");
 
-          // Elemento Tooltip integrado dentro del nodo central
+          // Elemento Tooltip como HIJO DIRECTO del Hexágono (NO del nodo central)
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
@@ -185,14 +186,15 @@ async function renderizarMapaHex(uid) {
             📄 <strong>${datosCelda.paginas} páginas</strong>
           `;
 
-          nodoCentral.appendChild(tooltip);
           hexDiv.appendChild(nodoCentral);
+          hexDiv.appendChild(tooltip);
 
         } else {
           hexDiv.classList.add("hex-vacio");
           const tooltipVacio = document.createElement("div");
           tooltipVacio.classList.add("tooltip-text");
           tooltipVacio.textContent = "🗺️ Territorio Niebla de Guerra";
+          
           hexDiv.appendChild(tooltipVacio);
         }
 
