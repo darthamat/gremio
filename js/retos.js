@@ -8,10 +8,12 @@ import {
   getDoc, 
   updateDoc, 
   arrayUnion,
-  increment 
+  increment,
+  query,
+  where
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
-import { completarRetoGremio } from "./gestorLibros.js";
+import { completarRetoGremio, registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -25,7 +27,7 @@ onAuthStateChanged(auth, async (user) => {
   }
   usuarioSesionId = user.uid;
   await cargarYRenderizarRetos();
-  await cargarMisionesSecundarias(user.uid);
+  await cargarMisionesSecundariasGlobales();
 });
 
 // Convierte 'reto26_01' o 'reto25_12' a 'Enero 2026'
@@ -55,26 +57,24 @@ function formatearIdAMesYAno(idDocumento, fechaCreacion) {
   return "Reto del Gremio";
 }
 
-// Resumen temático de respaldo
 function obtenerResumenGemini(tituloLibro) {
   if (!tituloLibro) return "Resumen no disponible en los pergaminos de la biblioteca.";
   const tituloNormalizado = tituloLibro.toLowerCase().trim();
 
   const resumenes = {
-    "una novela de ajedrez": "Novela de ficción histórica escrita por Stefan Zweig. Ambientada en la Viena de principios del siglo XX, narra la historia de un joven prodigio del ajedrez que lucha contra la opresión.",
-    "don quijote": "Obra cumbre de la literatura española. Sigue las aventuras de Alonso Quijano, un hidalgo que decide convertirse en caballero andante para impartir justicia.",
-    "el hobbit": "Novela fantástica de J.R.R. Tolkien sobre Bilbo Bolsón y un viaje extraordinario para recuperar un tesoro custodiado por un dragón.",
-    "1984": "Distopía política de George Orwell sobre una sociedad dominada por el Gran Hermano donde el pensamiento libre está reprimido."
+    "una novela de ajedrez": "Novela de ficción histórica escrita por Stefan Zweig. Ambientada en la Viena de principios del siglo XX, narra la historia de un joven prodigio del ajedrez.",
+    "don quijote": "Obra cumbre de la literatura española. Sigue las aventuras de Alonso Quijano, un hidalgo que decide convertirse en caballero andante.",
+    "el hobbit": "Novela fantástica de J.R.R. Tolkien sobre Bilbo Bolsón y un viaje extraordinario para recuperar un tesoro.",
+    "1984": "Distopía política de George Orwell sobre una sociedad dominada por el Gran Hermano."
   };
 
   for (const [clave, resumen] of Object.entries(resumenes)) {
     if (tituloNormalizado.includes(clave)) return resumen;
   }
 
-  return `Una notable obra titulada "${tituloLibro}" seleccionada por el Gremio para ser leída y analizada en este ciclo de exploración.`;
+  return `Una notable obra titulada "${tituloLibro}" seleccionada por el Gremio para ser leída y analizada.`;
 }
 
-// Biografía breve del autor desde Wikipedia
 async function obtenerBiografiaAutor(nombreAutor) {
   if (!nombreAutor || nombreAutor === "Desconocido") return "No hay registro en la gran biblioteca sobre este autor.";
   try {
@@ -87,6 +87,9 @@ async function obtenerBiografiaAutor(nombreAutor) {
   }
 }
 
+// ------------------------------------------------------------------
+// 1. CARGA DE RETOS PRINCIPALES DEL GREMIO (ACTUAL Y PASADOS)
+// ------------------------------------------------------------------
 async function cargarYRenderizarRetos() {
   try {
     const userRef = doc(db, "aventureros", usuarioSesionId);
@@ -115,10 +118,8 @@ async function cargarYRenderizarRetos() {
       return;
     }
 
-    // 1. SELECCIONAR RETO ACTUAL
     let retoActual = todosLosRetos.find(r => r.id === "actual" || r.esActual === true) || todosLosRetos[0];
 
-    // 2. FILTRAR HISTÓRICOS DESDUPLICADOS
     let retosHistoricos = todosLosRetos.filter(r => {
       if (r.id === retoActual.id) return false;
       if (r.id === "actual") return false;
@@ -130,7 +131,6 @@ async function cargarYRenderizarRetos() {
 
     retosHistoricos.sort((a, b) => b.id.localeCompare(a.id));
 
-    // Renderizar Header y Reto Actual
     const elProponente = document.getElementById("proponente-reto");
     const proponenteNombre = retoActual.proponente || "un misterioso aventurero del Cónclave";
 
@@ -153,8 +153,7 @@ async function cargarYRenderizarRetos() {
       retoActual.mensajeProponente || 
       retoActual.mensaje || 
       retoActual.proclama || 
-      (typeof retoActual.proponente === 'object' ? retoActual.proponente.mensaje : null) ||
-      `Por orden del Archimago Aurelius Vane, yo Lady Elena Astralis en nombre de ${proponenteNombre}, convoco a todos los miembros del Gremio a explorar esta obra.`;
+      `Por orden del Archimago Aurelius Vane, convoco a todos los miembros a explorar esta obra.`;
 
     const objetivoAdmin = retoActual.objetivoAdmin || 
       `Completar la lectura íntegra del tomo antes de que termine el ciclo mensual y compartir vuestras reflexiones en la Taberna de la Tinta.`;
@@ -228,7 +227,6 @@ async function cargarYRenderizarRetos() {
         </div>
       `;
 
-      // Tooltip Biografía
       const autorLink = document.getElementById("autor-link");
       const tooltipBody = document.getElementById("tooltip-body");
       let biografiaCargada = false;
@@ -255,7 +253,7 @@ async function cargarYRenderizarRetos() {
       }
     }
 
-    // Renderizar Retos Pasados
+    // Renderizar Retos Pasados del Gremio
     const contenedorPasados = document.getElementById("contenedor-retos-pasados");
     if (contenedorPasados) {
       contenedorPasados.innerHTML = "";
@@ -314,46 +312,170 @@ async function cargarYRenderizarRetos() {
   }
 }
 
-// Carga las misiones secundarias personales del usuario
-async function cargarMisionesSecundarias(userId) {
+// ------------------------------------------------------------------
+// 2. MISIONES SECUNDARIAS GLOBALES (COMPARTIDAS ENTRE NAVEGANTES)
+// ------------------------------------------------------------------
+async function cargarMisionesSecundariasGlobales() {
   const contenedor = document.getElementById("contenedor-retos-secundarios");
   if (!contenedor) return;
 
   contenedor.innerHTML = "";
 
   try {
-    const aventureroSnap = await getDoc(doc(db, "aventureros", userId));
-    if (!aventureroSnap.exists()) return;
+    // Buscar misiones secundarias activas (donde activa == true)
+    const q = query(collection(db, "misionesSecundarias"), where("activa", "==", true));
+    const snapshot = await getDocs(q);
 
-    const secundarias = aventureroSnap.data().misionesSecundarias || [];
-
-    if (secundarias.length === 0) {
-      contenedor.innerHTML = `<p class="sin-datos">No tienes misiones secundarias activas.</p>`;
+    if (snapshot.empty) {
+      contenedor.innerHTML = `<p class="sin-datos">No hay misiones secundarias activas en el tablero de anuncios.</p>`;
       return;
     }
 
-    secundarias.forEach((mision) => {
-      const el = document.createElement("div");
-      el.className = "card-reto-pasado reto-secundario";
-      el.innerHTML = `
+    snapshot.forEach((docSnap) => {
+      const mision = docSnap.data();
+      const idMision = docSnap.id;
+
+      const esCreador = mision.creadorId === usuarioSesionId;
+      const usuariosAceptaron = mision.usuariosAceptaron || [];
+      const usuariosCompletaron = mision.usuariosCompletaron || [];
+
+      const aceptadaPorMi = usuariosAceptaron.includes(usuarioSesionId);
+      const completadaPorMi = usuariosCompletaron.includes(usuarioSesionId);
+
+      const card = document.createElement("div");
+      card.className = "card-reto-pasado reto-secundario";
+      card.innerHTML = `
         <div class="portada-miniatura">
-          <img src="${mision.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" alt="${mision.titulo}">
+          <img src="${mision.portadaUrl || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" alt="${mision.titulo}">
+          ${completadaPorMi ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
         </div>
         <div class="info-reto-pasado">
           <span class="badge-tipo">Misión Secundaria</span>
           <h3>${mision.titulo}</h3>
           <span class="proponente-pasado">Autor: <strong>${mision.autor || 'Desconocido'}</strong></span>
+          <span class="proponente-pasado">Género: <strong>${mision.genero || 'Fantasía'}</strong></span>
           <span class="proponente-pasado">Páginas: <strong>${mision.paginas || 0} pág.</strong></span>
-          <p><small>Estado: <strong>${mision.estado || 'EN PROGRESO'}</strong></small></p>
+          <span class="proponente-pasado"><small>Creada por: ${mision.creadorNombre || 'Un Aventurero'}</small></span>
+
+          <div class="acciones-reto-pasado" style="margin-top: 10px;">
+            ${completadaPorMi ? `
+              <span class="sello-completado mini">✨ Lectura Finalizada</span>
+            ` : `
+              ${!aceptadaPorMi ? `
+                <button class="btn-magico btn-aceptar-secundaria" data-id="${idMision}">
+                  🗡️ Unirme a la Misión
+                </button>
+              ` : `
+                <button class="btn-magico exito btn-completar-secundaria" data-id="${idMision}">
+                  ✨ Marcar como Leído
+                </button>
+              `}
+            `}
+          </div>
         </div>
       `;
-      contenedor.appendChild(el);
+
+      contenedor.appendChild(card);
     });
+
+    // Asignar Eventos a Botones
+    contenedor.querySelectorAll(".btn-aceptar-secundaria").forEach(btn => {
+      btn.addEventListener("click", (e) => aceptarMisionSecundaria(e.currentTarget.getAttribute("data-id")));
+    });
+
+    contenedor.querySelectorAll(".btn-completar-secundaria").forEach(btn => {
+      btn.addEventListener("click", (e) => completarMisionSecundaria(e.currentTarget.getAttribute("data-id"), e.currentTarget));
+    });
+
   } catch (err) {
-    console.error("Error al cargar misiones secundarias:", err);
+    console.error("Error al cargar misiones secundarias globales:", err);
   }
 }
 
+// Aceptar Misión Secundaria
+async function aceptarMisionSecundaria(misionId) {
+  try {
+    const misionRef = doc(db, "misionesSecundarias", misionId);
+    await updateDoc(misionRef, {
+      usuariosAceptaron: arrayUnion(usuarioSesionId)
+    });
+    await cargarMisionesSecundariasGlobales();
+  } catch (error) {
+    console.error("Error al unirse a la misión secundaria:", error);
+  }
+}
+
+// Completar Misión Secundaria (Almacena en Biblioteca, Pinta Atlas y Cierra si es Creador)
+async function completarMisionSecundaria(misionId, elementoBoton) {
+  if (elementoBoton) {
+    elementoBoton.disabled = true;
+    elementoBoton.textContent = "⌛ Registrando en el Atlas...";
+  }
+
+  try {
+    const misionRef = doc(db, "misionesSecundarias", misionId);
+    const misionSnap = await getDoc(misionRef);
+
+    if (!misionSnap.exists()) return;
+
+    const data = misionSnap.data();
+    const esCreador = data.creadorId === usuarioSesionId;
+    const paginas = Number(data.paginas) || 0;
+
+    // 1. Recompensas de la Misión
+    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+    const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
+    const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
+
+    // 2. Actualizar perfil del aventurero
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    await updateDoc(userRef, {
+      xp: increment(gananciaXP),
+      prestigio: increment(gananciaPrestigio),
+      marcapaginas: increment(gananciaMarcapaginas)
+    });
+
+    // 3. REGISTRAR EN LA BIBLIOTECA DEL USUARIO Y COLOREAR HEX EN EL ATLAS
+    const datosLibro = {
+      id: misionId,
+      titulo: data.titulo,
+      autor: data.autor,
+      genero: data.genero || "Fantasía",
+      paginas: paginas,
+      portadaUrl: data.portadaUrl || "https://via.placeholder.com/150x220?text=Sin+Portada",
+      fechaTerminado: new Date().toISOString()
+    };
+
+    // Llama al gestor que almacena el libro en Firestore y pinta el hexágono
+    await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
+
+    // 4. Si quien la da por terminada es el CREADOR ORIGINAL, se desactiva para todos
+    if (esCreador) {
+      await updateDoc(misionRef, {
+        activa: false,
+        usuariosCompletaron: arrayUnion(usuarioSesionId)
+      });
+      alert(`🎉 ¡Has completado tu Misión Secundaria! Al ser el creador, la misión se da por concluida en el Cónclave y el libro ha sido añadido a la Biblioteca y al Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+    } else {
+      // Si la completa otro aventurero que se unió
+      await updateDoc(misionRef, {
+        usuariosCompletaron: arrayUnion(usuarioSesionId)
+      });
+      alert(`🎉 ¡Misión Secundaria Completada! El libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+    }
+
+    await cargarMisionesSecundariasGlobales();
+
+  } catch (error) {
+    console.error("Error al completar la misión secundaria:", error);
+    alert("Ocurrió un error al registrar la misión.");
+    if (elementoBoton) elementoBoton.disabled = false;
+  }
+}
+
+// ------------------------------------------------------------------
+// 3. MÉTODOS DE SOPORTE DE RETOS DEL GREMIO
+// ------------------------------------------------------------------
 async function aceptarReto(retoId) {
   try {
     const userRef = doc(db, "aventureros", usuarioSesionId);
@@ -364,7 +486,6 @@ async function aceptarReto(retoId) {
   }
 }
 
-// Marca la misión como completada, otorga XP, Prestigio y Marcapáginas
 async function terminarReto(retoId, puntos, elementoBoton = null) {
   if (elementoBoton) {
     if (elementoBoton.disabled) return;
@@ -400,12 +521,10 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
 
     const paginas = datosReto.paginas;
 
-    // CÁLCULO DE RECOMPENSAS
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 1. Actualizar perfil del aventurero
     const userRef = doc(db, "aventureros", usuarioSesionId);
     await updateDoc(userRef, { 
       retosCompletados: arrayUnion(retoId),
@@ -414,12 +533,10 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       marcapaginas: increment(gananciaMarcapaginas)
     });
 
-    // 2. Registrar en el gestor de libros
     await completarRetoGremio(usuarioSesionId, datosReto);
 
     alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
 
-    // 3. Refrescar la interfaz
     await cargarYRenderizarRetos();
 
   } catch (error) {
