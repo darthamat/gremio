@@ -302,3 +302,65 @@ body {
   margin-top: 6px;
   font-weight: bold;
 }
+
+/* Tooltip Global (Fijo en pantalla, independiente del scroll o divs con overflow) */
+.tooltip-libro-global {
+  position: fixed;
+  opacity: 0;
+  visibility: hidden;
+  width: 210px;
+  background-color: rgba(18, 18, 24, 0.95);
+  border: 1px solid #f39c12;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #e0e0e0;
+  font-size: 0.8rem;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  pointer-events: none; /* No interfiere con el cursor */
+  transition: opacity 0.15s ease, visibility 0.15s ease;
+  z-index: 9999; /* Por encima de cualquier modal o interfaz */
+}
+
+.tooltip-libro-global.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.tooltip-titulo {
+  font-weight: bold;
+  color: #f39c12;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.tooltip-autor {
+  color: #a0a0b0;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+}
+
+.tooltip-divisor {
+  border: 0;
+  border-top: 1px solid #3f3f5a;
+  margin: 6px 0;
+}
+
+.tooltip-detalle {
+  font-size: 0.75rem;
+  color: #cccccc;
+  margin-top: 3px;
+}
+
+.tooltip-badge {
+  display: inline-block;
+  background: rgba(142, 68, 173, 0.3);
+  border: 1px solid #8e44ad;
+  color: #e0aaff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 6px;
+  font-weight: bold;
+}
