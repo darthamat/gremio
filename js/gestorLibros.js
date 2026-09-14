@@ -84,8 +84,15 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
     const generoNorm = (datosReto.genero || "ficción").toLowerCase().trim();
     const colorLomo = COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
     const portada = datosReto.portadaUrl || datosReto.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
+    
+    // ID del reto (ej: "reto26_09")
+    const retoId = datosReto.id; 
 
-    // Generar un ID único basado en el título o ISBN
+    if (!retoId) {
+      console.warn("⚠️ Advertencia: No se proporcionó un id de reto en datosReto.");
+    }
+
+    // Generar un ID único para el libro en biblioteca global
     const libroId = generarIdLibro(datosReto);
     const libroRef = doc(db, "biblioteca", libroId);
 
@@ -102,19 +109,24 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       // Control de lectores globales
       lectores: arrayUnion(usuarioUid),
       totalLectores: increment(1),
-      retosAsociados: datosReto.id ? arrayUnion(datosReto.id) : []
+      retosAsociados: retoId ? arrayUnion(retoId) : []
     }, { merge: true });
 
-    // B. Actualizar recompensas y listas del Aventurero
+    // B. Guardar el ID del reto en el documento del aventurero (ej: "reto26_09")
     const userRef = doc(db, "aventureros", usuarioUid);
-    await updateDoc(userRef, {
-      retosCompletados: arrayUnion(datosReto.id),
-      retosAceptados: arrayUnion(datosReto.id),
+    const actualizacionAventurero = {
       xp: increment(paginas),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1),
       prestigio: increment(paginas)
-    });
+    };
+
+    if (retoId) {
+      actualizacionAventurero.retosCompletados = arrayUnion(retoId);
+      actualizacionAventurero.retosAceptados = arrayUnion(retoId);
+    }
+
+    await updateDoc(userRef, actualizacionAventurero);
 
     // C. Guardar registro personal en la subcolección misLibros del aventurero
     const miLibroRef = doc(db, "aventureros", usuarioUid, "misLibros", libroId);
@@ -123,10 +135,10 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       titulo: datosReto.titulo || datosReto.libro,
       fechaCompletado: serverTimestamp(),
       esReto: true,
-      retoId: datosReto.id || null
+      retoId: retoId || null
     }, { merge: true });
 
-    console.log(`✅ Reto completado guardado/actualizado en 'biblioteca' con ID: ${libroId}`);
+    console.log(`✅ Reto '${retoId}' completado y registrado para el aventurero ${usuarioUid}`);
     return { exito: true, libroId };
 
   } catch (error) {
