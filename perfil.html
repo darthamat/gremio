@@ -26,20 +26,15 @@
         <!-- SECCIÓN SUPERIOR -->
         <section class="profile-top-section">
             
-            <!-- Columna Izquierda: Avatar Clicable -->
-        <!-- Columna Izquierda: Avatar con barra inferior para cambiar foto -->
-<div class="avatar-card" id="avatar-container">
-    <div class="avatar-frame">
-        <img id="avatar-img" src="img/default-avatar.jpg" alt="Avatar del Aventurero">
-    </div>
-    
-    <!-- Barra inferior interactiva -->
-    <button id="btn-cambiar-avatar" class="btn-avatar">✨ Cambiar foto</button>
-        
-     
-    <!-- Input de archivo oculto -->
-    <input type="file" id="avatar-input" accept="image/*" class="hidden-input">
-</div>
+            <!-- Columna Izquierda: Avatar con barra inferior -->
+            <div class="avatar-card" id="avatar-container">
+                <div class="avatar-frame">
+                    <img id="avatar-img" src="img/default-avatar.jpg" alt="Avatar del Aventurero">
+                </div>
+                
+                <button id="btn-cambiar-avatar" class="btn-avatar">✨ Cambiar foto</button>
+                <input type="file" id="avatar-input" accept="image/*" class="hidden-input">
+            </div>
 
             <!-- Columna Derecha: Características e Información -->
             <div class="character-info-panel">
@@ -68,16 +63,17 @@
                         <strong id="char-gold-bookmarks">0</strong>
                     </div>
                 </div>
+
                 <!-- Barra de Progreso de Experiencia -->
-<div class="xp-bar-container">
-    <div class="xp-bar-header">
-        <span class="xp-title">Progreso de Nivel</span>
-        <span class="xp-text"><span id="xp-current">0</span> / <span id="xp-next-level">100</span> XP</span>
-    </div>
-    <div class="xp-bar-track">
-        <div class="xp-bar-fill" id="xp-fill" style="width: 0%;"></div>
-    </div>
-</div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar-header">
+                        <span class="xp-title">Progreso de Nivel</span>
+                        <span class="xp-text"><span id="xp-current">0</span> / <span id="xp-next-level">100</span> XP</span>
+                    </div>
+                    <div class="xp-bar-track">
+                        <div class="xp-bar-fill" id="xp-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
 
                 <!-- Métricas de Lectura -->
                 <div class="reading-stats-row">
@@ -109,63 +105,128 @@
             </div>
         </section>
 
-        <!-- Contenedor Principal de Secciones Desplegables -->
-<section class="acordeon-seccion">
-  
-  <!-- Barra de Botones / Pestañas -->
-  <div class="acordeon-botones">
-    <button class="btn-tab" data-tab="estadisticas">
-      <span>Estadísticas</span>
-      <i class="flecha">▼</i>
-    </button>
-    
-    <button class="btn-tab" data-tab="mochila">
-      <span>Mochila</span>
-      <i class="flecha">▼</i>
-    </button>
-    
-   
-    <button class="btn-tab" data-tab="misiones">
-      <span>Misiones</span>
-      <i class="flecha">▼</i>
-    </button>
+        <!-- SECCIÓN DE PESTAÑAS (ACORDEÓN) -->
+        <section class="acordeon-seccion">
+            <div class="acordeon-botones">
+                <button class="btn-tab" data-tab="estadisticas">
+                    <span>Estadísticas</span>
+                    <i class="flecha">▼</i>
+                </button>
+                
+                <button class="btn-tab" data-tab="mochila">
+                    <span>Mochila</span>
+                    <i class="flecha">▼</i>
+                </button>
+                
+                <button class="btn-tab" data-tab="misiones">
+                    <span>Misiones</span>
+                    <i class="flecha">▼</i>
+                </button>
 
-        <!-- ⬇️ CAMBIO AQUÍ: Ahora es un enlace <a> que abre biblioteca.html en nueva pestaña -->
-  <a href="biblioteca.html" target="_blank" class="btn-tab btn-enlace">
-    <span>Biblioteca</span>
-    <i class="flecha-enlace">↗</i>
-  </a>
-  </div>
+                <a href="biblioteca.html" target="_blank" class="btn-tab btn-enlace">
+                    <span>Biblioteca</span>
+                    <i class="flecha-enlace">↗</i>
+                </a>
+            </div>
 
-  <!-- Panel Desplegable (Donde se muestra el contenido) -->
-  <div id="panel-contenido" class="panel-desplegable oculto">
-    
-    <!-- Contenido: Estadísticas -->
-    <div id="tab-estadisticas" class="tab-contenido oculto">
-      <h2>Estadísticas Generales</h2>
-      <p>Aquí puedes mostrar gráficos o desglose detallado de lecturas, hábitos y récords.</p>
-    </div>
+            <!-- Panel Desplegable -->
+            <div id="panel-contenido" class="panel-desplegable oculto">
+                
+                <!-- Contenido: Estadísticas -->
+                <div id="tab-estadisticas" class="tab-contenido oculto">
+                    <h2>Estadísticas Generales</h2>
+                    <p>Aquí puedes mostrar gráficos o desglose detallado de lecturas, hábitos y récords.</p>
+                </div>
 
-    <!-- Contenido: Mochila -->
-    <div id="tab-mochila" class="tab-contenido oculto">
-      <h2>Mochila de Objetos</h2>
-      <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
-    </div>
+                <!-- Contenido: Mochila -->
+                <div id="tab-mochila" class="tab-contenido oculto">
+                    <h2>Mochila de Objetos</h2>
+                    <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
+                </div>
 
-    <!-- Contenido: Biblioteca -->
-    <div id="tab-biblioteca" class="tab-contenido oculto">
-      <h2>Biblioteca Personal</h2>
-      <p>Lista de libros leyéndose, terminados y pendientes.</p>
-    </div>
+                <!-- Contenido: Misiones / Lecturas Libres -->
+                <div id="tab-misiones" class="tab-contenido oculto">
+                    <div class="misiones-header-row">
+                        <h2>Misiones y Lecturas Libres</h2>
+                        <button id="btn-abrir-buscador-mision" class="btn-accion-mision">
+                            ➕ Registrar Nueva Lectura Libre
+                        </button>
+                    </div>
+                    <div id="contenedor-misiones" class="misiones-grid">
+                        <!-- Se rellenará dinámicamente -->
+                    </div>
+                </div>
 
-    <!-- Contenido: Misiones -->
-    <div id="tab-misiones" class="tab-contenido oculto">
-      <h2>Misiones Activas</h2>
-      <p>Misiones diarias, semanales y retos de lectura RPG.</p>
-    </div>
+            </div>
+        </section>
 
-  </div>
-</section>
+        <!-- Modal Búsqueda de Libros / Misiones -->
+        <div id="modal-buscador-mision" class="modal-overlay oculto">
+            <div class="modal-card">
+                <div class="modal-header">
+                    <h3>📜 Registrar Lectura Libre / Misión</h3>
+                    <button id="btn-cerrar-modal-mision" class="btn-cerrar-modal">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <!-- Buscador de Google Books -->
+                    <div class="search-box-group">
+                        <input type="text" id="input-buscar-libro" placeholder="Buscar por título, autor o ISBN..." />
+                        <button id="btn-ejecutar-busqueda" class="btn-buscar">🔍 Buscar</button>
+                    </div>
+
+                    <!-- Desplegable con los resultados -->
+                    <div id="resultados-busqueda-libros" class="resultados-busqueda-list" style="display:none;"></div>
+
+                    <!-- Formulario de Confirmación -->
+                    <form id="form-confirmar-mision" class="form-confirmar-mision oculto">
+                        <hr class="divisor-modal" />
+                        
+                        <div class="preview-container">
+                            <img id="mision-preview-portada" src="" alt="Portada" style="display:none; max-width:100px; border-radius:6px;" />
+                            <div class="subida-file-group">
+                                <label for="mision-portada-file">O sube tu propia portada (Cloudinary):</label>
+                                <input type="file" id="mision-portada-file" accept="image/*" />
+                                <input type="hidden" id="mision-portada-url" />
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Título:</label>
+                            <input type="text" id="mision-titulo" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Autor:</label>
+                            <input type="text" id="mision-autor" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Páginas:</label>
+                            <input type="number" id="mision-paginas" required />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Proclama / Impresiones:</label>
+                            <textarea id="mision-proclama" rows="2" placeholder="Notas o impresiones sobre esta lectura..."></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Estado:</label>
+                            <select id="mision-estado">
+                                <option value="EN_PROGRESO">⚔️ En Progreso</option>
+                                <option value="TERMINADA">✅ Completada</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" id="btn-guardar-mision" class="btn-guardar-mision">
+                            💾 Registrar Misión
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
     </main>
 
     <script type="module" src="js/perfil.js"></script>

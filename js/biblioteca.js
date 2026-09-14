@@ -1,3 +1,4 @@
+// js/biblioteca.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     getFirestore, 
@@ -24,7 +25,6 @@ onAuthStateChanged(auth, async (user) => {
     await cargarBiblioteca();
 });
 
-// Cargar libros guardados desde la colección principal 'biblioteca'
 async function cargarBiblioteca() {
     try {
         const estante = document.getElementById("estante-libros");
@@ -62,7 +62,6 @@ async function cargarBiblioteca() {
             });
         }
 
-        // Actualizar estadísticas en pantalla
         const elemLibros = document.getElementById("total-libros");
         const elemPaginas = document.getElementById("total-paginas");
         const elemXp = document.getElementById("total-xp");
@@ -77,7 +76,7 @@ async function cargarBiblioteca() {
         console.error("Error al cargar la biblioteca:", error);
     }
 }
-// Asegurar la existencia de un único tooltip en el body
+
 let tooltipGlobal = document.getElementById("tooltip-global");
 if (!tooltipGlobal) {
     tooltipGlobal = document.createElement("div");
@@ -94,8 +93,6 @@ function renderizarLomoLibro(libro) {
     lomo.className = "lomo-libro";
     
     const paginasNum = Number(libro.paginas) || 100;
-
-    // Dimensiones proporcionales del lomo
     const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
@@ -106,7 +103,6 @@ function renderizarLomoLibro(libro) {
     lomo.style.height = `${alto}px`;
     lomo.style.backgroundColor = colorFondo;
 
-    // Formatear la fecha
     let fechaTexto = "Fecha no registrada";
     if (libro.fechaCompletado) {
         const fechaObj = libro.fechaCompletado.toDate ? libro.fechaCompletado.toDate() : new Date(libro.fechaCompletado);
@@ -115,16 +111,13 @@ function renderizarLomoLibro(libro) {
         }
     }
 
-    // Título estático en el lomo
     const tituloSpan = document.createElement("span");
     tituloSpan.className = "lomo-titulo";
     tituloSpan.textContent = libro.titulo || "Sin título";
     lomo.appendChild(tituloSpan);
 
-    // Portada del libro (imagen por defecto si no hay URL guardada)
     const urlPortada = libro.portadaUrl || libro.imagenUrl || "https://via.placeholder.com/100x150/1e1e2f/f39c12?text=Sin+Portada";
 
-    // Mostrar tooltip sin animaciones
     lomo.addEventListener("mouseenter", (e) => {
         tooltipGlobal.innerHTML = `
             <div class="tooltip-cuerpo">
@@ -148,7 +141,6 @@ function renderizarLomoLibro(libro) {
         posicionarTooltip(e);
     });
 
-    // Ocultar de inmediato al quitar el cursor
     lomo.addEventListener("mouseleave", () => {
         tooltipGlobal.style.display = "none";
     });
@@ -156,13 +148,11 @@ function renderizarLomoLibro(libro) {
     estante.appendChild(lomo);
 }
 
-// Cálculo de la posición exacta junto al cursor
 function posicionarTooltip(e) {
     const offset = 15;
     let left = e.clientX + offset;
-    let top = e.clientY - (tooltipGlobal.offsetHeight / 2); // Centrado vertical respecto al puntero
+    let top = e.clientY - (tooltipGlobal.offsetHeight / 2);
 
-    // Control de bordes para evitar desbordamiento de pantalla
     if (left + tooltipGlobal.offsetWidth > window.innerWidth - 10) {
         left = e.clientX - tooltipGlobal.offsetWidth - offset;
     }
@@ -177,7 +167,7 @@ function posicionarTooltip(e) {
     tooltipGlobal.style.top = `${top}px`;
 }
 
-// Control del Modal
+// Control del Modal Rápido en la Biblioteca
 const modal = document.getElementById("modal-libro");
 const btnAbrirModal = document.getElementById("btn-abrir-modal");
 const btnCerrarModal = document.getElementById("btn-cerrar-modal");
@@ -191,7 +181,6 @@ if (btnCerrarModal && modal) {
     btnCerrarModal.addEventListener("click", () => modal.classList.add("oculto"));
 }
 
-// Formulario de registro de libro libre
 if (formLibro) {
     formLibro.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -201,31 +190,22 @@ if (formLibro) {
         const paginas = Number(document.getElementById("paginas").value) || 0;
         const color = document.getElementById("color") ? document.getElementById("color").value : "#8b263e";
 
-        const tiradaDado100 = Math.floor(Math.random() * 100) + 1;
-        const prestigioGanado = Math.round(paginas + (paginas / tiradaDado100));
-
-        const datosLibro = {
-            titulo,
-            autor,
-            paginas,
-            colorLomo: color,
-            prestigioGanado,
-            tiradaDado: tiradaDado100
-        };
-
         try {
-            const resultado = await registrarLecturaLibre(currentUser.uid, datosLibro);
+            const res = await registrarLecturaLibre(currentUser.uid, {
+                titulo,
+                autor,
+                paginas,
+                colorLomo: color
+            });
 
-            if (resultado.exito) {
-                alert(`🎲 ¡Tirada de d100: Sacaste un ${tiradaDado100}!\n✨ Has ganado ${prestigioGanado} Puntos de Prestigio.`);
-
+            if (res.exito) {
+                alert(`✨ ¡Lectura rápida registrada!\n\n🏆 Prestigio: +${res.prestigio}\n🔖 Marcapáginas: +${res.marcapaginas}\n⭐ XP: +${res.xp}`);
                 if (modal) modal.classList.add("oculto");
                 formLibro.reset();
                 await cargarBiblioteca();
             } else {
                 alert("Ocurrió un error al registrar el libro.");
             }
-
         } catch (error) {
             console.error("Error al guardar el libro manual:", error);
             alert("Ocurrió un error al registrar el libro.");
