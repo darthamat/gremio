@@ -24,7 +24,7 @@ const SEMILLAS_INICIALES = {
   ficcion:  { f: 3, c: 4 }
 };
 
-// Cache en memoria para no hacer peticiones repetidas de nombres de aventureros
+// Cache en memoria para evitar peticiones duplicadas de nombres
 const cacheAventureros = {};
 
 async function obtenerNombreAventurero(uid) {
@@ -131,13 +131,12 @@ async function renderizarMapaHex(uid) {
       misLecturasGlobales.push(docSnap.data());
     });
 
-    // Procesar cada libro e identificar al primer aventurero que lo completó
+    // Procesar cada libro e identificar al pionero (primer lector)
     for (const libro of misLecturasGlobales) {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
 
-      // Obtener el UID del primer lector (quien descubrió/completó primero la casilla)
       const primerLectorUid = Array.isArray(libro.lectores) && libro.lectores.length > 0 
         ? libro.lectores[0] 
         : (libro.usuarioId || uid);
@@ -157,7 +156,7 @@ async function renderizarMapaHex(uid) {
       }
     }
 
-    // Renderizado del Grid
+    // Renderizado del Grid Hexagonal
     for (let f = 0; f < FILAS; f++) {
       const filaDiv = document.createElement("div");
       filaDiv.classList.add("hex-fila");
@@ -172,17 +171,11 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
           if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
-          // CONTENIDO VISIBLE DENTRO DEL HEXÁGONO
-          const contenidoDiv = document.createElement("div");
-          contenidoDiv.classList.add("hex-contenido");
-          contenidoDiv.innerHTML = `
-            <span class="hex-titulo" title="${datosCelda.titulo}">${datosCelda.titulo}</span>
-            <span class="hex-primer-lector">🏆 ${datosCelda.primerLector}</span>
-            <span class="hex-paginas">📖 ${datosCelda.paginas}p</span>
-          `;
-          hexDiv.appendChild(contenidoDiv);
+          // PUNTO CENTRAL DENTRO DEL HEXÁGONO CON TOOLTIP
+          const nodoCentral = document.createElement("div");
+          nodoCentral.classList.add("hex-nodo-central");
 
-          // TOOLTIP FLOTANTE (Información completa al pasar el cursor)
+          // Elemento Tooltip integrado dentro del nodo central
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
@@ -191,14 +184,16 @@ async function renderizarMapaHex(uid) {
             <em>Pionero: ${datosCelda.primerLector}</em><br>
             📄 <strong>${datosCelda.paginas} páginas</strong>
           `;
-          hexDiv.appendChild(tooltip);
+
+          nodoCentral.appendChild(tooltip);
+          hexDiv.appendChild(nodoCentral);
 
         } else {
           hexDiv.classList.add("hex-vacio");
-          const tooltip = document.createElement("div");
-          tooltip.classList.add("tooltip-text");
-          tooltip.textContent = "🗺️ Territorio Niebla de Guerra";
-          hexDiv.appendChild(tooltip);
+          const tooltipVacio = document.createElement("div");
+          tooltipVacio.classList.add("tooltip-text");
+          tooltipVacio.textContent = "🗺️ Territorio Niebla de Guerra";
+          hexDiv.appendChild(tooltipVacio);
         }
 
         filaDiv.appendChild(hexDiv);
