@@ -94,7 +94,7 @@
 }
 
 /* ==========================================================================
-   3. TABLERO HEXAGONAL (AJUSTADO Y DEFINIDO)
+   3. TABLERO HEXAGONAL (GEOMETRÍA Y ENCAJE PERFECTO)
    ========================================================================== */
 .mapa-hex-card {
   background: #0d0c0a;
@@ -119,7 +119,8 @@
 
 .hex-fila {
   display: flex;
-  margin-bottom: -12px; /* Margen negativo suavizado para evitar colisiones */
+  /* Encaje vertical exacto para 60px de altura (25% solapamiento = -15px) */
+  margin-bottom: -15px;
   position: relative;
   z-index: 1;
 }
@@ -128,23 +129,24 @@
   z-index: 200;
 }
 
-/* Desplazamiento intercalado para el engranaje hexagonal */
+/* Desplazamiento horizontal exacto para la mitad de (52px de ancho + 2px margen) */
 .hex-fila:nth-child(even) {
-  transform: translateX(28px);
+  transform: translateX(27px);
 }
 
-/* Contenedor principal del hexágono */
+/* Contenedor principal (caja transparente que sirve de ancla) */
 .hexagono {
   width: 52px;
   height: 60px;
   position: relative;
-  margin: 0 2px;
+  margin: 0 1px;
   cursor: pointer;
   z-index: 2;
   overflow: visible !important;
+  background: transparent !important; /* Evita que el contenedor tenga fondo rectangular */
 }
 
-/* Dibujo geométrico del hexágono con proporciones corregidas */
+/* Dibujo geométrico del hexágono apuntado (Pointy-topped) */
 .hexagono::before {
   content: "";
   position: absolute;
@@ -152,13 +154,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  /* Puntos exactos: Vértice superior (50% 0%), lados (100% 25%, 100% 75%), base (50% 100%) */
+  /* Geometría de hexágono apuntado */
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   transition: transform 0.2s ease, filter 0.2s ease;
   z-index: 1;
 }
 
-/* Efecto hover: solo se escala la forma interna ::before */
+/* Efecto hover sobre la figura */
 .hexagono:hover {
   z-index: 500;
 }
@@ -168,13 +170,21 @@
   filter: brightness(1.3);
 }
 
-/* Colores de Fondo para los hexágonos y la leyenda */
-.hex-vacio, .hex-vacio::before         { background-color: #1c1a17; }
-.hex-fantasia, .hex-fantasia::before   { background-color: #2e7d32; }
-.hex-misterio, .hex-misterio::before   { background-color: #6a1b9a; }
-.hex-ciencia, .hex-ciencia::before    { background-color: #1565c0; }
-.hex-erudito, .hex-erudito::before    { background-color: #c5a059; }
-.hex-ficcion, .hex-ficcion::before    { background-color: #db2822; }
+/* Colores aplicados EXCLUSIVAMENTE al pseudo-elemento del hexágono */
+.hex-vacio::before     { background-color: #1c1a17; }
+.hex-fantasia::before  { background-color: #2e7d32; }
+.hex-misterio::before  { background-color: #6a1b9a; }
+.hex-ciencia::before   { background-color: #1565c0; }
+.hex-erudito::before   { background-color: #c5a059; }
+.hex-ficcion::before   { background-color: #db2822; }
+
+/* Colores para la Leyenda (que sí utiliza elementos span normales) */
+.dot.hex-vacio     { background-color: #1c1a17; }
+.dot.hex-fantasia  { background-color: #2e7d32; }
+.dot.hex-misterio  { background-color: #6a1b9a; }
+.dot.hex-ciencia   { background-color: #1565c0; }
+.dot.hex-erudito   { background-color: #c5a059; }
+.dot.hex-ficcion   { background-color: #db2822; }
 
 .hex-es-reto::before {
   filter: drop-shadow(0 0 4px #d4af37);
