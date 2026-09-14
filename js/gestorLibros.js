@@ -2,6 +2,7 @@
 import { 
   getFirestore, 
   doc, 
+  setDoc, 
   updateDoc, 
   arrayUnion, 
   increment, 
@@ -14,75 +15,190 @@ import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
 
+// Colores por defecto para los lomos según su género
+const COLORES_GENERO_LOMO = {
+  "ficción": "#c0392b",
+  "fantasía": "#27ae60",
+  "ciencia ficción": "#2980b9",
+  "historia": "#d35400",
+  "misterio": "#8e44ad",
+  "terror": "#000000",
+  "default": "#8b263e"
+};
+
 /**
- * 📚 1. REGISTRO RÁPIDO DE LECTURA LIBRE (Desde la Biblioteca)
+ * Función auxiliar para generar un ID único y limpio para cada libro
  */
-export async function registrarLecturaLibre(userId, datosLibro) {
+function generarIdLibro(datosLibro) {
+  if (datosLibro.isbn) return datosLibro.isbn.trim();
+  
+  const titulo = datosLibro.titulo || datosLibro.libro || "libro-desconocido";
+  return titulo
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-');
+}
+
+/**
+ * 📚 1. REGISTRO DE LECTURA LIBRE (Desde la Biblioteca o Perfil)
+ */
+export async function registrarLecturaLibre(usuarioUid, datosLibro) {
   try {
     const paginas = Number(datosLibro.paginas) || 0;
+    const portada = datosLibro.portadaUrl || datosLibro.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
+    const libroId = generarIdLibro(datosLibro);
+    const generoNorm = (datosLibro.genero || "ficción").toLowerCase().trim();
+    const colorLomo = datosLibro.colorLomo || COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
 
     // Fórmulas de Recompensas
-    // Prestigio: Paginas + Número Aleatorio entre 1 y Paginas
     const bonusPrestigio = paginas > 0 ? Math.floor(Math.random() * paginas) + 1 : 0;
     const prestigioGanado = paginas + bonusPrestigio;
-
-    // Marcapáginas: Número Aleatorio entre 1 y Paginas
     const marcapaginasGanados = paginas > 0 ? Math.floor(Math.random() * paginas) + 1 : 1;
 
-    // 1. Guardar o actualizar en la colección global 'biblioteca'
-    const libroRef = await addDoc(collection(db, "biblioteca"), {
-      titulo: datosLibro.titulo,
+    // A. Guardar/Actualizar en la colección global 'biblioteca'
+    const libroRef = doc(db, "biblioteca", libroId);
+    await setDoc(libroRef, {
+      titulo: datosLibro.titulo || "Libro sin título",
       autor: datosLibro.autor || "Desconocido",
+      portadaUrl: portada,
       paginas: paginas,
-      colorLomo: datosLibro.colorLomo || "#8b263e",
-      usuarioId: userId,
-      lectores: [userId],
-      prestigioGanado: prestigioGanado,
-      tipoOrigen: "LECTURA_LIBRE",
-      fechaCompletado: serverTimestamp()
-    });
+      genero: datosLibro.genero || "General",
+      colorLomo: colorLomo,
+      isbn: datosLibro.isbn || null,
+      lectores: arrayUnion(usuarioUid),
+      totalLectores: increment(1)
+    }, { merge: true });
 
-    // 2. Actualizar el perfil del aventurero
-    const userRef = doc(db, "aventureros", userId);
+    // B. Guardar registro personal en aventureros/{uid}/misLibros/{libroId}
+    const miLibroRef = doc(db, "aventureros", usuarioUid, "misLibros", libroId);
+    await setDoc(miLibroRef, {
+      libroId: libroId,
+      titulo: datosLibro.titulo || "Libro sin título",
+      autor: datosLibro.autor || "Desconocido",
+      portadaUrl: portada,
+      paginas: paginas,
+      genero: datosLibro.genero || "General",
+      colorLomo: colorLomo,
+      fechaFinLectura: serverTimestamp(),
+      esReto: false,
+      retoId: null
+    }, { merge: true });
+
+    // C. Actualizar estadísticas en la ficha del aventurero
+    const userRef = doc(db, "aventureros", usuarioUid);
     await updateDoc(userRef, {
-      xp: increment(paginas), // XP base = Páginas
+      xp: increment(paginas),
       prestigio: increment(prestigioGanado),
       marcapaginas: increment(marcapaginasGanados),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1),
       estanteria: arrayUnion({
-        id: libroRef.id,
+        id: libroId,
         titulo: datosLibro.titulo,
         autor: datosLibro.autor,
         paginas: paginas,
-        colorLomo: datosLibro.colorLomo
+        colorLomo: colorLomo
       })
     });
 
+    console.log("✅ Lectura libre guardada en 'biblioteca' y 'misLibros' con ID:", libroId);
     return { 
       exito: true, 
+      libroId, 
       prestigio: prestigioGanado, 
       marcapaginas: marcapaginasGanados, 
       xp: paginas 
     };
+
   } catch (error) {
-    console.error("Error al registrar lectura libre:", error);
+    console.error("❌ Error al registrar lectura libre:", error);
     return { exito: false, error };
   }
 }
 
 /**
- * ⚔️ 2. REGISTRO DE MISIÓN SECUNDARIA (Desde Perfil/Misiones)
+ * 🏆 2. COMPLETAR RETO DEL GREMIO (Desde retos.js)
+ */
+export async function completarRetoGremio(usuarioUid, datosReto) {
+  try {
+    const paginas = Number(datosReto.paginas) || 0;
+    const generoNorm = (datosReto.genero || "ficción").toLowerCase().trim();
+    const colorLomo = datosReto.colorLomo || COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
+    const portada = datosReto.portadaUrl || datosReto.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
+    
+    // ID del reto (ej: "reto26_09")
+    const retoId = datosReto.id; 
+
+    if (!retoId) {
+      console.warn("⚠️ Advertencia: No se proporcionó un id de reto en datosReto.");
+    }
+
+    // Generar un ID único para el libro en biblioteca global
+    const libroId = generarIdLibro(datosReto);
+    const libroRef = doc(db, "biblioteca", libroId);
+
+    // A. Guardar o actualizar en la colección principal 'biblioteca'
+    await setDoc(libroRef, {
+      titulo: datosReto.titulo || datosReto.libro || "Misión del Gremio",
+      autor: datosReto.autor || "Desconocido",
+      portadaUrl: portada,
+      paginas: paginas,
+      genero: datosReto.genero || "Fantasía",
+      colorLomo: colorLomo,
+      isbn: datosReto.isbn || null,
+      lectores: arrayUnion(usuarioUid),
+      totalLectores: increment(1),
+      retosAsociados: retoId ? arrayUnion(retoId) : []
+    }, { merge: true });
+
+    // B. Guardar registro personal en aventureros/{uid}/misLibros/{libroId}
+    const miLibroRef = doc(db, "aventureros", usuarioUid, "misLibros", libroId);
+    await setDoc(miLibroRef, {
+      libroId: libroId,
+      titulo: datosReto.titulo || datosReto.libro || "Misión del Gremio",
+      autor: datosReto.autor || "Desconocido",
+      portadaUrl: portada,
+      paginas: paginas,
+      genero: datosReto.genero || "Fantasía",
+      colorLomo: colorLomo,
+      fechaFinLectura: serverTimestamp(),
+      esReto: true,
+      retoId: retoId || null
+    }, { merge: true });
+
+    // C. Guardar el ID del reto y stats en el documento del aventurero
+    const userRef = doc(db, "aventureros", usuarioUid);
+    const actualizacionAventurero = {
+      xp: increment(paginas),
+      paginasLeidas: increment(paginas),
+      librosCompletados: increment(1),
+      prestigio: increment(paginas)
+    };
+
+    if (retoId) {
+      actualizacionAventurero.retosCompletados = arrayUnion(retoId);
+      actualizacionAventurero.retosAceptados = arrayUnion(retoId);
+    }
+
+    await updateDoc(userRef, actualizacionAventurero);
+
+    console.log(`✅ Reto '${retoId}' completado y registrado para el aventurero ${usuarioUid}`);
+    return { exito: true, libroId };
+
+  } catch (error) {
+    console.error("❌ Error al completar reto en gestorLibros:", error);
+    return { exito: false, error };
+  }
+}
+
+/**
+ * ⚔️ 3. REGISTRO DE MISIÓN SECUNDARIA (Desde Perfil/Misiones)
  */
 export async function crearMisionSecundaria(userId, datosMision) {
   try {
     const paginas = Number(datosMision.paginas) || 0;
     const esCompletadaDirecta = datosMision.estado === "TERMINADA";
-
-    // Recompensas base
-    const bonusPrestigio = paginas > 0 ? Math.floor(Math.random() * paginas) + 1 : 0;
-    const prestigioGanado = paginas + bonusPrestigio;
-    const marcapaginasGanados = paginas > 0 ? Math.floor(Math.random() * paginas) + 1 : 1;
 
     // OBTENER NOMBRE DEL CREADOR
     const userSnap = await getDoc(doc(db, "aventureros", userId));
@@ -99,7 +215,7 @@ export async function crearMisionSecundaria(userId, datosMision) {
       creadorId: userId,
       esSecundaria: true,
       mensajeProponente: datosMision.proclama || `¡Aventureros! Os convoco a explorar el reino de ${datosMision.titulo}.`,
-      participantes: [userId], // El creador entra como primer aventurero
+      participantes: [userId],
       completadosPor: esCompletadaDirecta ? [userId] : [],
       fechaCreacion: serverTimestamp()
     });
@@ -133,7 +249,7 @@ export async function crearMisionSecundaria(userId, datosMision) {
 }
 
 /**
- * 🛡️ 3. UNIRSE A UNA MISIÓN SECUNDARIA EN GRUPO / CLAN
+ * 🛡️ 4. UNIRSE A UNA MISIÓN SECUNDARIA EN GRUPO / CLAN
  */
 export async function unirseAMisionSecundaria(userId, retoId) {
   try {
@@ -154,9 +270,9 @@ export async function unirseAMisionSecundaria(userId, retoId) {
       participantes: arrayUnion(userId)
     });
 
-    // 2. Otorgar BONO DE CLAN (100 Prestigio extras por aventurero en el grupo)
+    // 2. Otorgar BONO DE CLAN
     const nuevoTamanoGrupo = participantes.length + 1;
-    const bonoClan = 100; // +100 Prestigio por unirse a la expedición en grupo
+    const bonoClan = 100;
 
     const userRef = doc(db, "aventureros", userId);
     await updateDoc(userRef, {
