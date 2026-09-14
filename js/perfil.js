@@ -30,6 +30,7 @@ onAuthStateChanged(auth, async (user) => {
   inicializarAcordeon();
   inicializarModalMisiones();
   inicializarCerrarSesion();
+  inicializarAvatar(); // <--- Inicializamos el listener del avatar
 });
 
 // Carga y renderiza los datos del usuario desde Firestore
@@ -125,7 +126,6 @@ function renderizarMisiones(misiones) {
       </div>
     `;
 
-    // Asignación de manejadores de eventos a los botones
     const btnCompletar = tarjeta.querySelector(".btn-completar");
     if (btnCompletar) {
       btnCompletar.addEventListener("click", () => actualizarEstadoMision(index, "TERMINADA"));
@@ -301,4 +301,62 @@ function inicializarCerrarSesion() {
       signOut(auth).then(() => window.location.href = "index.html");
     });
   }
+}
+
+// Manejo de cambio de avatar
+function inicializarAvatar() {
+  const btnAvatar = document.getElementById("btn-cambiar-avatar") || document.getElementById("char-avatar");
+  const inputAvatar = document.getElementById("input-avatar-file");
+
+  if (!btnAvatar || !inputAvatar) return;
+
+  btnAvatar.addEventListener("click", () => {
+    inputAvatar.click();
+  });
+
+  inputAvatar.addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
+
+    try {
+      // 1. Mostrar vista previa inmediata
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (avatarImg) avatarImg.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      // 2. Subir imagen a Cloudinary
+      // IMPORTANTE: Recuerda reemplazar estas dos variables por tus valores reales de Cloudinary
+      const cloudName = "dwuokewzr";
+      const uploadPreset = "avatar_users";
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", uploadPreset);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      if (!res.ok) throw new Error("Error al subir la imagen a Cloudinary");
+
+      const data = await res.json();
+      const nuevaUrlAvatar = data.secure_url;
+
+      // 3. Actualizar la URL del avatar en Firestore
+      await updateDoc(currentUserDocRef, {
+        avatarUrl: nuevaUrlAvatar
+      });
+
+      alert("✨ ¡Avatar actualizado con éxito!");
+
+    } catch (error) {
+      console.error("Error al actualizar el avatar:", error);
+      alert("❌ No se pudo subir el avatar. Revisa la configuración de Cloudinary.");
+    }
+  });
 }
