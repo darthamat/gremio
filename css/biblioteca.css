@@ -126,49 +126,50 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 4px;
-  border-radius: 0 0 4px 4px; /* Ajustado por la rotación de 180deg */
+  padding: 10px 2px;
+  border-radius: 0 0 4px 4px;
   box-shadow: inset -2px 0 5px rgba(0,0,0,0.4), inset 2px 0 5px rgba(255,255,255,0.1), 3px 0 6px rgba(0,0,0,0.5);
   cursor: pointer;
   transition: transform 0.2s ease, filter 0.2s ease;
   user-select: none;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   box-sizing: border-box;
+  overflow: hidden; /* Evita que el contenido desborde el lomo */
 }
 
 .lomo-libro:hover {
-  /* Al estar rotado 180deg, -10px hace que el libro suba hacia arriba */
   transform: rotate(180deg) translateY(-10px) scale(1.03);
   filter: brightness(1.2);
 }
 
 .lomo-titulo {
   font-weight: bold;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #fff;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 160px;
+  max-height: 140px;
 }
 
 .lomo-paginas {
-  font-size: 0.7rem;
-  color: #ffd700;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-
-.insignia-gremio {
   font-size: 0.65rem;
-  background: rgba(0, 0, 0, 0.4);
-  padding: 2px 4px;
-  border-radius: 3px;
+  color: #ffd700;
+  text-align: center;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+.insignia-gremio {
+  font-size: 0.6rem;
   color: #e0aaff;
+  background: rgba(142, 68, 173, 0.4);
   border: 1px solid #8e44ad;
+  border-radius: 3px;
+  padding: 1px 3px;
+  margin-bottom: 4px;
+  display: inline-block;
+  text-align: center;
 }
 
 /* Modal */

@@ -100,17 +100,17 @@ function renderizarLomoLibro(libro) {
     lomo.style.backgroundColor = colorFondo;
 
     // Etiqueta estilizada para el reto
-    const insigniaGremio = esReto ? `<span class="insignia-gremio">📜 GREMIO</span>` : '';
+const insigniaGremio = esReto ? `<span class="insignia-gremio">📜 GREMIO</span>` : '';
 
-    lomo.innerHTML = `
-        <span class="lomo-titulo" title="${libro.titulo || 'Sin título'} - ${libro.autor || 'Autor desconocido'}">
-            ${libro.titulo || 'Sin título'}
-        </span>
-        <div class="lomo-paginas">
-            ${insigniaGremio}
-            <span>📖 ${paginasNum}p</span>
-        </div>
-    `;
+lomo.innerHTML = `
+    <span class="lomo-titulo" title="${libro.titulo || 'Sin título'} - ${libro.autor || 'Autor desconocido'}">
+        ${libro.titulo || 'Sin título'}
+    </span>
+    <div class="lomo-paginas">
+        ${insigniaGremio}
+        📖 ${paginasNum}p
+    </div>
+`;
 
     estante.appendChild(lomo);
 }
