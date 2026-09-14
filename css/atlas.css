@@ -168,12 +168,12 @@
 }
 
 /* Colores de Fondo para el ::before */
-.hex-vacio::before     { background-color: #1c1a17; }
-.hex-fantasia::before  { background-color: #2e7d32; }
-.hex-misterio::before  { background-color: #6a1b9a; }
-.hex-ciencia::before   { background-color: #1565c0; }
-.hex-erudito::before   { background-color: #c5a059; }
-.hex-ficcion::before   { background-color: #db2822; }
+.hex-vacio, .hex-vacio::before     { background-color: #1c1a17; }
+.hex-fantasia, .hex-fantasia::before  { background-color: #2e7d32; }
+.hex-misterio, .hex-misterio::before  { background-color: #6a1b9a; }
+.hex-ciencia, .hex-ciencia::before   { background-color: #1565c0; }
+.hex-erudito, .hex-erudito::before   { background-color: #c5a059; }
+.hex-ficcion, .hex-ficcion::before   { background-color: #db2822; }
 
 .hex-es-reto::before {
   filter: drop-shadow(0 0 4px #d4af37);

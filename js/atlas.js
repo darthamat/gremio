@@ -193,7 +193,7 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add("hex-vacio");
           const tooltipVacio = document.createElement("div");
           tooltipVacio.classList.add("tooltip-text");
-          tooltipVacio.textContent = "🗺️ Territorio Niebla de Guerra";
+          tooltipVacio.textContent = "🗺️ Territorio sin explorar";
           
           hexDiv.appendChild(tooltipVacio);
         }
