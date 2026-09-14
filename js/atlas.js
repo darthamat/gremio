@@ -124,24 +124,27 @@ async function renderizarMapaHex(uid) {
 
   try {
     const bibliotecaRef = collection(db, "biblioteca");
-    const q = query(bibliotecaRef, where("lectores", "array-contains", uid));
-    const snapshot = await getDocs(q);
+    
+    // 1. Obtener TODOS los libros de la biblioteca global (sin filtrar por lector)
+    const snapshot = await getDocs(bibliotecaRef);
 
-    let misLecturasGlobales = [];
+    let lecturasGlobales = [];
     snapshot.forEach(docSnap => {
-      misLecturasGlobales.push(docSnap.data());
+      const data = docSnap.data();
+      // Solo tomamos libros que hayan sido leídos al menos por 1 aventurero
+      if (Array.isArray(data.lectores) && data.lectores.length > 0) {
+        lecturasGlobales.push(data);
+      }
     });
 
-    // Procesar cada libro e identificar al pionero (primer lector)
-    for (const libro of misLecturasGlobales) {
+    // 2. Procesar cada libro leído en el servidor
+    for (const libro of lecturasGlobales) {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
 
-      const primerLectorUid = Array.isArray(libro.lectores) && libro.lectores.length > 0 
-        ? libro.lectores[0] 
-        : (libro.usuarioId || uid);
-
+      // El pionero siempre será el PRIMER elemento del array 'lectores'
+      const primerLectorUid = libro.lectores[0] || libro.usuarioId;
       const nombrePrimerLector = await obtenerNombreAventurero(primerLectorUid);
 
       if (pos) {
@@ -157,7 +160,7 @@ async function renderizarMapaHex(uid) {
       }
     }
 
-    // Renderizado del Grid Hexagonal
+    // 3. Renderizado del Grid Hexagonal
     for (let f = 0; f < FILAS; f++) {
       const filaDiv = document.createElement("div");
       filaDiv.classList.add("hex-fila");
@@ -172,11 +175,9 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
           if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
-          // PUNTO CENTRAL
           const nodoCentral = document.createElement("div");
           nodoCentral.classList.add("hex-nodo-central");
 
-          // TOOLTIP CORREGIDO: Es hermano del punto central, no su hijo
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
@@ -193,7 +194,7 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add("hex-vacio");
           const tooltipVacio = document.createElement("div");
           tooltipVacio.classList.add("tooltip-text");
-          tooltipVacio.textContent = "🗺️ Territorio sin explorar";
+          tooltipVacio.textContent = "🗺️ Territorio Niebla de Guerra";
           
           hexDiv.appendChild(tooltipVacio);
         }
