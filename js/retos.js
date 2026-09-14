@@ -366,7 +366,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     });
 
     // 2. Llamamos al gestor central para actualizar Firestore (libros, prestigio, totalLectores)
-    await completarRetoAventurero(usuarioSesionId, datosReto);
+    await completarRetoGremio(usuarioSesionId, datosReto);
 
     // 3. Refrescar la interfaz
     await cargarYRenderizarRetos();

@@ -88,7 +88,7 @@ export async function obtenerBibliotecaGlobal() {
 /**
  * ⚔️ Marca un reto como completado para un aventurero de forma atómica
  */
-export async function completarRetoAventurero(uid, datosReto) {
+export async function completarRetoGremio(uid, datosReto) {
   const libroId = datosReto.id || generarLibroId(datosReto.titulo || datosReto.libro);
   
   const userRef = doc(db, "aventureros", uid);
