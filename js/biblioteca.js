@@ -2,17 +2,14 @@ import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/
 import { 
     getFirestore, 
     doc, 
-    getDoc, 
     collection, 
     getDocs, 
     query, 
     where, 
-    addDoc, 
-    updateDoc, 
-    increment,
-    serverTimestamp 
+    or 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
+import { registrarLecturaLibre } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -36,11 +33,16 @@ async function cargarBiblioteca() {
         
         estante.innerHTML = "";
 
-        // 🔍 Consulta a la colección global 'biblioteca' filtrando por usuarioId
+        // 🔍 Consulta flexible: busca si el usuario está en el array 'lectores' 
+        // O si es el creador directo ('usuarioId') para mantener retrocompatibilidad.
         const q = query(
             collection(db, "biblioteca"), 
-            where("usuarioId", "==", currentUser.uid)
+            or(
+                where("lectores", "array-contains", currentUser.uid),
+                where("usuarioId", "==", currentUser.uid)
+            )
         );
+        
         const snapshot = await getDocs(q);
 
         let totalPaginas = 0;
@@ -94,7 +96,7 @@ function renderizarLomoLibro(libro) {
     // La altura también escala ligeramente (mínimo 180px, máximo 240px)
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
-    const esReto = libro.esReto || libro.tipoOrigen === "RETO_GREMIO";
+    const esReto = libro.esReto || libro.tipoOrigen === "RETO_GREMIO" || (libro.retosAsociados && libro.retosAsociados.length > 0);
     const colorFondo = libro.colorLomo || libro.color || (esReto ? "#8e44ad" : "#8b263e");
 
     lomo.style.width = `${ancho}px`;
@@ -131,7 +133,7 @@ if (btnCerrarModal && modal) {
     btnCerrarModal.addEventListener("click", () => modal.classList.add("oculto"));
 }
 
-// Guardar un libro manual en Firestore con tirada de Prestigio
+// Guardar un libro manual utilizando el gestor centralizado
 if (formLibro) {
     formLibro.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -147,40 +149,30 @@ if (formLibro) {
         // 🏆 Cálculo del Prestigio
         const prestigioGanado = Math.round(paginas + (paginas / tiradaDado100));
 
-        const nuevoLibro = {
+        const datosLibro = {
             titulo,
             autor,
             paginas,
             colorLomo: color,
             prestigioGanado,
-            tiradaDado: tiradaDado100,
-            usuarioId: currentUser.uid,
-            esReto: false,
-            tipoOrigen: "LECTURA_LIBRE",
-            fechaAgregado: serverTimestamp(),
-            estadoLectura: "COMPLETADO"
+            tiradaDado: tiradaDado100
         };
 
         try {
-            // 1. Guardar en la colección global 'biblioteca'
-            await addDoc(collection(db, "biblioteca"), nuevoLibro);
+            // Guardar usando la función unificada de gestorLibros.js
+            const resultado = await registrarLecturaLibre(currentUser.uid, datosLibro);
 
-            // 2. Actualizar las estadísticas en el documento principal del aventurero
-            const userDocRef = doc(db, "aventureros", currentUser.uid);
-            await updateDoc(userDocRef, {
-                xp: increment(paginas),
-                paginasLeidas: increment(paginas),
-                librosCompletados: increment(1),
-                prestigio: increment(prestigioGanado)
-            });
+            if (resultado.exito) {
+                alert(`🎲 ¡Tirada de d100: Sacaste un ${tiradaDado100}!\n✨ Has ganado ${prestigioGanado} Puntos de Prestigio.`);
 
-            alert(`🎲 ¡Tirada de d100: Sacaste un ${tiradaDado100}!\n✨ Has ganado ${prestigioGanado} Puntos de Prestigio.`);
-
-            if (modal) modal.classList.add("oculto");
-            formLibro.reset();
-            
-            // Recargar biblioteca completa
-            await cargarBiblioteca();
+                if (modal) modal.classList.add("oculto");
+                formLibro.reset();
+                
+                // Recargar biblioteca completa
+                await cargarBiblioteca();
+            } else {
+                alert("Ocurrió un error al registrar el libro.");
+            }
 
         } catch (error) {
             console.error("Error al guardar el libro manual:", error);
