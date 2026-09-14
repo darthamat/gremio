@@ -3,6 +3,8 @@ import {
   getFirestore, 
   collection, 
   getDocs, 
+  doc,
+  getDoc,
   query, 
   where 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -21,6 +23,27 @@ const SEMILLAS_INICIALES = {
   erudito:  { f: 5, c: 7 },
   ficcion:  { f: 3, c: 4 }
 };
+
+// Cache en memoria para no hacer peticiones repetidas de nombres de aventureros
+const cacheAventureros = {};
+
+async function obtenerNombreAventurero(uid) {
+  if (!uid) return "Aventurero Desconocido";
+  if (cacheAventureros[uid]) return cacheAventureros[uid];
+
+  try {
+    const userSnap = await getDoc(doc(db, "aventureros", uid));
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      const nombre = data.nombre || data.nombreUsuario || data.apodo || "Aventurero";
+      cacheAventureros[uid] = nombre;
+      return nombre;
+    }
+  } catch (err) {
+    console.error("Error al obtener nombre del aventurero:", err);
+  }
+  return "Aventurero Anónimo";
+}
 
 function normalizarGenero(genero = "") {
   const g = String(genero).toLowerCase();
@@ -99,7 +122,6 @@ async function renderizarMapaHex(uid) {
   let matriz = Array.from({ length: FILAS }, () => Array(COLS).fill(null));
 
   try {
-    // 🎯 CONSULTAR LA COLECCIÓN GLOBAL 'biblioteca' BUSCANDO LIBROS DONDE EL USUARIO SEA LECTOR
     const bibliotecaRef = collection(db, "biblioteca");
     const q = query(bibliotecaRef, where("lectores", "array-contains", uid));
     const snapshot = await getDocs(q);
@@ -109,11 +131,18 @@ async function renderizarMapaHex(uid) {
       misLecturasGlobales.push(docSnap.data());
     });
 
-    // Ubicar los libros leídos en el mapa de hexágonos
-    misLecturasGlobales.forEach(libro => {
+    // Procesar cada libro e identificar al primer aventurero que lo completó
+    for (const libro of misLecturasGlobales) {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
       const pos = buscarCasillaCrecimiento(matriz, generoKey);
+
+      // Obtener el UID del primer lector (quien descubrió/completó primero la casilla)
+      const primerLectorUid = Array.isArray(libro.lectores) && libro.lectores.length > 0 
+        ? libro.lectores[0] 
+        : (libro.usuarioId || uid);
+
+      const nombrePrimerLector = await obtenerNombreAventurero(primerLectorUid);
 
       if (pos) {
         matriz[pos.f][pos.c] = {
@@ -122,10 +151,11 @@ async function renderizarMapaHex(uid) {
           generoKey,
           paginas: libro.paginas || 0,
           esReto: libro.esReto || false,
-          autor: libro.autor || "Desconocido"
+          autor: libro.autor || "Desconocido",
+          primerLector: nombrePrimerLector
         };
       }
-    });
+    }
 
     // Renderizado del Grid
     for (let f = 0; f < FILAS; f++) {
@@ -142,17 +172,24 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
           if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
-          const puntoCentro = document.createElement("div");
-          puntoCentro.classList.add("hex-centro-punto");
-          hexDiv.appendChild(puntoCentro);
+          // CONTENIDO VISIBLE DENTRO DEL HEXÁGONO
+          const contenidoDiv = document.createElement("div");
+          contenidoDiv.classList.add("hex-contenido");
+          contenidoDiv.innerHTML = `
+            <span class="hex-titulo" title="${datosCelda.titulo}">${datosCelda.titulo}</span>
+            <span class="hex-primer-lector">🏆 ${datosCelda.primerLector}</span>
+            <span class="hex-paginas">📖 ${datosCelda.paginas}p</span>
+          `;
+          hexDiv.appendChild(contenidoDiv);
 
+          // TOOLTIP FLOTANTE (Información completa al pasar el cursor)
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
-            <strong>📖 ${datosCelda.titulo}</strong> ${datosCelda.esReto ? '🛡️' : ''}<br>
-            <em>Autor: ${datosCelda.autor}</em><br>
-            <em>Gén: ${datosCelda.genero}</em><br>
-            📄 <strong>${datosCelda.paginas} págs</strong>
+            <strong>📖 ${datosCelda.titulo}</strong> ${datosCelda.esReto ? '🛡️ (Reto del Gremio)' : ''}<br>
+            <em>Cronista: ${datosCelda.autor}</em><br>
+            <em>Pionero: ${datosCelda.primerLector}</em><br>
+            📄 <strong>${datosCelda.paginas} páginas</strong>
           `;
           hexDiv.appendChild(tooltip);
 
