@@ -145,7 +145,18 @@ function seleccionarLibroGB(info, imagenUrl) {
 
 // 💾 Guardado definitivo en la colección 'biblioteca' y en el Aventurero
 export async function registrarMisionAventurero(userId, datosFormulario) {
-  const { titulo, autor, paginas, proclama, estado, archivoLocal, urlPortadaGB } = datosFormulario;
+  const { 
+    titulo, 
+    autor, 
+    paginas, 
+    proclama, 
+    estado, 
+    archivoLocal, 
+    urlPortadaGB,
+    generos = [], 
+    rasgos = [], 
+    cicatrices = [] 
+  } = datosFormulario;
 
   const urlFinalPortada = await obtenerUrlPortadaValida(archivoLocal, urlPortadaGB);
   const libroId = generarLibroId(titulo);
@@ -155,6 +166,7 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
     titulo,
     autor,
     paginas,
+    generos,
     portadaUrl: urlFinalPortada,
     portada: urlFinalPortada,
     esReto: false,
@@ -175,6 +187,9 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
     paginas,
     proclama,
     estado,
+    generos,
+    rasgos,
+    cicatrices,
     portada: urlFinalPortada,
     fechaRegistro: new Date().toISOString()
   };
@@ -189,4 +204,65 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
 
 export function limpiarSeleccionBuscador() {
   libroSeleccionado = null;
+}
+
+// Inicializador de eventos del formulario (Llamar desde perfil.js)
+export function inicializarFormularioMisiones(userId, callbackExito) {
+  const formConfirmar = document.getElementById('form-confirmar-mision');
+  if (!formConfirmar) return;
+
+  formConfirmar.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const btnSubmit = formConfirmar.querySelector('button[type="submit"]');
+    if (btnSubmit) btnSubmit.disabled = true;
+
+    try {
+      // 1. Obtener géneros seleccionados
+      const generosSeleccionados = Array.from(
+        document.querySelectorAll('input[name="genero"]:checked')
+      ).map(cb => cb.value);
+
+      // 2. Obtener Rasgos y Cicatrices
+      const rasgosInput = document.getElementById('mision-rasgos')?.value.trim() || "";
+      const cicatricesInput = document.getElementById('mision-cicatrices')?.value.trim() || "";
+
+      const rasgos = rasgosInput ? rasgosInput.split(',').map(r => r.trim()).filter(Boolean) : [];
+      const cicatrices = cicatricesInput ? cicatricesInput.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+      // 3. Obtener archivo local de portada (si subió uno)
+      const inputArchivo = document.getElementById('mision-portada-file');
+      const archivoLocal = inputArchivo && inputArchivo.files.length > 0 ? inputArchivo.files[0] : null;
+
+      // 4. Preparar payload
+      const datosMision = {
+        titulo: document.getElementById('mision-titulo').value,
+        autor: document.getElementById('mision-autor').value,
+        paginas: parseInt(document.getElementById('mision-paginas').value, 10) || 0,
+        proclama: document.getElementById('mision-proclama').value,
+        estado: document.getElementById('mision-estado').value,
+        urlPortadaGB: document.getElementById('mision-portada-url').value,
+        archivoLocal: archivoLocal,
+        generos: generosSeleccionados,
+        rasgos: rasgos,
+        cicatrices: cicatrices
+      };
+
+      const misionGuardada = await registrarMisionAventurero(userId, datosMision);
+      console.log('✅ Misión guardada con éxito:', misionGuardada);
+
+      // Limpiar formulario
+      formConfirmar.reset();
+      const modal = document.getElementById('modal-buscador-mision');
+      if (modal) modal.classList.add('oculto');
+
+      if (callbackExito) callbackExito(misionGuardada);
+
+    } catch (err) {
+      console.error('❌ Error al registrar la misión:', err);
+      alert('Ocurrió un error al guardar la misión. Revisa la consola.');
+    } finally {
+      if (btnSubmit) btnSubmit.disabled = false;
+    }
+  });
 }

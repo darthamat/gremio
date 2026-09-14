@@ -8,12 +8,14 @@ import {
   limpiarSeleccionBuscador 
 } from "./buscadorMisiones.js";
 
+// 1. Inicialización de Firebase (SIEMPRE PRIMERO)
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let currentUserId = null;
 let currentUserDocRef = null;
 
+// 2. Control de Estado de Autenticación (Único listener)
 onAuthStateChanged(auth, async (user) => {
     if (!user) {
         window.location.href = "index.html";
@@ -29,6 +31,7 @@ onAuthStateChanged(auth, async (user) => {
     inicializarCerrarSesion();
 });
 
+// Carga y renderiza los datos del usuario desde Firestore
 async function cargarDatosAventurero(docRef) {
     const snap = await getDoc(docRef);
     if (!snap.exists()) return;
@@ -43,6 +46,7 @@ async function cargarDatosAventurero(docRef) {
     renderizarMisiones(misiones);
 }
 
+// Lógica de pestañas / acordeón
 function inicializarAcordeon() {
     const botones = document.querySelectorAll(".acordeon-botones .btn-tab:not(.btn-enlace)");
     const panelContenido = document.getElementById("panel-contenido");
@@ -73,6 +77,7 @@ function inicializarAcordeon() {
     });
 }
 
+// Renderiza la lista de tarjetas de misiones
 function renderizarMisiones(misiones) {
     const contenedor = document.getElementById("contenedor-misiones");
     if (!contenedor) return;
@@ -95,12 +100,14 @@ function renderizarMisiones(misiones) {
                 <small>${mision.autor}</small>
                 <p>📖 ${mision.paginas} páginas | Estado: ${mision.estado}</p>
                 ${mision.proclama ? `<p class="proclama">"${mision.proclama}"</p>` : ''}
+                ${mision.generos && mision.generos.length ? `<p><small>🏷️ ${mision.generos.join(', ')}</small></p>` : ''}
             </div>
         `;
         contenedor.appendChild(tarjeta);
     });
 }
 
+// Inicializa todos los eventos del modal de búsqueda y guardado de misiones
 function inicializarModalMisiones() {
     const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
     const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
@@ -140,52 +147,78 @@ function inicializarModalMisiones() {
         });
     }
 
-    // Previsualización de imagen si el usuario sube su propio archivo
+    // Previsualización de imagen si el usuario sube archivo local
     if (inputPortadaFile) {
         inputPortadaFile.addEventListener("change", (e) => {
             const file = e.target.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = (event) => {
-                    previewPortada.src = event.target.result;
-                    previewPortada.style.display = "block";
+                    if (previewPortada) {
+                        previewPortada.src = event.target.result;
+                        previewPortada.style.display = "block";
+                    }
                 };
                 reader.readAsDataURL(file);
             }
         });
     }
 
+    // Procesamiento del submit para guardar en Firestore
     if (formConfirmar) {
         formConfirmar.addEventListener("submit", async (e) => {
             e.preventDefault();
             
             try {
-                btnGuardar.disabled = true;
-                btnGuardar.innerText = "⏳ Registrando en Firestore y Cloudinary...";
+                if (btnGuardar) {
+                    btnGuardar.disabled = true;
+                    btnGuardar.innerText = "⏳ Registrando en Firestore y Cloudinary...";
+                }
 
+                // 1. Obtener géneros seleccionados (checkboxes)
+                const generosSeleccionados = Array.from(
+                    document.querySelectorAll('input[name="genero"]:checked')
+                ).map(cb => cb.value);
+
+                // 2. Obtener Rasgos y Cicatrices (listas separadas por comas)
+                const rasgosRaw = document.getElementById('mision-rasgos')?.value || "";
+                const cicatricesRaw = document.getElementById('mision-cicatrices')?.value || "";
+
+                const rasgos = rasgosRaw ? rasgosRaw.split(',').map(r => r.trim()).filter(Boolean) : [];
+                const cicatrices = cicatricesRaw ? cicatricesRaw.split(',').map(c => c.trim()).filter(Boolean) : [];
+
+                // 3. Empaquetar payload completo
                 const datosFormulario = {
                     titulo: document.getElementById("mision-titulo").value,
                     autor: document.getElementById("mision-autor").value,
                     paginas: Number(document.getElementById("mision-paginas").value) || 0,
                     proclama: document.getElementById("mision-proclama").value,
                     estado: document.getElementById("mision-estado").value,
-                    urlPortadaGB: document.getElementById("mision-portada-url").value,
-                    archivoLocal: inputPortadaFile?.files[0]
+                    urlPortadaGB: document.getElementById("mision-portada-url")?.value || "",
+                    archivoLocal: inputPortadaFile?.files[0] || null,
+                    generos: generosSeleccionados,
+                    rasgos: rasgos,
+                    cicatrices: cicatrices
                 };
 
+                // 4. Guardar en BD mediante la función exportada de buscadorMisiones.js
                 await registrarMisionAventurero(currentUserId, datosFormulario);
 
                 alert("✨ ¡Misión registrada con éxito en tu Perfil y en la Biblioteca!");
-                modal.classList.add("oculto");
+                if (modal) modal.classList.add("oculto");
                 limpiarFormularioLocal();
+                
+                // Recargar los datos del perfil
                 await cargarDatosAventurero(currentUserDocRef);
 
             } catch (err) {
                 console.error("Error al guardar la misión:", err);
                 alert("❌ Ocurrió un error al registrar la misión.");
             } finally {
-                btnGuardar.disabled = false;
-                btnGuardar.innerText = "💾 Registrar Misión";
+                if (btnGuardar) {
+                    btnGuardar.disabled = false;
+                    btnGuardar.innerText = "💾 Registrar Misión";
+                }
             }
         });
     }

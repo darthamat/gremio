@@ -218,6 +218,33 @@
                                 <option value="TERMINADA">✅ Completada</option>
                             </select>
                         </div>
+                        <!-- GÉNEROS LITERARIOS DE LA MISIÓN -->
+<div class="form-group">
+  <label>🔮 Géneros / Círculos de Conocimiento:</label>
+  <div class="tags-selector-container" id="generos-container">
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Fantasía"> 🗡️ Fantasía</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Ciencia Ficción"> 🚀 Sci-Fi</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Filosofía"> 📜 Filosofía</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Historia"> 🏛️ Historia</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Misterio"> 🕵️ Misterio</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Desarrollo Personal"> 🧠 Mente</label>
+    <label class="tag-checkbox"><input type="checkbox" name="genero" value="Terror"> 👁️ Terror</label>
+  </div>
+</div>
+
+<!-- RASGOS ADQUIRIDOS O DESARROLLADOS -->
+<div class="form-group">
+  <label for="mision-rasgos">✨ Rasgos Adquiridos / Aprendizajes:</label>
+  <input type="text" id="mision-rasgos" placeholder="Ej: Pensamiento Crítico +1, Resiliencia Estoica, Mente Analítica..." />
+  <small class="form-help">Escribe las virtudes o habilidades ganadas con este libro (separadas por comas).</small>
+</div>
+
+<!-- CICATRICES Y MARCAS DE LA LECTURA -->
+<div class="form-group">
+  <label for="mision-cicatrices">💥 Cicatrices de Aventurero / Impacto Emocional:</label>
+  <textarea id="mision-cicatrices" rows="2" placeholder="Ej: Corazón Roto por el final, Obsesión Estratégica, Fatiga Mental tras batalla conceptual..."></textarea>
+  <small class="form-help">Escribe los traumas, giros de guión impactantes o secuelas emocionales de este viaje.</small>
+</div>
 
                         <button type="submit" id="btn-guardar-mision" class="btn-guardar-mision">
                             💾 Registrar Misión
