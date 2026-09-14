@@ -60,6 +60,7 @@ body {
   gap: 20px;
   max-width: 1100px;
   margin: 0 auto 30px auto;
+  flex-wrap: wrap;
 }
 
 .stat-card {
@@ -87,17 +88,26 @@ body {
 .estanteria-contenedor {
   max-width: 1100px;
   margin: 0 auto;
-  padding-top: 40px;
+  padding-top: 20px;
 }
 
 .estante {
   display: flex;
   align-items: flex-end;
   justify-content: flex-start;
-  gap: 6px;
-  min-height: 260px;
-  padding: 0 20px;
+  gap: 8px;
+  min-height: 250px;
+  padding: 10px 20px 0 20px;
   overflow-x: auto;
+}
+
+.sin-datos {
+  width: 100%;
+  text-align: center;
+  color: #a0a0b0;
+  font-style: italic;
+  padding: 40px 0;
+  align-self: center;
 }
 
 .tabla-madera {
@@ -116,35 +126,49 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 6px;
-  border-radius: 4px 4px 0 0;
+  padding: 12px 4px;
+  border-radius: 0 0 4px 4px; /* Ajustado por la rotación de 180deg */
   box-shadow: inset -2px 0 5px rgba(0,0,0,0.4), inset 2px 0 5px rgba(255,255,255,0.1), 3px 0 6px rgba(0,0,0,0.5);
   cursor: pointer;
   transition: transform 0.2s ease, filter 0.2s ease;
   user-select: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.2);
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+  box-sizing: border-box;
 }
 
 .lomo-libro:hover {
-  transform: rotate(180deg) translateY(10px) scale(1.03);
+  /* Al estar rotado 180deg, -10px hace que el libro suba hacia arriba */
+  transform: rotate(180deg) translateY(-10px) scale(1.03);
   filter: brightness(1.2);
 }
 
 .lomo-titulo {
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #fff;
   text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 180px;
+  max-height: 160px;
 }
 
 .lomo-paginas {
   font-size: 0.7rem;
   color: #ffd700;
-  margin-top: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.insignia-gremio {
+  font-size: 0.65rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 2px 4px;
+  border-radius: 3px;
+  color: #e0aaff;
+  border: 1px solid #8e44ad;
 }
 
 /* Modal */

@@ -1,7 +1,6 @@
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
     getFirestore, 
-    doc, 
     collection, 
     getDocs, 
     query, 
@@ -33,8 +32,6 @@ async function cargarBiblioteca() {
         
         estante.innerHTML = "";
 
-        // 🔍 Consulta flexible: busca si el usuario está en el array 'lectores' 
-        // O si es el creador directo ('usuarioId') para mantener retrocompatibilidad.
         const q = query(
             collection(db, "biblioteca"), 
             or(
@@ -50,7 +47,7 @@ async function cargarBiblioteca() {
         let totalPrestigio = 0;
 
         if (snapshot.empty) {
-            estante.innerHTML = `<p class="sin-datos" style="color: #bbb; padding: 20px;">Tu estantería está vacía. Completa retos o añade libros para llenar tus pergaminos.</p>`;
+            estante.innerHTML = `<p class="sin-datos">Tu estantería está vacía. Completa retos o añade libros para llenar tus pergaminos.</p>`;
         } else {
             snapshot.forEach(docSnap => {
                 const libro = docSnap.data();
@@ -65,7 +62,7 @@ async function cargarBiblioteca() {
             });
         }
 
-        // Actualizar estadísticas en pantalla si los elementos existen
+        // Actualizar estadísticas en pantalla
         const elemLibros = document.getElementById("total-libros");
         const elemPaginas = document.getElementById("total-paginas");
         const elemXp = document.getElementById("total-xp");
@@ -91,9 +88,8 @@ function renderizarLomoLibro(libro) {
     
     const paginasNum = Number(libro.paginas) || 100;
 
-    // El grosor escala con las páginas (mínimo 28px, máximo 65px)
+    // Dimensiones proporcionales
     const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
-    // La altura también escala ligeramente (mínimo 180px, máximo 240px)
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
     const esReto = libro.esReto || libro.tipoOrigen === "RETO_GREMIO" || (libro.retosAsociados && libro.retosAsociados.length > 0);
@@ -103,23 +99,23 @@ function renderizarLomoLibro(libro) {
     lomo.style.height = `${alto}px`;
     lomo.style.backgroundColor = colorFondo;
 
-    // Distintivo especial si es un reto del gremio completado
-    const insigniaGremio = esReto ? `<span style="font-size: 10px; display: block;">📜 GREMIO</span>` : '';
+    // Etiqueta estilizada para el reto
+    const insigniaGremio = esReto ? `<span class="insignia-gremio">📜 GREMIO</span>` : '';
 
     lomo.innerHTML = `
         <span class="lomo-titulo" title="${libro.titulo || 'Sin título'} - ${libro.autor || 'Autor desconocido'}">
             ${libro.titulo || 'Sin título'}
         </span>
-        <span class="lomo-paginas">
+        <div class="lomo-paginas">
             ${insigniaGremio}
-            📖 ${paginasNum}p
-        </span>
+            <span>📖 ${paginasNum}p</span>
+        </div>
     `;
 
     estante.appendChild(lomo);
 }
 
-// Control seguro del Modal (solo si los botones existen en la vista HTML)
+// Control del Modal
 const modal = document.getElementById("modal-libro");
 const btnAbrirModal = document.getElementById("btn-abrir-modal");
 const btnCerrarModal = document.getElementById("btn-cerrar-modal");
@@ -133,7 +129,7 @@ if (btnCerrarModal && modal) {
     btnCerrarModal.addEventListener("click", () => modal.classList.add("oculto"));
 }
 
-// Guardar un libro manual utilizando el gestor centralizado
+// Formulario de registro de libro libre
 if (formLibro) {
     formLibro.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -143,10 +139,7 @@ if (formLibro) {
         const paginas = Number(document.getElementById("paginas").value) || 0;
         const color = document.getElementById("color") ? document.getElementById("color").value : "#8b263e";
 
-        // 🎲 Tirada virtual de d100
         const tiradaDado100 = Math.floor(Math.random() * 100) + 1;
-
-        // 🏆 Cálculo del Prestigio
         const prestigioGanado = Math.round(paginas + (paginas / tiradaDado100));
 
         const datosLibro = {
@@ -159,7 +152,6 @@ if (formLibro) {
         };
 
         try {
-            // Guardar usando la función unificada de gestorLibros.js
             const resultado = await registrarLecturaLibre(currentUser.uid, datosLibro);
 
             if (resultado.exito) {
@@ -167,8 +159,6 @@ if (formLibro) {
 
                 if (modal) modal.classList.add("oculto");
                 formLibro.reset();
-                
-                // Recargar biblioteca completa
                 await cargarBiblioteca();
             } else {
                 alert("Ocurrió un error al registrar el libro.");
