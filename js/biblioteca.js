@@ -78,15 +78,7 @@ async function cargarBiblioteca() {
     }
 }
 
-// Crear un único tooltip global en el body si no existe
-let tooltipGlobal = document.getElementById("tooltip-global");
-if (!tooltipGlobal) {
-    tooltipGlobal = document.createElement("div");
-    tooltipGlobal.id = "tooltip-global";
-    tooltipGlobal.className = "tooltip-libro-global";
-    document.body.appendChild(tooltipGlobal);
-}
-
+// Renderizar un lomo individual en la estantería
 function renderizarLomoLibro(libro) {
     const estante = document.getElementById("estante-libros");
     if (!estante) return;
@@ -96,7 +88,7 @@ function renderizarLomoLibro(libro) {
     
     const paginasNum = Number(libro.paginas) || 100;
 
-    // Dimensiones proporcionales
+    // Dimensiones proporcionales (ancho y alto)
     const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
@@ -107,65 +99,36 @@ function renderizarLomoLibro(libro) {
     lomo.style.height = `${alto}px`;
     lomo.style.backgroundColor = colorFondo;
 
-    // Formatear la fecha
+    // Formatear la fecha si existe en el objeto libro
     let fechaTexto = "Fecha desconocida";
     if (libro.fechaCompletado) {
+        // Soporta marcas de tiempo de Firestore o fechas en string/Date
         const fechaObj = libro.fechaCompletado.toDate ? libro.fechaCompletado.toDate() : new Date(libro.fechaCompletado);
         if (!isNaN(fechaObj)) {
             fechaTexto = fechaObj.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
         }
     }
 
-    // Título en el lomo
+    // Contenido visible en el lomo (Solo el título)
     const tituloSpan = document.createElement("span");
     tituloSpan.className = "lomo-titulo";
     tituloSpan.textContent = libro.titulo || "Sin título";
     lomo.appendChild(tituloSpan);
 
-    // Eventos de ratón para mostrar/ocultar el tooltip fuera del div estante
-    lomo.addEventListener("mouseenter", (e) => {
-        tooltipGlobal.innerHTML = `
-            <div class="tooltip-titulo">📖 ${libro.titulo || 'Sin título'}</div>
-            <div class="tooltip-autor"><em>de ${libro.autor || 'Autor desconocido'}</em></div>
-            <hr class="tooltip-divisor">
-            <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
-            <div class="tooltip-detalle">📅 Leído el <strong>${fechaTexto}</strong></div>
-            ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
-        `;
-        
-        tooltipGlobal.classList.add("visible");
-        posicionarTooltip(e);
-    });
-
-    lomo.addEventListener("mousemove", (e) => {
-        posicionarTooltip(e);
-    });
-
-    lomo.addEventListener("mouseleave", () => {
-        tooltipGlobal.classList.remove("visible");
-    });
+    // Tooltip flotante al hacer hover
+    const tooltip = document.createElement("div");
+    tooltip.className = "tooltip-libro";
+    tooltip.innerHTML = `
+        <div class="tooltip-titulo">📖 ${libro.titulo || 'Sin título'}</div>
+        <div class="tooltip-autor"><em>de ${libro.autor || 'Autor desconocido'}</em></div>
+        <hr class="tooltip-divisor">
+        <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
+        <div class="tooltip-detalle">📅 Leído el <strong>${fechaTexto}</strong></div>
+        ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
+    `;
+    lomo.appendChild(tooltip);
 
     estante.appendChild(lomo);
-}
-
-// Función para calcular la posición sobre el cursor
-function posicionarTooltip(e) {
-    const offset = 15;
-    let left = e.clientX + offset;
-    let top = e.clientY - tooltipGlobal.offsetHeight - offset;
-
-    // Si el tooltip se sale por la derecha de la pantalla
-    if (left + tooltipGlobal.offsetWidth > window.innerWidth) {
-        left = e.clientX - tooltipGlobal.offsetWidth - offset;
-    }
-
-    // Si el tooltip se sale por la parte superior de la pantalla
-    if (top < 10) {
-        top = e.clientY + offset;
-    }
-
-    tooltipGlobal.style.left = `${left}px`;
-    tooltipGlobal.style.top = `${top}px`;
 }
 
 // Control del Modal
