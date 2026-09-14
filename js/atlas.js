@@ -172,11 +172,11 @@ async function renderizarMapaHex(uid) {
           hexDiv.classList.add(`hex-${datosCelda.generoKey}`);
           if (datosCelda.esReto) hexDiv.classList.add("hex-es-reto");
           
-          // PUNTO CENTRAL DENTRO DEL HEXÁGONO
+          // PUNTO CENTRAL
           const nodoCentral = document.createElement("div");
           nodoCentral.classList.add("hex-nodo-central");
 
-          // Elemento Tooltip como HIJO DIRECTO del Hexágono (NO del nodo central)
+          // TOOLTIP CORREGIDO: Es hermano del punto central, no su hijo
           const tooltip = document.createElement("div");
           tooltip.classList.add("tooltip-text");
           tooltip.innerHTML = `
