@@ -125,8 +125,8 @@ body {
   transform: rotate(180deg);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 2px;
+  justify-content: center; /* Centra el título en el lomo */
+  padding: 12px 4px;
   border-radius: 0 0 4px 4px;
   box-shadow: inset -2px 0 5px rgba(0,0,0,0.4), inset 2px 0 5px rgba(255,255,255,0.1), 3px 0 6px rgba(0,0,0,0.5);
   cursor: pointer;
@@ -134,23 +134,24 @@ body {
   user-select: none;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   box-sizing: border-box;
-  overflow: hidden; /* Evita que el contenido desborde el lomo */
+  position: relative; /* Permite ubicar el tooltip en relación al lomo */
 }
 
 .lomo-libro:hover {
   transform: rotate(180deg) translateY(-10px) scale(1.03);
   filter: brightness(1.2);
+  z-index: 100; /* Asegura que el libro activo quede por encima de los demás */
 }
 
 .lomo-titulo {
   font-weight: bold;
-  font-size: 0.8rem;
-  color: #fff;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+  font-size: 0.85rem;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.9);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 140px;
+  max-height: 180px;
 }
 
 .lomo-paginas {
@@ -230,4 +231,74 @@ body {
   border-radius: 6px;
   cursor: pointer;
   margin-top: 10px;
+}
+
+/* ==========================================================================
+   TOOLTIP FLOTANTE DE INFORMACIÓN
+   ========================================================================== */
+.tooltip-libro {
+  visibility: hidden;
+  opacity: 0;
+  width: 200px;
+  background-color: rgba(18, 18, 24, 0.95);
+  border: 1px solid #f39c12;
+  border-radius: 8px;
+  padding: 10px 12px;
+  position: absolute;
+  /* Dado que el lomo está rotado 180deg, top/left invierten direcciones */
+  top: 110%;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg); /* Deshace la rotación del lomo para leerse horizontal */
+  writing-mode: horizontal-tb; /* Restablece el texto a horizontal normal */
+  color: #e0e0e0;
+  font-size: 0.8rem;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+  z-index: 200;
+  text-align: left;
+}
+
+.lomo-libro:hover .tooltip-libro {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-titulo {
+  font-weight: bold;
+  color: #f39c12;
+  font-size: 0.85rem;
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+.tooltip-autor {
+  color: #a0a0b0;
+  font-size: 0.75rem;
+  margin-bottom: 6px;
+}
+
+.tooltip-divisor {
+  border: 0;
+  border-top: 1px solid #3f3f5a;
+  margin: 6px 0;
+}
+
+.tooltip-detalle {
+  font-size: 0.75rem;
+  color: #cccccc;
+  margin-top: 3px;
+}
+
+.tooltip-badge {
+  display: inline-block;
+  background: rgba(142, 68, 173, 0.3);
+  border: 1px solid #8e44ad;
+  color: #e0aaff;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 6px;
+  font-weight: bold;
 }

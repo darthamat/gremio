@@ -88,7 +88,7 @@ function renderizarLomoLibro(libro) {
     
     const paginasNum = Number(libro.paginas) || 100;
 
-    // Dimensiones proporcionales
+    // Dimensiones proporcionales (ancho y alto)
     const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
@@ -99,18 +99,34 @@ function renderizarLomoLibro(libro) {
     lomo.style.height = `${alto}px`;
     lomo.style.backgroundColor = colorFondo;
 
-    // Etiqueta estilizada para el reto
-const insigniaGremio = esReto ? `<span class="insignia-gremio">📜 GREMIO</span>` : '';
+    // Formatear la fecha si existe en el objeto libro
+    let fechaTexto = "Fecha desconocida";
+    if (libro.fechaCompletado) {
+        // Soporta marcas de tiempo de Firestore o fechas en string/Date
+        const fechaObj = libro.fechaCompletado.toDate ? libro.fechaCompletado.toDate() : new Date(libro.fechaCompletado);
+        if (!isNaN(fechaObj)) {
+            fechaTexto = fechaObj.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+        }
+    }
 
-lomo.innerHTML = `
-    <span class="lomo-titulo" title="${libro.titulo || 'Sin título'} - ${libro.autor || 'Autor desconocido'}">
-        ${libro.titulo || 'Sin título'}
-    </span>
-    <div class="lomo-paginas">
-        ${insigniaGremio}
-        📖 ${paginasNum}p
-    </div>
-`;
+    // Contenido visible en el lomo (Solo el título)
+    const tituloSpan = document.createElement("span");
+    tituloSpan.className = "lomo-titulo";
+    tituloSpan.textContent = libro.titulo || "Sin título";
+    lomo.appendChild(tituloSpan);
+
+    // Tooltip flotante al hacer hover
+    const tooltip = document.createElement("div");
+    tooltip.className = "tooltip-libro";
+    tooltip.innerHTML = `
+        <div class="tooltip-titulo">📖 ${libro.titulo || 'Sin título'}</div>
+        <div class="tooltip-autor"><em>de ${libro.autor || 'Autor desconocido'}</em></div>
+        <hr class="tooltip-divisor">
+        <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
+        <div class="tooltip-detalle">📅 Leído el <strong>${fechaTexto}</strong></div>
+        ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
+    `;
+    lomo.appendChild(tooltip);
 
     estante.appendChild(lomo);
 }
