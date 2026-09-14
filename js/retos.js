@@ -1,3 +1,4 @@
+// js/reto.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -6,7 +7,8 @@ import {
   doc, 
   getDoc, 
   updateDoc, 
-  arrayUnion 
+  arrayUnion,
+  increment 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { completarRetoGremio } from "./gestorLibros.js";
@@ -203,7 +205,7 @@ async function cargarYRenderizarRetos() {
 
             <div class="meta-info">
               <span>📖 Tomo Asignado: <strong>${retoActual.libro || retoActual.titulo}</strong></span>
-              <span>🏆 Recompensa: <strong>+${recompensaPuntos} Prestigio</strong></span>
+              <span>🏆 Recompensa Estimada: <strong>~${recompensaPuntos * 1.5} XP / Prestigio</strong></span>
             </div>
 
             <div class="acciones-reto">
@@ -281,7 +283,7 @@ async function cargarYRenderizarRetos() {
             <div class="fecha-reto-header">📅 Expedición de ${tituloFecha}</div>
             <h3>${reto.titulo || 'Reto Antiguo'}</h3>
             <span class="proponente-pasado">Autor: <strong>${reto.autor || 'Desconocido'}</strong></span>
-            <span class="proponente-pasado">Recompensa: <strong>+${puntosHistorico} Prestigio</strong></span>
+            <span class="proponente-pasado">Páginas: <strong>${puntosHistorico} pág.</strong></span>
             
             <div class="acciones-reto-pasado">
               ${fueCompletado ? `
@@ -290,7 +292,7 @@ async function cargarYRenderizarRetos() {
                 </a>
               ` : `
                 <button class="btn-magico exito btn-completar-pasado" data-id="${reto.id}" data-puntos="${puntosHistorico}">
-                  ✨ Completar (+${puntosHistorico} pts)
+                  ✨ Completar (+${puntosHistorico} pág.)
                 </button>
               `}
             </div>
@@ -325,13 +327,13 @@ async function aceptarReto(retoId) {
   }
 }
 
-// Marca la misión como completada y añade el tomo a la biblioteca del aventurero
+// Marca la misión como completada, otorga XP, Prestigio y Marcapáginas al aventurero
 async function terminarReto(retoId, puntos, elementoBoton = null) {
   if (elementoBoton) {
     if (elementoBoton.disabled) return;
     elementoBoton.disabled = true;
     elementoBoton.dataset.textoOriginal = elementoBoton.textContent;
-    elementoBoton.textContent = "⌛ Guardando en los pergaminos...";
+    elementoBoton.textContent = "⌛ Reclamando recompensas...";
   }
 
   try {
@@ -359,14 +361,32 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       };
     }
 
-    // 1. Guardar el reto como completado en el perfil del aventurero
+    const paginas = datosReto.paginas;
+
+    // CÁLCULO DE RECOMPENSAS
+    // 1. XP (Misión): Páginas + número aleatorio entre 0 y Páginas
+    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+
+    // 2. Prestigio (Todas las lecturas): Páginas + número aleatorio entre 0 y Páginas
+    const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
+
+    // 3. Marcapáginas (Moneda): Número aleatorio entre 1 y Páginas
+    const gananciaMarcapaginas = Math.floor(Math.random() * paginas) + 1;
+
+    // 1. Actualizar el perfil del aventurero en Firestore
     const userRef = doc(db, "aventureros", usuarioSesionId);
     await updateDoc(userRef, { 
-      retosCompletados: arrayUnion(retoId) 
+      retosCompletados: arrayUnion(retoId),
+      xp: increment(gananciaXP),
+      prestigio: increment(gananciaPrestigio),
+      marcapaginas: increment(gananciaMarcapaginas)
     });
 
-    // 2. Llamamos al gestor central para actualizar Firestore (libros, prestigio, totalLectores)
+    // 2. Llamamos al gestor central para actualizar Firestore (libros, atlas, etc.)
     await completarRetoGremio(usuarioSesionId, datosReto);
+
+    // Mensaje flotante / Alerta de recompensas ganadas
+    alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
 
     // 3. Refrescar la interfaz
     await cargarYRenderizarRetos();
