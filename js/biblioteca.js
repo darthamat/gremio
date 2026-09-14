@@ -77,8 +77,7 @@ async function cargarBiblioteca() {
         console.error("Error al cargar la biblioteca:", error);
     }
 }
-
-// Crear un único tooltip global en el body si no existe
+// Asegurar la existencia de un único tooltip en el body
 let tooltipGlobal = document.getElementById("tooltip-global");
 if (!tooltipGlobal) {
     tooltipGlobal = document.createElement("div");
@@ -96,7 +95,7 @@ function renderizarLomoLibro(libro) {
     
     const paginasNum = Number(libro.paginas) || 100;
 
-    // Dimensiones proporcionales
+    // Dimensiones proporcionales del lomo
     const ancho = Math.min(Math.max(paginasNum / 12, 28), 65);
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
@@ -108,7 +107,7 @@ function renderizarLomoLibro(libro) {
     lomo.style.backgroundColor = colorFondo;
 
     // Formatear la fecha
-    let fechaTexto = "Fecha desconocida";
+    let fechaTexto = "Fecha no registrada";
     if (libro.fechaCompletado) {
         const fechaObj = libro.fechaCompletado.toDate ? libro.fechaCompletado.toDate() : new Date(libro.fechaCompletado);
         if (!isNaN(fechaObj)) {
@@ -116,24 +115,32 @@ function renderizarLomoLibro(libro) {
         }
     }
 
-    // Título en el lomo
+    // Título estático en el lomo
     const tituloSpan = document.createElement("span");
     tituloSpan.className = "lomo-titulo";
     tituloSpan.textContent = libro.titulo || "Sin título";
     lomo.appendChild(tituloSpan);
 
-    // Eventos de ratón para mostrar/ocultar el tooltip fuera del div estante
+    // Portada del libro (imagen por defecto si no hay URL guardada)
+    const urlPortada = libro.portadaUrl || libro.imagenUrl || "https://via.placeholder.com/100x150/1e1e2f/f39c12?text=Sin+Portada";
+
+    // Mostrar tooltip sin animaciones
     lomo.addEventListener("mouseenter", (e) => {
         tooltipGlobal.innerHTML = `
-            <div class="tooltip-titulo">📖 ${libro.titulo || 'Sin título'}</div>
-            <div class="tooltip-autor"><em>de ${libro.autor || 'Autor desconocido'}</em></div>
-            <hr class="tooltip-divisor">
-            <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
-            <div class="tooltip-detalle">📅 Leído el <strong>${fechaTexto}</strong></div>
-            ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
+            <div class="tooltip-cuerpo">
+                <img src="${urlPortada}" alt="Portada" class="tooltip-portada" onerror="this.src='https://via.placeholder.com/100x150/1e1e2f/f39c12?text=Sin+Portada';" />
+                <div class="tooltip-info">
+                    <div class="tooltip-titulo">📖 ${libro.titulo || 'Sin título'}</div>
+                    <div class="tooltip-autor"><em>de ${libro.autor || 'Autor desconocido'}</em></div>
+                    <hr class="tooltip-divisor">
+                    <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
+                    <div class="tooltip-detalle">📅 Leído: <strong>${fechaTexto}</strong></div>
+                    ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
+                </div>
+            </div>
         `;
         
-        tooltipGlobal.classList.add("visible");
+        tooltipGlobal.style.display = "block";
         posicionarTooltip(e);
     });
 
@@ -141,27 +148,29 @@ function renderizarLomoLibro(libro) {
         posicionarTooltip(e);
     });
 
+    // Ocultar de inmediato al quitar el cursor
     lomo.addEventListener("mouseleave", () => {
-        tooltipGlobal.classList.remove("visible");
+        tooltipGlobal.style.display = "none";
     });
 
     estante.appendChild(lomo);
 }
 
-// Función para calcular la posición sobre el cursor
+// Cálculo de la posición exacta junto al cursor
 function posicionarTooltip(e) {
     const offset = 15;
     let left = e.clientX + offset;
-    let top = e.clientY - tooltipGlobal.offsetHeight - offset;
+    let top = e.clientY - (tooltipGlobal.offsetHeight / 2); // Centrado vertical respecto al puntero
 
-    // Si el tooltip se sale por la derecha de la pantalla
-    if (left + tooltipGlobal.offsetWidth > window.innerWidth) {
+    // Control de bordes para evitar desbordamiento de pantalla
+    if (left + tooltipGlobal.offsetWidth > window.innerWidth - 10) {
         left = e.clientX - tooltipGlobal.offsetWidth - offset;
     }
 
-    // Si el tooltip se sale por la parte superior de la pantalla
     if (top < 10) {
-        top = e.clientY + offset;
+        top = 10;
+    } else if (top + tooltipGlobal.offsetHeight > window.innerHeight - 10) {
+        top = window.innerHeight - tooltipGlobal.offsetHeight - 10;
     }
 
     tooltipGlobal.style.left = `${left}px`;

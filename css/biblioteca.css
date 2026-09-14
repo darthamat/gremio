@@ -125,22 +125,19 @@ body {
   transform: rotate(180deg);
   display: flex;
   align-items: center;
-  justify-content: center; /* Centra el título en el lomo */
+  justify-content: center;
   padding: 12px 4px;
   border-radius: 0 0 4px 4px;
   box-shadow: inset -2px 0 5px rgba(0,0,0,0.4), inset 2px 0 5px rgba(255,255,255,0.1), 3px 0 6px rgba(0,0,0,0.5);
   cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
   user-select: none;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   box-sizing: border-box;
-  position: relative; /* Permite ubicar el tooltip en relación al lomo */
 }
 
+/* Hover estático: solo realza sutilmente el brillo sin mover el lomo */
 .lomo-libro:hover {
-  transform: rotate(180deg) translateY(-10px) scale(1.03);
-  filter: brightness(1.2);
-  z-index: 100; /* Asegura que el libro activo quede por encima de los demás */
+  filter: brightness(1.25);
 }
 
 .lomo-titulo {
