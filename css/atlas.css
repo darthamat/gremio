@@ -94,7 +94,7 @@
 }
 
 /* ==========================================================================
-   3. TABLERO HEXAGONAL (SIN RECORTE OVERFLOW)
+   3. TABLERO HEXAGONAL (AJUSTADO Y DEFINIDO)
    ========================================================================== */
 .mapa-hex-card {
   background: #0d0c0a;
@@ -119,33 +119,32 @@
 
 .hex-fila {
   display: flex;
-  margin-bottom: -14px;
+  margin-bottom: -12px; /* Margen negativo suavizado para evitar colisiones */
   position: relative;
   z-index: 1;
 }
 
-/* Eleva la fila activa para que su tooltip vuele por encima de la fila superior */
 .hex-fila:hover {
   z-index: 200;
 }
 
+/* Desplazamiento intercalado para el engranaje hexagonal */
 .hex-fila:nth-child(even) {
-  transform: translateX(27px);
+  transform: translateX(28px);
 }
 
-/* Contenedor del hexágono (Sin clip-path para permitir tooltips) */
+/* Contenedor principal del hexágono */
 .hexagono {
-  width: 54px;
+  width: 52px;
   height: 60px;
   position: relative;
-  margin: 0 1px;
-  transition: transform 0.2s ease;
+  margin: 0 2px;
   cursor: pointer;
   z-index: 2;
   overflow: visible !important;
 }
 
-/* El pseudo-elemento es quien dibuja la forma del hexágono */
+/* Dibujo geométrico del hexágono con proporciones corregidas */
 .hexagono::before {
   content: "";
   position: absolute;
@@ -153,27 +152,29 @@
   left: 0;
   width: 100%;
   height: 100%;
+  /* Puntos exactos: Vértice superior (50% 0%), lados (100% 25%, 100% 75%), base (50% 100%) */
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  transition: filter 0.2s ease;
+  transition: transform 0.2s ease, filter 0.2s ease;
   z-index: 1;
 }
 
+/* Efecto hover: solo se escala la forma interna ::before */
 .hexagono:hover {
-  transform: scale(1.2);
   z-index: 500;
 }
 
 .hexagono:hover::before {
-  filter: brightness(1.25);
+  transform: scale(1.1);
+  filter: brightness(1.3);
 }
 
-/* Colores de Fondo para el ::before */
-.hex-vacio, .hex-vacio::before     { background-color: #1c1a17; }
-.hex-fantasia, .hex-fantasia::before  { background-color: #2e7d32; }
-.hex-misterio, .hex-misterio::before  { background-color: #6a1b9a; }
-.hex-ciencia, .hex-ciencia::before   { background-color: #1565c0; }
-.hex-erudito, .hex-erudito::before   { background-color: #c5a059; }
-.hex-ficcion, .hex-ficcion::before   { background-color: #db2822; }
+/* Colores de Fondo para los hexágonos y la leyenda */
+.hex-vacio, .hex-vacio::before         { background-color: #1c1a17; }
+.hex-fantasia, .hex-fantasia::before   { background-color: #2e7d32; }
+.hex-misterio, .hex-misterio::before   { background-color: #6a1b9a; }
+.hex-ciencia, .hex-ciencia::before    { background-color: #1565c0; }
+.hex-erudito, .hex-erudito::before    { background-color: #c5a059; }
+.hex-ficcion, .hex-ficcion::before    { background-color: #db2822; }
 
 .hex-es-reto::before {
   filter: drop-shadow(0 0 4px #d4af37);
