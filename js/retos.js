@@ -9,7 +9,7 @@ import {
   arrayUnion 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
-import { completarRetoAventurero } from "./gestorLibros.js";
+import { completarRetoGremio } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
