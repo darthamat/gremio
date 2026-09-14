@@ -45,10 +45,16 @@ async function cargarDatosAventurero(docRef) {
   const data = snap.data();
   misionesLocales = data.misionesSecundarias || [];
 
-  // Datos de texto
+  // Datos de texto y estadísticas básicas
   if (document.getElementById("char-name")) document.getElementById("char-name").textContent = data.nombre || "Aventurero";
   if (document.getElementById("char-level")) document.getElementById("char-level").textContent = data.nivel || 1;
   if (document.getElementById("char-xp")) document.getElementById("char-xp").textContent = `${data.xp || 0} XP`;
+  
+  // 🔖 CORRECCIÓN: Renderizar Marcapáginas en pantalla
+  const elMarcapaginas = document.getElementById("char-marcapaginas") || document.getElementById("contador-marcapaginas");
+  if (elMarcapaginas) {
+    elMarcapaginas.textContent = data.marcapaginas || 0;
+  }
 
   // Renderizar Avatar
   const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
@@ -60,8 +66,45 @@ async function cargarDatosAventurero(docRef) {
   // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
   renderizarEstadisticasAcordeon(data.estadisticas || {});
 
+  // 🩸✨ CORRECCIÓN: Renderizar Rasgos y Cicatrices en el Perfil
+  renderizarRasgosYCicatrices(data.rasgos || [], data.cicatrices || []);
+
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
+}
+
+// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices visualmente
+function renderizarRasgosYCicatrices(rasgos, cicatrices) {
+  const contenedorRasgos = document.getElementById("contenedor-rasgos");
+  const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
+
+  if (contenedorRasgos) {
+    if (rasgos.length === 0) {
+      contenedorRasgos.innerHTML = `<p class="sin-datos">Ningún rasgo obtenido aún.</p>`;
+    } else {
+      contenedorRasgos.innerHTML = rasgos.map(r => `
+        <div class="badge-item rasgo-badge" title="${r.descripcion || ''}">
+          <span class="icono">${r.icono || '✨'}</span>
+          <span class="nombre">${r.nombre}</span>
+          <span class="contador">(x${r.acumulaciones || 1})</span>
+        </div>
+      `).join('');
+    }
+  }
+
+  if (contenedorCicatrices) {
+    if (cicatrices.length === 0) {
+      contenedorCicatrices.innerHTML = `<p class="sin-datos">Tu historial está limpio de cicatrices.</p>`;
+    } else {
+      contenedorCicatrices.innerHTML = cicatrices.map(c => `
+        <div class="badge-item cicatriz-badge" title="${c.descripcion || ''}">
+          <span class="icono">${c.icono || '🩸'}</span>
+          <span class="nombre">${c.nombre}</span>
+          <span class="contador">(x${c.acumulaciones || 1})</span>
+        </div>
+      `).join('');
+    }
+  }
 }
 
 // Lógica de pestañas / acordeón
@@ -113,7 +156,7 @@ function renderizarMisiones(misiones) {
     tarjeta.className = `mision-card ${esTerminada ? 'mision-completada' : 'mision-en-progreso'}`;
 
     tarjeta.innerHTML = `
-      ${mision.portada ? `<img src="${mision.portada}" class="mision-portada-thumb" alt="Portada">` : ''}
+      ${mision.portadaUrl ? `<img src="${mision.portadaUrl}" class="mision-portada-thumb" alt="Portada">` : ''}
       <div class="mision-info">
         <strong>${mision.titulo}</strong>
         <small>${mision.autor}</small>
@@ -347,7 +390,7 @@ function inicializarModalMisiones() {
 
       } catch (error) {
         console.error("Error al registrar la misión en el perfil:", error);
-        alert("❌ Hubo un fallo al registrar la misión secundaria.");
+        alert("❌ Hubo un fallo al registrar la misión secundaria. Revisa tus reglas de seguridad para 'misionesSecundarias'.");
       } finally {
         if (btnGuardar) {
           btnGuardar.disabled = false;
