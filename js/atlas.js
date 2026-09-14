@@ -14,19 +14,41 @@ import { app } from "./firebase-config.js";
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const FILAS = 7;
-const COLS = 9;
-
-const SEMILLAS_INICIALES = {
-  fantasia: { f: 1, c: 1 },
-  misterio: { f: 1, c: 7 },
-  ciencia:  { f: 5, c: 1 },
-  erudito:  { f: 5, c: 7 },
-  ficcion:  { f: 3, c: 4 }
-};
-
 // Cache en memoria para evitar peticiones duplicadas de nombres
 const cacheAventureros = {};
+
+/**
+ * Calcula dinámicamente el tamaño de la matriz (filas x columnas)
+ * basándose en la cantidad total de libros leídos.
+ */
+function calcularDimensionesTablero(totalLibros) {
+  let filas = 7;
+  let cols = 9;
+
+  // Mientras la cantidad de libros ocupe más del 65% de la capacidad del mapa, expandimos
+  while (totalLibros >= (filas * cols) * 0.65) {
+    filas += 2; // Añade filas en pares para mantener el patrón intercalado
+    cols += 2;  // Añade columnas
+  }
+
+  return { filas, cols };
+}
+
+/**
+ * Genera posiciones iniciales (semillas) proporcionales al tamaño del tablero.
+ */
+function obtenerSemillasIniciales(filas, cols) {
+  const centroFila = Math.floor(filas / 2);
+  const centroCol = Math.floor(cols / 2);
+
+  return {
+    fantasia: { f: 1, c: 1 },
+    misterio: { f: 1, c: cols - 2 },
+    ciencia:  { f: filas - 2, c: 1 },
+    erudito:  { f: filas - 2, c: cols - 2 },
+    ficcion:  { f: centroFila, c: centroCol }
+  };
+}
 
 async function obtenerNombreAventurero(uid) {
   if (!uid) return "Aventurero Desconocido";
@@ -55,7 +77,7 @@ function normalizarGenero(genero = "") {
   return "erudito";
 }
 
-function obtenerVecinos(f, c) {
+function obtenerVecinos(f, c, maxFilas, maxCols) {
   const esPar = f % 2 === 0;
   const desplazamientos = esPar ? [
     [-1, -1], [-1, 0], [0, -1], [0, 1], [1, -1], [1, 0]
@@ -65,22 +87,24 @@ function obtenerVecinos(f, c) {
 
   return desplazamientos
     .map(([df, dc]) => ({ f: f + df, c: c + dc }))
-    .filter(p => p.f >= 0 && p.f < FILAS && p.c >= 0 && p.c < COLS);
+    .filter(p => p.f >= 0 && p.f < maxFilas && p.c >= 0 && p.c < maxCols);
 }
 
-function buscarCasillaCrecimiento(matriz, genero) {
+function buscarCasillaCrecimiento(matriz, genero, filas, cols) {
   const celdasReino = [];
 
-  for (let f = 0; f < FILAS; f++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let f = 0; f < filas; f++) {
+    for (let c = 0; c < cols; c++) {
       if (matriz[f][c] && matriz[f][c].generoKey === genero) {
         celdasReino.push({ f, c });
       }
     }
   }
 
+  const semillas = obtenerSemillasIniciales(filas, cols);
+
   if (celdasReino.length === 0) {
-    const semilla = SEMILLAS_INICIALES[genero] || SEMILLAS_INICIALES.ficcion;
+    const semilla = semillas[genero] || semillas.ficcion;
     if (!matriz[semilla.f][semilla.c]) {
       return semilla;
     }
@@ -88,7 +112,7 @@ function buscarCasillaCrecimiento(matriz, genero) {
 
   let candidatosLibres = [];
   celdasReino.forEach(celda => {
-    const vecinos = obtenerVecinos(celda.f, celda.c);
+    const vecinos = obtenerVecinos(celda.f, celda.c, filas, cols);
     vecinos.forEach(v => {
       if (!matriz[v.f][v.c]) {
         candidatosLibres.push(v);
@@ -101,8 +125,8 @@ function buscarCasillaCrecimiento(matriz, genero) {
   }
 
   let casillasVacias = [];
-  for (let f = 0; f < FILAS; f++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let f = 0; f < filas; f++) {
+    for (let c = 0; c < cols; c++) {
       if (!matriz[f][c]) casillasVacias.push({ f, c });
     }
   }
@@ -120,30 +144,30 @@ async function renderizarMapaHex(uid) {
   if (!contenedor) return;
   contenedor.innerHTML = "";
 
-  let matriz = Array.from({ length: FILAS }, () => Array(COLS).fill(null));
-
   try {
     const bibliotecaRef = collection(db, "biblioteca");
     
-    // 1. Obtener TODOS los libros de la biblioteca global (sin filtrar por lector)
+    // 1. Obtener libros leídos globales
     const snapshot = await getDocs(bibliotecaRef);
 
     let lecturasGlobales = [];
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
-      // Solo tomamos libros que hayan sido leídos al menos por 1 aventurero
       if (Array.isArray(data.lectores) && data.lectores.length > 0) {
         lecturasGlobales.push(data);
       }
     });
 
-    // 2. Procesar cada libro leído en el servidor
+    // 2. Calcular las dimensiones dinámicas según el número de lecturas
+    const { filas, cols } = calcularDimensionesTablero(lecturasGlobales.length);
+    let matriz = Array.from({ length: filas }, () => Array(cols).fill(null));
+
+    // 3. Procesar y posicionar cada libro en la matriz expandible
     for (const libro of lecturasGlobales) {
       const generoTexto = libro.genero || "Ficción";
       const generoKey = normalizarGenero(generoTexto);
-      const pos = buscarCasillaCrecimiento(matriz, generoKey);
+      const pos = buscarCasillaCrecimiento(matriz, generoKey, filas, cols);
 
-      // El pionero siempre será el PRIMER elemento del array 'lectores'
       const primerLectorUid = libro.lectores[0] || libro.usuarioId;
       const nombrePrimerLector = await obtenerNombreAventurero(primerLectorUid);
 
@@ -160,12 +184,12 @@ async function renderizarMapaHex(uid) {
       }
     }
 
-    // 3. Renderizado del Grid Hexagonal
-    for (let f = 0; f < FILAS; f++) {
+    // 4. Renderizado del Grid Hexagonal según el nuevo tamaño
+    for (let f = 0; f < filas; f++) {
       const filaDiv = document.createElement("div");
       filaDiv.classList.add("hex-fila");
 
-      for (let c = 0; c < COLS; c++) {
+      for (let c = 0; c < cols; c++) {
         const hexDiv = document.createElement("div");
         hexDiv.classList.add("hexagono");
 
