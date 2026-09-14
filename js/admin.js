@@ -477,27 +477,30 @@ if (form) {
       };
 
       // Estructura para la Colección Biblioteca (Global)
-      const datosBiblioteca = {
-        titulo,
-        autor,
-        paginas,
-        fechaPublicacion: fechaPublicacion || "Desconocida",
-        genero: arrayGeneros[0] || "general",
-        generos: arrayGeneros,
-        portadaUrl: finalPortadaUrl,
-        portada: finalPortadaUrl,
-        descripcion,
-        esReto: true,
-        lectores: []
-      };
+  const datosBiblioteca = {
+  titulo,
+  autor,
+  paginas,
+  genero: arrayGeneros[0] || "general",
+  generos: arrayGeneros,
+  portadaUrl: finalPortadaUrl,
+  portada: finalPortadaUrl,
+  descripcion,
+  colorLomo: "#8b263e", // O el color seleccionado
+  esReto: true,
+  tipoOrigen: "RETO_GREMIO",
+  proponente,
+  retoId: idHistorico,   // ✅ Guarda 'reto26_09' en lugar de 'actual'
+  conteoLectores: 0,     // ✅ Inicializa el contador
+  lectores: []           // ✅ Array con los IDs de los aventureros
+};
 
-      // Guardado atómico en retos y biblioteca
-      const batch = writeBatch(db);
-      batch.set(doc(db, "retos", "actual"), datosDelReto);
-      batch.set(doc(db, "retos", idHistorico), datosDelReto);
-      batch.set(doc(db, "biblioteca", libroId), datosBiblioteca, { merge: true });
+const batch = writeBatch(db);
+batch.set(doc(db, "retos", "actual"), datosDelReto);
+batch.set(doc(db, "retos", idHistorico), datosDelReto);
+batch.set(doc(db, "biblioteca", libroId), datosBiblioteca, { merge: true });
 
-      await batch.commit();
+await batch.commit();
 
       mensajeEstado.innerText = `✅ ¡Reto y libro publicados con éxito!`;
       mensajeEstado.style.color = "#4CAF50";

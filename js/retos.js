@@ -9,7 +9,7 @@ import {
   arrayUnion 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
-import { completarRetoGremio } from "./gestorLibros.js";
+import { completarRetoAventurero } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -327,9 +327,8 @@ async function aceptarReto(retoId) {
 
 // Marca la misión como completada y añade el tomo a la biblioteca del aventurero
 async function terminarReto(retoId, puntos, elementoBoton = null) {
-  // 🛡️ Prevenir clics múltiples deshabilitando el botón inmediatamente
   if (elementoBoton) {
-    if (elementoBoton.disabled) return; // Si ya estaba deshabilitado, ignorar el clic
+    if (elementoBoton.disabled) return;
     elementoBoton.disabled = true;
     elementoBoton.dataset.textoOriginal = elementoBoton.textContent;
     elementoBoton.textContent = "⌛ Guardando en los pergaminos...";
@@ -360,17 +359,22 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       };
     }
 
-    // Llamamos al gestor central para actualizar Firestore y otorgar recompensas
-    await completarRetoGremio(usuarioSesionId, datosReto);
+    // 1. Guardar el reto como completado en el perfil del aventurero
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    await updateDoc(userRef, { 
+      retosCompletados: arrayUnion(retoId) 
+    });
 
-    // 🔄 Refrescar la interfaz incondicionalmente
+    // 2. Llamamos al gestor central para actualizar Firestore (libros, prestigio, totalLectores)
+    await completarRetoAventurero(usuarioSesionId, datosReto);
+
+    // 3. Refrescar la interfaz
     await cargarYRenderizarRetos();
 
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
     alert("Ocurrió un error al completar la misión. Inténtalo de nuevo.");
     
-    // Si falla, rehabilitar el botón
     if (elementoBoton) {
       elementoBoton.disabled = false;
       elementoBoton.textContent = elementoBoton.dataset.textoOriginal || "✨ Marcar Misión Completada";
