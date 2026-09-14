@@ -8,6 +8,8 @@ import {
   limpiarSeleccionBuscador 
 } from "./buscadorMisiones.js";
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
+import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
+import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 👈 Sistema de 30% Cicatriz / 70% Rasgo
 
 // 1. Inicialización de Firebase
 const auth = getAuth(app);
@@ -27,6 +29,7 @@ onAuthStateChanged(auth, async (user) => {
   currentUserId = user.uid;
   currentUserDocRef = doc(db, "aventureros", user.uid);
 
+  // Cargar datos y renderizar interfaz
   await cargarDatosAventurero(currentUserDocRef);
   inicializarAcordeon();
   inicializarModalMisiones();
@@ -53,6 +56,9 @@ async function cargarDatosAventurero(docRef) {
     const defaultAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
     avatarImg.src = data.avatarUrl || data.avatar || defaultAvatar;
   }
+
+  // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
+  renderizarEstadisticasAcordeon(data.estadisticas || {});
 
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
@@ -141,14 +147,31 @@ function renderizarMisiones(misiones) {
   });
 }
 
-// Cambia el estado de la misión
+// Cambia el estado de la misión y aplica la tirada de Rasgo/Cicatriz al completar
 async function actualizarEstadoMision(index, nuevoEstado) {
   try {
-    misionesLocales[index].estado = nuevoEstado;
+    const mision = misionesLocales[index];
+    mision.estado = nuevoEstado;
+
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales
     });
-    renderizarMisiones(misionesLocales);
+
+    if (nuevoEstado === "TERMINADA") {
+      const generoLibro = (mision.generos && mision.generos.length) ? mision.generos[0] : "Fantasía";
+      
+      // Tirada aleatoria del 30% Cicatriz / 70% Rasgo
+      const recompensa = await procesarRecompensaLectura(currentUserId, generoLibro);
+
+      if (recompensa) {
+        const textoTipo = recompensa.tipo === "rasgos" ? "✨ Rasgo Obtenido" : "🩸 Cicatriz Adquirida";
+        alert(`¡Misión Terminada!\n\n${textoTipo}: ${recompensa.item.icono} ${recompensa.item.nombre} (+${recompensa.contador})`);
+      }
+    }
+
+    // Recargar y actualizar vista completa (misiones + estadísticas)
+    await cargarDatosAventurero(currentUserDocRef);
+
   } catch (error) {
     console.error("Error al actualizar la misión:", error);
     alert("❌ No se pudo actualizar el estado de la misión.");
@@ -243,13 +266,11 @@ function inicializarModalMisiones() {
       }
 
       try {
-        // 1. Obtener datos del aventurero
         const userRef = doc(db, "aventureros", user.uid);
         const userSnap = await getDoc(userRef);
         const userData = userSnap.exists() ? userSnap.data() : {};
         const nombreAventurero = userData.nombre || user.displayName || "Un Aventurero";
 
-        // 2. Extraer datos del formulario
         const titulo = document.getElementById("mision-titulo").value.trim();
         const autor = document.getElementById("mision-autor").value.trim();
         const paginas = parseInt(document.getElementById("mision-paginas").value, 10) || 0;
@@ -265,7 +286,6 @@ function inicializarModalMisiones() {
 
         const estaCompletada = (estado === "TERMINADA");
 
-        // 3. Crear documento global en 'misionesSecundarias'
         const nuevaMisionData = {
           titulo: titulo,
           autor: autor,
@@ -284,7 +304,6 @@ function inicializarModalMisiones() {
 
         const docMisionRef = await addDoc(collection(db, "misionesSecundarias"), nuevaMisionData);
 
-        // 4. Si la misión nace completada, se otorgan recompensas y se actualiza la biblioteca/atlas
         if (estaCompletada) {
           const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
           const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
@@ -310,7 +329,14 @@ function inicializarModalMisiones() {
 
           await registrarLibroEnBibliotecaYAtlas(user.uid, datosLibro);
 
-          alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas\n\n📖 Se ha añadido el lomo a tu Biblioteca y se ha explorado el Atlas.`);
+          // Asignar Rasgo/Cicatriz en Firestore
+          const recompensa = await procesarRecompensaLectura(user.uid, generoPrincipal);
+          let mensajeRecompensa = "";
+          if (recompensa) {
+            mensajeRecompensa = `\n\n${recompensa.tipo === "rasgos" ? "✨ Rasgo Obtenido" : "🩸 Cicatriz Adquirida"}: ${recompensa.item.icono} ${recompensa.item.nombre} (+${recompensa.contador})`;
+          }
+
+          alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeRecompensa}\n\n📖 Se ha añadido el lomo a tu Biblioteca.`);
         } else {
           alert("⚔️ Misión Secundaria registrada con éxito. ¡Aparecerá en la sección de Retos!");
         }
@@ -355,7 +381,6 @@ function inicializarCerrarSesion() {
   }
 }
 
-// Manejo de cambio de avatar
 function inicializarAvatar() {
   const btnAvatar = document.getElementById("btn-cambiar-avatar") || document.getElementById("char-avatar");
   const inputAvatar = document.getElementById("input-avatar-file");
