@@ -1,4 +1,3 @@
-// js/retos.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -30,7 +29,6 @@ onAuthStateChanged(auth, async (user) => {
   await cargarMisionesSecundariasGlobales();
 });
 
-// Convierte 'reto26_01' o 'reto25_12' a 'Enero 2026'
 function formatearIdAMesYAno(idDocumento, fechaCreacion) {
   const patron = /^reto(\d{2})_(\d{2})$/i;
   const coincidencia = idDocumento.match(patron);
@@ -88,7 +86,7 @@ async function obtenerBiografiaAutor(nombreAutor) {
 }
 
 // ------------------------------------------------------------------
-// 1. CARGA DE RETOS PRINCIPALES DEL GREMIO (ACTUAL Y PASADOS)
+// 1. CARGA DE RETOS PRINCIPALES DEL GREMIO
 // ------------------------------------------------------------------
 async function cargarYRenderizarRetos() {
   try {
@@ -253,7 +251,7 @@ async function cargarYRenderizarRetos() {
       }
     }
 
-    // Renderizar Retos Pasados del Gremio
+    // Renderizar Retos Pasados
     const contenedorPasados = document.getElementById("contenedor-retos-pasados");
     if (contenedorPasados) {
       contenedorPasados.innerHTML = "";
@@ -313,7 +311,7 @@ async function cargarYRenderizarRetos() {
 }
 
 // ------------------------------------------------------------------
-// 2. MISIONES SECUNDARIAS GLOBALES (COMPARTIDAS ENTRE NAVEGANTES)
+// 2. MISIONES SECUNDARIAS GLOBALES
 // ------------------------------------------------------------------
 async function cargarMisionesSecundariasGlobales() {
   const contenedor = document.getElementById("contenedor-retos-secundarios");
@@ -322,7 +320,7 @@ async function cargarMisionesSecundariasGlobales() {
   contenedor.innerHTML = "";
 
   try {
-    // Buscar misiones secundarias activas (donde activa == true)
+    // Se realiza la lectura de todas las misiones activas en el tablero
     const q = query(collection(db, "misionesSecundarias"), where("activa", "==", true));
     const snapshot = await getDocs(q);
 
@@ -335,7 +333,6 @@ async function cargarMisionesSecundariasGlobales() {
       const mision = docSnap.data();
       const idMision = docSnap.id;
 
-      const esCreador = mision.creadorId === usuarioSesionId;
       const usuariosAceptaron = mision.usuariosAceptaron || [];
       const usuariosCompletaron = mision.usuariosCompletaron || [];
 
@@ -346,7 +343,9 @@ async function cargarMisionesSecundariasGlobales() {
       card.className = "card-reto-pasado reto-secundario";
       card.innerHTML = `
         <div class="portada-miniatura">
-          <img src="${mision.portadaUrl || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" alt="${mision.titulo}">
+          <img src="${mision.portadaUrl || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" 
+               alt="${mision.titulo}"
+               onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=Sin+Portada';">
           ${completadaPorMi ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
         </div>
         <div class="info-reto-pasado">
@@ -378,7 +377,7 @@ async function cargarMisionesSecundariasGlobales() {
       contenedor.appendChild(card);
     });
 
-    // Asignar Eventos a Botones
+    // Eventos
     contenedor.querySelectorAll(".btn-aceptar-secundaria").forEach(btn => {
       btn.addEventListener("click", (e) => aceptarMisionSecundaria(e.currentTarget.getAttribute("data-id")));
     });
@@ -405,7 +404,7 @@ async function aceptarMisionSecundaria(misionId) {
   }
 }
 
-// Completar Misión Secundaria (Almacena en Biblioteca, Pinta Atlas y Cierra si es Creador)
+// Completar Misión Secundaria
 async function completarMisionSecundaria(misionId, elementoBoton) {
   if (elementoBoton) {
     elementoBoton.disabled = true;
@@ -432,10 +431,12 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     await updateDoc(userRef, {
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
-      marcapaginas: increment(gananciaMarcapaginas)
+      marcapaginas: increment(gananciaMarcapaginas),
+      paginasLeidas: increment(paginas),
+      librosCompletados: increment(1)
     });
 
-    // 3. REGISTRAR EN LA BIBLIOTECA DEL USUARIO Y COLOREAR HEX EN EL ATLAS
+    // 3. REGISTRAR EN LA BIBLIOTECA Y DIBUJAR EN EL ATLAS
     const datosLibro = {
       id: misionId,
       titulo: data.titulo,
@@ -446,22 +447,20 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       fechaTerminado: new Date().toISOString()
     };
 
-    // Llama al gestor que almacena el libro en Firestore y pinta el hexágono
     await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
 
-    // 4. Si quien la da por terminada es el CREADOR ORIGINAL, se desactiva para todos
+    // 4. Marcar la misión como completada por el usuario actual
     if (esCreador) {
       await updateDoc(misionRef, {
         activa: false,
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Has completado tu Misión Secundaria! Al ser el creador, la misión se da por concluida en el Cónclave y el libro ha sido añadido a la Biblioteca y al Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+      alert(`🎉 ¡Has completado tu Misión Secundaria!\n\nAl ser el creador, la misión ha quedado concluida para el Cónclave y el libro se ha incorporado a tu Biblioteca y Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
     } else {
-      // Si la completa otro aventurero que se unió
       await updateDoc(misionRef, {
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Misión Secundaria Completada! El libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
     }
 
     await cargarMisionesSecundariasGlobales();
@@ -530,7 +529,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       retosCompletados: arrayUnion(retoId),
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
-      marcapaginas: increment(gananciaMarcapaginas)
+      marcapaginas: increment(gananciaMarcapaginas),
+      paginasLeidas: increment(paginas),
+      librosCompletados: increment(1)
     });
 
     await completarRetoGremio(usuarioSesionId, datosReto);

@@ -1,12 +1,13 @@
-// js/perfil.js
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { 
+  getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc 
+} from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { 
   buscarEnGoogleBooks, 
-  registrarMisionAventurero, 
   limpiarSeleccionBuscador 
 } from "./buscadorMisiones.js";
+import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 
 // 1. Inicialización de Firebase
 const auth = getAuth(app);
@@ -25,12 +26,12 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUserId = user.uid;
   currentUserDocRef = doc(db, "aventureros", user.uid);
-  
+
   await cargarDatosAventurero(currentUserDocRef);
   inicializarAcordeon();
   inicializarModalMisiones();
   inicializarCerrarSesion();
-  inicializarAvatar(); // <--- Inicializamos el listener del avatar
+  inicializarAvatar();
 });
 
 // Carga y renderiza los datos del usuario desde Firestore
@@ -104,7 +105,7 @@ function renderizarMisiones(misiones) {
     const tarjeta = document.createElement("div");
     const esTerminada = mision.estado === 'TERMINADA';
     tarjeta.className = `mision-card ${esTerminada ? 'mision-completada' : 'mision-en-progreso'}`;
-    
+
     tarjeta.innerHTML = `
       ${mision.portada ? `<img src="${mision.portada}" class="mision-portada-thumb" alt="Portada">` : ''}
       <div class="mision-info">
@@ -140,7 +141,7 @@ function renderizarMisiones(misiones) {
   });
 }
 
-// Cambia el estado de la misión (e.g. TERMINADA)
+// Cambia el estado de la misión
 async function actualizarEstadoMision(index, nuevoEstado) {
   try {
     misionesLocales[index].estado = nuevoEstado;
@@ -175,11 +176,11 @@ function inicializarModalMisiones() {
   const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
   const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
   const modal = document.getElementById("modal-buscador-mision");
-  
+
   const inputBuscar = document.getElementById("input-buscar-libro");
   const btnBuscar = document.getElementById("btn-ejecutar-busqueda");
   const contenedorResultados = document.getElementById("resultados-busqueda-libros");
-  
+
   const inputPortadaFile = document.getElementById("mision-portada-file");
   const previewPortada = document.getElementById("mision-preview-portada");
   const formConfirmar = document.getElementById("form-confirmar-mision");
@@ -229,51 +230,102 @@ function inicializarModalMisiones() {
   if (formConfirmar) {
     formConfirmar.addEventListener("submit", async (e) => {
       e.preventDefault();
-      
+
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Debes estar autenticado para registrar una misión.");
+        return;
+      }
+
+      if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = "⌛ Guardando Misión...";
+      }
+
       try {
-        if (btnGuardar) {
-          btnGuardar.disabled = true;
-          btnGuardar.innerText = "⏳ Registrando en Firestore y Cloudinary...";
-        }
+        // 1. Obtener datos del aventurero
+        const userRef = doc(db, "aventureros", user.uid);
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        const nombreAventurero = userData.nombre || user.displayName || "Un Aventurero";
 
-        const generosSeleccionados = Array.from(
-          document.querySelectorAll('input[name="genero"]:checked')
-        ).map(cb => cb.value);
+        // 2. Extraer datos del formulario
+        const titulo = document.getElementById("mision-titulo").value.trim();
+        const autor = document.getElementById("mision-autor").value.trim();
+        const paginas = parseInt(document.getElementById("mision-paginas").value, 10) || 0;
+        const proclama = document.getElementById("mision-proclama").value.trim();
+        const estado = document.getElementById("mision-estado").value;
+        
+        const inputPortadaUrl = document.getElementById("mision-portada-url")?.value || "";
+        const previewSrc = previewPortada?.src || "";
+        const portadaUrl = inputPortadaUrl || (previewSrc !== window.location.href ? previewSrc : "https://via.placeholder.com/150x220?text=Sin+Portada");
 
-        const rasgosRaw = document.getElementById('mision-rasgos')?.value || "";
-        const cicatricesRaw = document.getElementById('mision-cicatrices')?.value || "";
+        const generosChecked = Array.from(document.querySelectorAll('input[name="genero"]:checked')).map(cb => cb.value);
+        const generoPrincipal = generosChecked.length > 0 ? generosChecked[0] : "Fantasía";
 
-        const rasgos = rasgosRaw ? rasgosRaw.split(',').map(r => r.trim()).filter(Boolean) : [];
-        const cicatrices = cicatricesRaw ? cicatricesRaw.split(',').map(c => c.trim()).filter(Boolean) : [];
+        const estaCompletada = (estado === "TERMINADA");
 
-        const datosFormulario = {
-          titulo: document.getElementById("mision-titulo").value,
-          autor: document.getElementById("mision-autor").value,
-          paginas: Number(document.getElementById("mision-paginas").value) || 0,
-          proclama: document.getElementById("mision-proclama").value,
-          estado: document.getElementById("mision-estado").value,
-          urlPortadaGB: document.getElementById("mision-portada-url")?.value || "",
-          archivoLocal: inputPortadaFile?.files[0] || null,
-          generos: generosSeleccionados,
-          rasgos: rasgos,
-          cicatrices: cicatrices
+        // 3. Crear documento global en 'misionesSecundarias'
+        const nuevaMisionData = {
+          titulo: titulo,
+          autor: autor,
+          paginas: paginas,
+          proclama: proclama,
+          genero: generoPrincipal,
+          generos: generosChecked,
+          portadaUrl: portadaUrl,
+          creadorId: user.uid,
+          creadorNombre: nombreAventurero,
+          activa: !estaCompletada,
+          usuariosAceptaron: [user.uid],
+          usuariosCompletaron: estaCompletada ? [user.uid] : [],
+          fechaCreacion: new Date().toISOString()
         };
 
-        await registrarMisionAventurero(currentUserId, datosFormulario);
+        const docMisionRef = await addDoc(collection(db, "misionesSecundarias"), nuevaMisionData);
 
-        alert("✨ ¡Misión registrada con éxito en tu Perfil!");
+        // 4. Si la misión nace completada, se otorgan recompensas y se actualiza la biblioteca/atlas
+        if (estaCompletada) {
+          const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+          const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
+          const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
+
+          await updateDoc(userRef, {
+            xp: increment(gananciaXP),
+            prestigio: increment(gananciaPrestigio),
+            marcapaginas: increment(gananciaMarcapaginas),
+            paginasLeidas: increment(paginas),
+            librosCompletados: increment(1)
+          });
+
+          const datosLibro = {
+            id: docMisionRef.id,
+            titulo: titulo,
+            autor: autor,
+            genero: generoPrincipal,
+            paginas: paginas,
+            portadaUrl: portadaUrl,
+            fechaTerminado: new Date().toISOString()
+          };
+
+          await registrarLibroEnBibliotecaYAtlas(user.uid, datosLibro);
+
+          alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas\n\n📖 Se ha añadido el lomo a tu Biblioteca y se ha explorado el Atlas.`);
+        } else {
+          alert("⚔️ Misión Secundaria registrada con éxito. ¡Aparecerá en la sección de Retos!");
+        }
+
         if (modal) modal.classList.add("oculto");
         limpiarFormularioLocal();
-        
         await cargarDatosAventurero(currentUserDocRef);
 
-      } catch (err) {
-        console.error("Error al guardar la misión:", err);
-        alert("❌ Ocurrió un error al registrar la misión.");
+      } catch (error) {
+        console.error("Error al registrar la misión en el perfil:", error);
+        alert("❌ Hubo un fallo al registrar la misión secundaria.");
       } finally {
         if (btnGuardar) {
           btnGuardar.disabled = false;
-          btnGuardar.innerText = "💾 Registrar Misión";
+          btnGuardar.textContent = "💾 Registrar Misión";
         }
       }
     });
@@ -321,15 +373,12 @@ function inicializarAvatar() {
     const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
 
     try {
-      // 1. Mostrar vista previa inmediata
       const reader = new FileReader();
       reader.onload = (event) => {
         if (avatarImg) avatarImg.src = event.target.result;
       };
       reader.readAsDataURL(file);
 
-      // 2. Subir imagen a Cloudinary
-      // IMPORTANTE: Recuerda reemplazar estas dos variables por tus valores reales de Cloudinary
       const cloudName = "dwuokewzr";
       const uploadPreset = "avatar_users";
 
@@ -347,7 +396,6 @@ function inicializarAvatar() {
       const data = await res.json();
       const nuevaUrlAvatar = data.secure_url;
 
-      // 3. Actualizar la URL del avatar en Firestore
       await updateDoc(currentUserDocRef, {
         avatarUrl: nuevaUrlAvatar
       });
