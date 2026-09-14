@@ -1,4 +1,4 @@
-// js/reto.js
+// js/retos.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -25,6 +25,7 @@ onAuthStateChanged(auth, async (user) => {
   }
   usuarioSesionId = user.uid;
   await cargarYRenderizarRetos();
+  await cargarMisionesSecundarias(user.uid);
 });
 
 // Convierte 'reto26_01' o 'reto25_12' a 'Enero 2026'
@@ -54,13 +55,13 @@ function formatearIdAMesYAno(idDocumento, fechaCreacion) {
   return "Reto del Gremio";
 }
 
-// Resumen temático
+// Resumen temático de respaldo
 function obtenerResumenGemini(tituloLibro) {
   if (!tituloLibro) return "Resumen no disponible en los pergaminos de la biblioteca.";
   const tituloNormalizado = tituloLibro.toLowerCase().trim();
 
   const resumenes = {
-    "una novela de ajedrez": "Novela de ficción histórica escrita por Stefan Zweig. Ambientada en la Viena de principios del siglo XX, narra la historia de un joven prodigio del ajedrez que lucha contra la opresión y la soledad mientras se enfrenta a desafíos tanto en el tablero como en su vida personal.",
+    "una novela de ajedrez": "Novela de ficción histórica escrita por Stefan Zweig. Ambientada en la Viena de principios del siglo XX, narra la historia de un joven prodigio del ajedrez que lucha contra la opresión.",
     "don quijote": "Obra cumbre de la literatura española. Sigue las aventuras de Alonso Quijano, un hidalgo que decide convertirse en caballero andante para impartir justicia.",
     "el hobbit": "Novela fantástica de J.R.R. Tolkien sobre Bilbo Bolsón y un viaje extraordinario para recuperar un tesoro custodiado por un dragón.",
     "1984": "Distopía política de George Orwell sobre una sociedad dominada por el Gran Hermano donde el pensamiento libre está reprimido."
@@ -105,8 +106,12 @@ async function cargarYRenderizarRetos() {
       });
     });
 
+    const contenedorActual = document.getElementById("contenedor-reto-actual");
+
     if (todosLosRetos.length === 0) {
-      document.getElementById("contenedor-reto-actual").innerHTML = `<p class="sin-datos">No hay misiones activas registradas en el Cónclave.</p>`;
+      if (contenedorActual) {
+        contenedorActual.innerHTML = `<p class="sin-datos">No hay misiones activas registradas en el Cónclave.</p>`;
+      }
       return;
     }
 
@@ -126,9 +131,7 @@ async function cargarYRenderizarRetos() {
     retosHistoricos.sort((a, b) => b.id.localeCompare(a.id));
 
     // Renderizar Header y Reto Actual
-    const contenedorActual = document.getElementById("contenedor-reto-actual");
     const elProponente = document.getElementById("proponente-reto");
-
     const proponenteNombre = retoActual.proponente || "un misterioso aventurero del Cónclave";
 
     if (elProponente) {
@@ -146,21 +149,18 @@ async function cargarYRenderizarRetos() {
     const recompensaPuntos = Number(paginas) || 0;
     const portadaImagen = retoActual.portadaUrl || retoActual.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada';
 
-    // DETECCIÓN DEL MENSAJE DE LA LECTORA Y PROPONENTE
     const mensajeProponente = 
       retoActual.mensajeProponente || 
       retoActual.mensaje || 
       retoActual.proclama || 
       (typeof retoActual.proponente === 'object' ? retoActual.proponente.mensaje : null) ||
-      `Por orden del Archimago y gran Bibliotecario Aurelius Vane, yo la gran Lectora Lady Elena Astralis en nombre de ${proponenteNombre}, convoco a todos los miembros del Gremio a explorar el portal mágico que esconde esta obra.`;
+      `Por orden del Archimago Aurelius Vane, yo Lady Elena Astralis en nombre de ${proponenteNombre}, convoco a todos los miembros del Gremio a explorar esta obra.`;
 
-    // Proclama/Indicaciones del Archimago
     const objetivoAdmin = retoActual.objetivoAdmin || 
-      `Completar la lectura íntegra del tomo antes de que termine el ciclo mensual y compartir vuestras reflexiones en la Taberna de la Tinta para recibir vuestra justa recompensa de prestigio.`;
+      `Completar la lectura íntegra del tomo antes de que termine el ciclo mensual y compartir vuestras reflexiones en la Taberna de la Tinta.`;
 
     if (contenedorActual) {
       contenedorActual.innerHTML = `
-        <!-- PROCLAMA MÁGICA / DECRETO TEMÁTICO DE ENCABEZADO -->
         <div class="proclama-tematica-box">
           <div class="proclama-header">📜 Propuesto por ${proponenteNombre}</div>
           <p class="proclama-texto">«${mensajeProponente}»</p>
@@ -197,7 +197,6 @@ async function cargarYRenderizarRetos() {
               <div class="ficha-item"><span>📅 Publicación:</span> <strong>${fechaPublicacion}</strong></div>
             </div>
 
-            <!-- PROCLAMA Y OBJETIVO DEL ARCHIMAGO / ADMIN -->
             <div class="bloque-objetivo-admin">
               <strong>🛡️ Mandato del Archimago:</strong>
               <p>${objetivoAdmin}</p>
@@ -205,7 +204,7 @@ async function cargarYRenderizarRetos() {
 
             <div class="meta-info">
               <span>📖 Tomo Asignado: <strong>${retoActual.libro || retoActual.titulo}</strong></span>
-              <span>🏆 Recompensa Estimada: <strong>~${recompensaPuntos * 1.5} XP / Prestigio</strong></span>
+              <span>🏆 Recompensa Estimada: <strong>~${Math.round(recompensaPuntos * 1.5)} XP / Prestigio</strong></span>
             </div>
 
             <div class="acciones-reto">
@@ -229,7 +228,7 @@ async function cargarYRenderizarRetos() {
         </div>
       `;
 
-      // Evento Hover para Biografía
+      // Tooltip Biografía
       const autorLink = document.getElementById("autor-link");
       const tooltipBody = document.getElementById("tooltip-body");
       let biografiaCargada = false;
@@ -262,58 +261,96 @@ async function cargarYRenderizarRetos() {
       contenedorPasados.innerHTML = "";
       if (retosHistoricos.length === 0) {
         contenedorPasados.innerHTML = `<p class="sin-datos">No hay expediciones pasadas en el archivo del Cónclave.</p>`;
-        return;
-      }
+      } else {
+        retosHistoricos.forEach((reto) => {
+          const fueCompletado = retosCompletados.includes(reto.id);
+          const puntosHistorico = Number(reto.paginas) || 0;
+          const tituloFecha = formatearIdAMesYAno(reto.id, reto.fechaCreacion);
 
-      retosHistoricos.forEach((reto) => {
-        const fueCompletado = retosCompletados.includes(reto.id);
-        const puntosHistorico = Number(reto.paginas) || 0;
-        const tituloFecha = formatearIdAMesYAno(reto.id, reto.fechaCreacion);
-
-        const item = document.createElement("div");
-        item.className = "card-reto-pasado";
-        item.innerHTML = `
-          <div class="portada-miniatura">
-            <img src="${reto.portadaUrl || reto.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" 
-                 alt="${reto.titulo}" 
-                 onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=Sin+Portada';">
-            ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
-          </div>
-          <div class="info-reto-pasado">
-            <div class="fecha-reto-header">📅 Expedición de ${tituloFecha}</div>
-            <h3>${reto.titulo || 'Reto Antiguo'}</h3>
-            <span class="proponente-pasado">Autor: <strong>${reto.autor || 'Desconocido'}</strong></span>
-            <span class="proponente-pasado">Páginas: <strong>${puntosHistorico} pág.</strong></span>
-            
-            <div class="acciones-reto-pasado">
-              ${fueCompletado ? `
-                <a href="taberna.html?retoId=${reto.id}" class="btn-magico btn-taberna mini">
-                  🍻 Comentar en la Taberna
-                </a>
-              ` : `
-                <button class="btn-magico exito btn-completar-pasado" data-id="${reto.id}" data-puntos="${puntosHistorico}">
-                  ✨ Completar (+${puntosHistorico} pág.)
-                </button>
-              `}
+          const item = document.createElement("div");
+          item.className = "card-reto-pasado";
+          item.innerHTML = `
+            <div class="portada-miniatura">
+              <img src="${reto.portadaUrl || reto.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" 
+                   alt="${reto.titulo}" 
+                   onerror="this.onerror=null; this.src='https://via.placeholder.com/150x220?text=Sin+Portada';">
+              ${fueCompletado ? `<div class="sello-completado mini">COMPLETADO</div>` : ''}
             </div>
-          </div>
-        `;
-        contenedorPasados.appendChild(item);
-      });
-
-      // Delegación de eventos para completar retos antiguos
-      contenedorPasados.querySelectorAll(".btn-completar-pasado").forEach(btn => {
-        btn.addEventListener("click", async (e) => {
-          const boton = e.currentTarget;
-          const idReto = boton.getAttribute("data-id");
-          const puntos = Number(boton.getAttribute("data-puntos")) || 0;
-          await terminarReto(idReto, puntos, boton);
+            <div class="info-reto-pasado">
+              <div class="fecha-reto-header">📅 Expedición de ${tituloFecha}</div>
+              <h3>${reto.titulo || 'Reto Antiguo'}</h3>
+              <span class="proponente-pasado">Autor: <strong>${reto.autor || 'Desconocido'}</strong></span>
+              <span class="proponente-pasado">Páginas: <strong>${puntosHistorico} pág.</strong></span>
+              
+              <div class="acciones-reto-pasado">
+                ${fueCompletado ? `
+                  <a href="taberna.html?retoId=${reto.id}" class="btn-magico btn-taberna mini">
+                    🍻 Comentar en la Taberna
+                  </a>
+                ` : `
+                  <button class="btn-magico exito btn-completar-pasado" data-id="${reto.id}" data-puntos="${puntosHistorico}">
+                    ✨ Completar (+${puntosHistorico} pág.)
+                  </button>
+                `}
+              </div>
+            </div>
+          `;
+          contenedorPasados.appendChild(item);
         });
-      });
+
+        contenedorPasados.querySelectorAll(".btn-completar-pasado").forEach(btn => {
+          btn.addEventListener("click", async (e) => {
+            const boton = e.currentTarget;
+            const idReto = boton.getAttribute("data-id");
+            const puntos = Number(boton.getAttribute("data-puntos")) || 0;
+            await terminarReto(idReto, puntos, boton);
+          });
+        });
+      }
     }
 
   } catch (error) {
     console.error("Error al cargar las misiones del Gremio:", error);
+  }
+}
+
+// Carga las misiones secundarias personales del usuario
+async function cargarMisionesSecundarias(userId) {
+  const contenedor = document.getElementById("contenedor-retos-secundarios");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  try {
+    const aventureroSnap = await getDoc(doc(db, "aventureros", userId));
+    if (!aventureroSnap.exists()) return;
+
+    const secundarias = aventureroSnap.data().misionesSecundarias || [];
+
+    if (secundarias.length === 0) {
+      contenedor.innerHTML = `<p class="sin-datos">No tienes misiones secundarias activas.</p>`;
+      return;
+    }
+
+    secundarias.forEach((mision) => {
+      const el = document.createElement("div");
+      el.className = "card-reto-pasado reto-secundario";
+      el.innerHTML = `
+        <div class="portada-miniatura">
+          <img src="${mision.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada'}" alt="${mision.titulo}">
+        </div>
+        <div class="info-reto-pasado">
+          <span class="badge-tipo">Misión Secundaria</span>
+          <h3>${mision.titulo}</h3>
+          <span class="proponente-pasado">Autor: <strong>${mision.autor || 'Desconocido'}</strong></span>
+          <span class="proponente-pasado">Páginas: <strong>${mision.paginas || 0} pág.</strong></span>
+          <p><small>Estado: <strong>${mision.estado || 'EN PROGRESO'}</strong></small></p>
+        </div>
+      `;
+      contenedor.appendChild(el);
+    });
+  } catch (err) {
+    console.error("Error al cargar misiones secundarias:", err);
   }
 }
 
@@ -327,7 +364,7 @@ async function aceptarReto(retoId) {
   }
 }
 
-// Marca la misión como completada, otorga XP, Prestigio y Marcapáginas al aventurero
+// Marca la misión como completada, otorga XP, Prestigio y Marcapáginas
 async function terminarReto(retoId, puntos, elementoBoton = null) {
   if (elementoBoton) {
     if (elementoBoton.disabled) return;
@@ -364,16 +401,11 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     const paginas = datosReto.paginas;
 
     // CÁLCULO DE RECOMPENSAS
-    // 1. XP (Misión): Páginas + número aleatorio entre 0 y Páginas
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
-
-    // 2. Prestigio (Todas las lecturas): Páginas + número aleatorio entre 0 y Páginas
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
+    const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 3. Marcapáginas (Moneda): Número aleatorio entre 1 y Páginas
-    const gananciaMarcapaginas = Math.floor(Math.random() * paginas) + 1;
-
-    // 1. Actualizar el perfil del aventurero en Firestore
+    // 1. Actualizar perfil del aventurero
     const userRef = doc(db, "aventureros", usuarioSesionId);
     await updateDoc(userRef, { 
       retosCompletados: arrayUnion(retoId),
@@ -382,10 +414,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       marcapaginas: increment(gananciaMarcapaginas)
     });
 
-    // 2. Llamamos al gestor central para actualizar Firestore (libros, atlas, etc.)
+    // 2. Registrar en el gestor de libros
     await completarRetoGremio(usuarioSesionId, datosReto);
 
-    // Mensaje flotante / Alerta de recompensas ganadas
     alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
 
     // 3. Refrescar la interfaz

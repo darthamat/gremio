@@ -606,6 +606,46 @@
   box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
 }
 
+.btn-completar {
+  background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
+  color: #fff;
+  border: 1px solid #f1c40f;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+}
+
+.btn-completar:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(243, 156, 18, 0.5);
+}
+
+.btn-cancelar {
+  background: linear-gradient(180deg, #f39c12 0%, #d35400 100%);
+  color: #fff;
+  border: 1px solid #f1c40f;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 10px rgba(243, 156, 18, 0.3);
+}
+
+.btn-cancelar:hover {
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(243, 156, 18, 0.5);
+}
+
 .btn-guardar-mision:hover {
   filter: brightness(1.1);
   transform: translateY(-2px);
