@@ -12,10 +12,8 @@ const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 const PORTADA_DEFAULT = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400";
 
 let libroSeleccionado = null;
-let rasgosSeleccionadosLocal = [];
-let cicatricesSeleccionadasLocal = [];
 
-// Normaliza el título para crear un ID de documento limpio para la colección biblioteca
+// Normaliza el título para crear un ID de documento limpio
 export function generarLibroId(titulo) {
   return titulo
     .toLowerCase()
@@ -26,29 +24,46 @@ export function generarLibroId(titulo) {
     .replace(/^_+|_+$/g, "");
 }
 
-// Mapeador auxiliar de claves de género a BANCO_HUELLAS
-function obtenerClaveGenero(genero) {
-  if (!genero) return "fantasia";
-  const g = genero.toLowerCase().trim()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+// 🎲 GENERADOR AUTOMÁTICO DE HUELLAS (Rasgos y Cicatrices)
+// Genera de forma limpia y transparente las huellas basadas en el libro/páginas/géneros
+function calcularHuellasAutomaticas(paginas, generos = []) {
+  const rasgosGuardar = [];
+  const cicatricesGuardar = [];
 
-  if (g.includes("fantas") || g.includes("epica")) return "fantasia";
-  if (g.includes("poes") || g.includes("poet")) return "poesia";
-  if (g.includes("terror") || g.includes("horror") || g.includes("mister")) return "terror";
-  if (g.includes("histor")) return "historia";
-  if (g.includes("filos")) return "filosofia";
-  if (g.includes("cienc") || g.includes("scifi") || g.includes("ficcion")) return "ciencia_ficcion";
-  if (g.includes("negr") || g.includes("polic") || g.includes("thriller")) return "novela_negra";
-  if (g.includes("ensa") || g.includes("divulg")) return "ensayo";
-  if (g.includes("biogr") || g.includes("memor")) return "biografia";
+  if (!BANCO_HUELLAS) {
+    return { rasgosGuardar, cicatricesGuardar };
+  }
 
-  return "fantasia"; // fallback
-}
+  // 1. Asignación de Rasgos según géneros seleccionados o longitud
+  if (BANCO_HUELLAS.rasgos) {
+    BANCO_HUELLAS.rasgos.forEach(r => {
+      // Si el género del libro coincide con el rasgo o si es un libro largo (+400 pág)
+      const coincideGenero = generos.some(g => r.nombre.toLowerCase().includes(g.toLowerCase()));
+      const esLibroLargo = paginas >= 400 && (r.nombre.includes("Sabiduría") || r.nombre.includes("Resistencia"));
 
-// Obtiene lista de rasgos y cicatrices filtrados por género
-export function obtenerHuellasPorGenero(genero) {
-  const clave = obtenerClaveGenero(genero);
-  return BANCO_HUELLAS[clave] || BANCO_HUELLAS.fantasia;
+      if (coincideGenero || esLibroLargo) {
+        rasgosGuardar.push({
+          id: r.id || r.nombre,
+          nombre: r.nombre,
+          icono: r.icono || "✨"
+        });
+      }
+    });
+  }
+
+  // 2. Asignación de Cicatrices según extensión del libro (Libros pesados/desafiantes)
+  if (BANCO_HUELLAS.cicatrices && paginas > 300) {
+    const cicatrizBasica = BANCO_HUELLAS.cicatrices[0];
+    if (cicatrizBasica) {
+      cicatricesGuardar.push({
+        id: cicatrizBasica.id || cicatrizBasica.nombre,
+        nombre: cicatrizBasica.nombre,
+        icono: cicatrizBasica.icono || "⚡"
+      });
+    }
+  }
+
+  return { rasgosGuardar, cicatricesGuardar };
 }
 
 // Subida a Cloudinary de la portada si el usuario subió archivo
@@ -71,7 +86,7 @@ async function obtenerUrlPortadaValida(archivoLocal, urlGB) {
     try {
       return await subirArchivoACloudinary(archivoLocal);
     } catch (err) {
-      console.warn("Fallo la subida local, utilizando portada por defecto:", err);
+      console.warn("Falló la subida local, utilizando portada por defecto:", err);
       return PORTADA_DEFAULT;
     }
   }
@@ -171,86 +186,22 @@ function seleccionarLibroGB(info, imagenUrl) {
     imgPreview.style.display = "block";
   }
 
-  // Renderizar las huellas (rasgos y cicatrices) según el género detectado o por defecto
-  renderizarOpcionesHuellas(generosGB);
+  // Mantenemos limpia la UI vaciando los contenedores del DOM
+  renderizarOpcionesHuellas();
 
   if (formConfirmar) formConfirmar.classList.remove("oculto");
 }
 
-// 🎨 Renderiza visualmente las opciones de Rasgos y Cicatrices según el género en el DOM
-export function renderizarOpcionesHuellas(generoNombre) {
-  const huellas = obtenerHuellasPorGenero(generoNombre);
+// 🙈 Vacía los contenedores HTML para que el usuario NUNCA vea los selectores en pantalla
+export function renderizarOpcionesHuellas() {
   const contenedorRasgos = document.getElementById("mision-opciones-rasgos");
   const contenedorCicatrices = document.getElementById("mision-opciones-cicatrices");
 
-  rasgosSeleccionadosLocal = [];
-  cicatricesSeleccionadasLocal = [];
-
-  if (contenedorRasgos) {
-    contenedorRasgos.innerHTML = "";
-    huellas.rasgos.forEach(rasgo => {
-      const chip = document.createElement("div");
-      chip.className = "chip-huella chip-rasgo";
-      chip.style.cssText = "display:inline-flex; align-items:center; gap:5px; padding:4px 8px; margin:3px; background:#1b2838; border:1px solid #4a90e2; border-radius:12px; cursor:pointer; font-size:0.8rem; color:#fff;";
-      chip.innerHTML = `<span>${rasgo.icono}</span> <span>${rasgo.nombre}</span>`;
-
-      chip.addEventListener("click", () => {
-        const index = rasgosSeleccionadosLocal.findIndex(r => r.id === rasgo.id);
-        if (index > -1) {
-          rasgosSeleccionadosLocal.splice(index, 1);
-          chip.style.background = "#1b2838";
-          chip.style.borderColor = "#4a90e2";
-        } else {
-          rasgosSeleccionadosLocal.push(rasgo);
-          chip.style.background = "#2d5a88";
-          chip.style.borderColor = "#71b2ff";
-        }
-        sincronizarInputsHuellas();
-      });
-      contenedorRasgos.appendChild(chip);
-    });
-  }
-
-  if (contenedorCicatrices) {
-    contenedorCicatrices.innerHTML = "";
-    huellas.cicatrices.forEach(cicatriz => {
-      const chip = document.createElement("div");
-      chip.className = "chip-huella chip-cicatriz";
-      chip.style.cssText = "display:inline-flex; align-items:center; gap:5px; padding:4px 8px; margin:3px; background:#2a1b1b; border:1px solid #e24a4a; border-radius:12px; cursor:pointer; font-size:0.8rem; color:#fff;";
-      chip.innerHTML = `<span>${cicatriz.icono}</span> <span>${cicatriz.nombre}</span>`;
-
-      chip.addEventListener("click", () => {
-        const index = cicatricesSeleccionadasLocal.findIndex(c => c.id === cicatriz.id);
-        if (index > -1) {
-          cicatricesSeleccionadasLocal.splice(index, 1);
-          chip.style.background = "#2a1b1b";
-          chip.style.borderColor = "#e24a4a";
-        } else {
-          cicatricesSeleccionadasLocal.push(cicatriz);
-          chip.style.background = "#5a2d2d";
-          chip.style.borderColor = "#ff7171";
-        }
-        sincronizarInputsHuellas();
-      });
-      contenedorCicatrices.appendChild(chip);
-    });
-  }
+  if (contenedorRasgos) contenedorRasgos.innerHTML = "";
+  if (contenedorCicatrices) contenedorCicatrices.innerHTML = "";
 }
 
-// Sincroniza los chips seleccionados con los campos ocultos o inputs de texto si existen
-function sincronizarInputsHuellas() {
-  const inputRasgos = document.getElementById("mision-rasgos");
-  const inputCicatrices = document.getElementById("mision-cicatrices");
-
-  if (inputRasgos) {
-    inputRasgos.value = rasgosSeleccionadosLocal.map(r => r.nombre).join(", ");
-  }
-  if (inputCicatrices) {
-    inputCicatrices.value = cicatricesSeleccionadasLocal.map(c => c.nombre).join(", ");
-  }
-}
-
-// 💾 Guardado definitivo en la colección 'biblioteca' y en el Aventurero
+// 💾 Guardado definitivo en Firestore
 export async function registrarMisionAventurero(userId, datosFormulario) {
   const { 
     titulo, 
@@ -260,22 +211,23 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
     estado, 
     archivoLocal, 
     urlPortadaGB,
-    generos = [], 
-    rasgos = [], 
-    cicatrices = [] 
+    generos = [] 
   } = datosFormulario;
 
   const urlFinalPortada = await obtenerUrlPortadaValida(archivoLocal, urlPortadaGB);
   const libroId = generarLibroId(titulo);
 
-  // 1. Registro en la biblioteca global de la app
+  // ⚙️ CALCULO AUTOMÁTICO EN EL BACKEND DE LA APP
+  const { rasgosGuardar, cicatricesGuardar } = calcularHuellasAutomaticas(paginas, generos);
+
+  // 1. Registro en la colección global 'biblioteca'
   const datosBiblioteca = {
     titulo,
     autor,
     paginas,
     generos,
-    rasgos,
-    cicatrices,
+    rasgos: rasgosGuardar,
+    cicatrices: cicatricesGuardar,
     portadaUrl: urlFinalPortada,
     portada: urlFinalPortada,
     esReto: false,
@@ -297,8 +249,8 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
     proclama,
     estado,
     generos,
-    rasgos,
-    cicatrices,
+    rasgos: rasgosGuardar,
+    cicatrices: cicatricesGuardar,
     portada: urlFinalPortada,
     fechaRegistro: new Date().toISOString()
   };
@@ -313,25 +265,12 @@ export async function registrarMisionAventurero(userId, datosFormulario) {
 
 export function limpiarSeleccionBuscador() {
   libroSeleccionado = null;
-  rasgosSeleccionadosLocal = [];
-  cicatricesSeleccionadasLocal = [];
 }
 
-// Inicializador de eventos del formulario (Llamar desde perfil.js)
+// Inicializador de eventos del formulario
 export function inicializarFormularioMisiones(userId, callbackExito) {
   const formConfirmar = document.getElementById('form-confirmar-mision');
   if (!formConfirmar) return;
-
-  // Escuchar cambios de géneros para actualizar las sugerencias de rasgos/cicatrices
-  const checkboxesGenero = document.querySelectorAll('input[name="genero"]');
-  checkboxesGenero.forEach(cb => {
-    cb.addEventListener('change', () => {
-      const primerSeleccionado = document.querySelector('input[name="genero"]:checked');
-      if (primerSeleccionado) {
-        renderizarOpcionesHuellas(primerSeleccionado.value);
-      }
-    });
-  });
 
   formConfirmar.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -340,28 +279,13 @@ export function inicializarFormularioMisiones(userId, callbackExito) {
     if (btnSubmit) btnSubmit.disabled = true;
 
     try {
-      // 1. Obtener géneros seleccionados
       const generosSeleccionados = Array.from(
         document.querySelectorAll('input[name="genero"]:checked')
       ).map(cb => cb.value);
 
-      // 2. Obtener Rasgos y Cicatrices (combina los chips seleccionados y el texto manual si lo hay)
-      const rasgosInputStr = document.getElementById('mision-rasgos')?.value.trim() || "";
-      const cicatricesInputStr = document.getElementById('mision-cicatrices')?.value.trim() || "";
-
-      let rasgosFinales = rasgosSeleccionadosLocal.length > 0 
-        ? rasgosSeleccionadosLocal 
-        : rasgosInputStr.split(',').map(r => ({ nombre: r.trim() })).filter(r => r.nombre);
-
-      let cicatricesFinales = cicatricesSeleccionadasLocal.length > 0 
-        ? cicatricesSeleccionadasLocal 
-        : cicatricesInputStr.split(',').map(c => ({ nombre: c.trim() })).filter(c => c.nombre);
-
-      // 3. Obtener archivo local de portada
       const inputArchivo = document.getElementById('mision-portada-file');
       const archivoLocal = inputArchivo && inputArchivo.files.length > 0 ? inputArchivo.files[0] : null;
 
-      // 4. Preparar payload
       const datosMision = {
         titulo: document.getElementById('mision-titulo').value,
         autor: document.getElementById('mision-autor').value,
@@ -370,15 +294,12 @@ export function inicializarFormularioMisiones(userId, callbackExito) {
         estado: document.getElementById('mision-estado').value,
         urlPortadaGB: document.getElementById('mision-portada-url')?.value || "",
         archivoLocal: archivoLocal,
-        generos: generosSeleccionados,
-        rasgos: rasgosFinales,
-        cicatrices: cicatricesFinales
+        generos: generosSeleccionados
       };
 
       const misionGuardada = await registrarMisionAventurero(userId, datosMision);
-      console.log('✅ Misión guardada con éxito:', misionGuardada);
+      console.log('✅ Misión creada y huellas guardadas en Firestore:', misionGuardada);
 
-      // Limpiar formulario y cerrar modal
       formConfirmar.reset();
       limpiarSeleccionBuscador();
       const modal = document.getElementById('modal-buscador-mision');
@@ -388,7 +309,7 @@ export function inicializarFormularioMisiones(userId, callbackExito) {
 
     } catch (err) {
       console.error('❌ Error al registrar la misión:', err);
-      alert('Ocurrió un error al guardar la misión. Revisa la consola.');
+      alert('Ocurrió un error al guardar la misión.');
     } finally {
       if (btnSubmit) btnSubmit.disabled = false;
     }
