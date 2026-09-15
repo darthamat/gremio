@@ -14,11 +14,13 @@ export function normalizarGenero(genero) {
   if (g.includes("fantas") || g.includes("epica")) return "fantasia";
   if (g.includes("poes") || g.includes("poet")) return "poesia";
   if (g.includes("terror") || g.includes("horror") || g.includes("mister")) return "terror";
-  if (g.includes("histor")) return "historia";
+  if (g.includes("histor")) return "historica";
   if (g.includes("filos")) return "filosofia";
-  if (g.includes("cienc") || g.includes("scifi") || g.includes("ficcion")) return "ciencia_ficcion";
+  if (g.includes("cienc") || g.includes("scifi") || g.includes("ficcion_especulativa")) return "ciencia_ficcion";
+  if (g.includes("no_ficcion") || g.includes("no ficcion") || g.includes("ensayo") || g.includes("divulg")) return "no_ficcion";
+  if (g.includes("ficcion")) return "ficcion";
+  if (g.includes("clasic")) return "clasicos";
   if (g.includes("negr") || g.includes("polic") || g.includes("thriller")) return "novela_negra";
-  if (g.includes("ensa") || g.includes("divulg")) return "ensayo";
   if (g.includes("biogr") || g.includes("memor")) return "biografia";
   if (g.includes("roman") || g.includes("amor")) return "romance";
 
@@ -26,50 +28,85 @@ export function normalizarGenero(genero) {
 }
 
 /**
- * Obtiene un pool unificado uniendo las huellas genéricas con las del género.
- * Mezcla libre para selección o asignación de recompensas.
+ * Obtiene las huellas disponibles para uno o varios géneros,
+ * combinándolas con las huellas genéricas.
+ * @param {string|string[]} generos - Género individual o lista de géneros.
  */
-export function obtenerHuellasDisponibles(generoLibro) {
-  const claveGenero = normalizarGenero(generoLibro);
+export function obtenerHuellasDisponibles(generos) {
+  const listaGeneros = Array.isArray(generos) ? generos : [generos];
+  const clavesUnicas = [...new Set(listaGeneros.map(g => normalizarGenero(g)))];
+
   const genericas = BANCO_HUELLAS.generica || { rasgos: [], cicatrices: [] };
-  const especificas = BANCO_HUELLAS[claveGenero] || { rasgos: [], cicatrices: [] };
+
+  const rasgosAcumulados = [...genericas.rasgos.map(r => ({ ...r, origen: "generica" }))];
+  const cicatricesAcumuladas = [...genericas.cicatrices.map(c => ({ ...c, origen: "generica" }))];
+
+  clavesUnicas.forEach(clave => {
+    const especificas = BANCO_HUELLAS[clave] || { rasgos: [], cicatrices: [] };
+    
+    especificas.rasgos.forEach(r => {
+      if (!rasgosAcumulados.some(existente => existente.id === r.id)) {
+        rasgosAcumulados.push({ ...r, origen: clave });
+      }
+    });
+
+    especificas.cicatrices.forEach(c => {
+      if (!cicatricesAcumuladas.some(existente => existente.id === c.id)) {
+        cicatricesAcumuladas.push({ ...c, origen: clave });
+      }
+    });
+  });
 
   return {
-    rasgos: [
-      ...genericas.rasgos.map(r => ({ ...r, origen: "generica" })),
-      ...especificas.rasgos.map(r => ({ ...r, origen: claveGenero }))
-    ],
-    cicatrices: [
-      ...genericas.cicatrices.map(c => ({ ...c, origen: "generica" })),
-      ...especificas.cicatrices.map(c => ({ ...c, origen: claveGenero }))
-    ]
+    rasgos: rasgosAcumulados,
+    cicatrices: cicatricesAcumuladas
   };
 }
 
 /**
- * Procesa la recompensa de lectura usando el pool unificado (Genéricas + Género).
- * - 70% de probabilidad de ganar 1 Rasgo.
- * - 30% de probabilidad de ganar 1 Cicatriz.
+ * Determina el número de tiradas en función de las páginas del libro.
  */
-export async function procesarRecompensaLectura(userId, generoLibro) {
-  const pool = obtenerHuellasDisponibles(generoLibro);
+function calcularNumeroTiradas(paginas = 0) {
+  const numPaginas = Number(paginas) || 0;
+  if (numPaginas > 400) return 3;
+  if (numPaginas >= 200) return 2;
+  return 1;
+}
 
-  // Tirada de dado (1 al 100)
-  const tirada = Math.floor(Math.random() * 100) + 1;
-  const esCicatriz = tirada <= 30; // 30% probabilidad
+/**
+ * Procesa la recompensa de lectura realizando tiradas múltiples según 
+ * los géneros del libro y la longitud del volumen (número de páginas).
+ * 
+ * - Cada tirada tiene un 70% de probabilidad de Rasgo y 30% de Cicatriz.
+ * 
+ * @param {string} userId - ID del usuario en Firestore.
+ * @param {string|string[]} generos - Género o array de géneros del libro.
+ * @param {number} [paginas=0] - Cantidad de páginas del libro leído.
+ */
+export async function procesarRecompensaLectura(userId, generos, paginas = 0) {
+  const listaGeneros = Array.isArray(generos) ? generos : [generos || "fantasia"];
+  const tiradasPorPaginas = calcularNumeroTiradas(paginas);
+  
+  // Realizamos tiradas por cada género multiplicado por el multiplicador de longitud
+  const totalTiradas = Math.max(1, listaGeneros.length * tiradasPorPaginas);
+  
+  const pool = obtenerHuellasDisponibles(listaGeneros);
+  const obtenciones = [];
 
-  let itemObtenido = null;
-  let tipo = "";
+  for (let i = 0; i < totalTiradas; i++) {
+    const tiradaDado = Math.floor(Math.random() * 100) + 1;
+    const esCicatriz = tiradaDado <= 30; // 30% probabilidad
 
-  if (esCicatriz && pool.cicatrices.length > 0) {
-    const idx = Math.floor(Math.random() * pool.cicatrices.length);
-    itemObtenido = pool.cicatrices[idx];
-    tipo = "cicatrices";
-  } else {
-    const idx = Math.floor(Math.random() * pool.rasgos.length);
-    itemObtenido = pool.rasgos[idx];
-    tipo = "rasgos";
+    if (esCicatriz && pool.cicatrices.length > 0) {
+      const idx = Math.floor(Math.random() * pool.cicatrices.length);
+      obtenciones.push({ tipo: "cicatrices", item: pool.cicatrices[idx] });
+    } else if (pool.rasgos.length > 0) {
+      const idx = Math.floor(Math.random() * pool.rasgos.length);
+      obtenciones.push({ tipo: "rasgos", item: pool.rasgos[idx] });
+    }
   }
+
+  if (obtenciones.length === 0) return null;
 
   // Actualizar en Firestore
   const userRef = doc(db, "aventureros", userId);
@@ -80,24 +117,38 @@ export async function procesarRecompensaLectura(userId, generoLibro) {
   const userData = userSnap.data();
   const estadisticas = userData.estadisticas || { rasgos: {}, cicatrices: {}, atributos: {} };
 
-  if (!estadisticas[tipo]) estadisticas[tipo] = {};
+  if (!estadisticas.rasgos) estadisticas.rasgos = {};
+  if (!estadisticas.cicatrices) estadisticas.cicatrices = {};
 
-  const itemId = itemObtenido.id;
-  if (estadisticas[tipo][itemId]) {
-    estadisticas[tipo][itemId].contador += 1;
-  } else {
-    estadisticas[tipo][itemId] = {
-      nombre: itemObtenido.nombre,
-      icono: itemObtenido.icono,
-      desc: itemObtenido.desc,
-      modificadores: itemObtenido.modificadores || {},
-      contador: 1
-    };
-  }
+  const resumenResultados = [];
+
+  obtenciones.forEach(({ tipo, item }) => {
+    const itemId = item.id;
+    if (estadisticas[tipo][itemId]) {
+      estadisticas[tipo][itemId].contador += 1;
+    } else {
+      estadisticas[tipo][itemId] = {
+        nombre: item.nombre,
+        icono: item.icono,
+        desc: item.desc,
+        modificadores: item.modificadores || {},
+        contador: 1
+      };
+    }
+
+    resumenResultados.push({
+      tipo,
+      item,
+      contador: estadisticas[tipo][itemId].contador
+    });
+  });
 
   await updateDoc(userRef, { estadisticas });
 
-  return { tipo, item: itemObtenido, contador: estadisticas[tipo][itemId].contador };
+  return {
+    totalTiradas,
+    recompensas: resumenResultados
+  };
 }
 
 /**
@@ -192,7 +243,7 @@ export function calcularEstadoAventurero(stats = {}, rasgosEquipados = [], cicat
   // 2. Evaluador por Atributo Dominante
   const mapaAtributos = [
     { val: fue, max: { t: "Titán de Voluntad", i: "🔥", d: "Tu determinación e impacto físico se imponen a cualquier obstáculo." }, min: { t: "Espíritu Frágil", i: "🪶", d: "Te agotas rápidamente ante el esfuerzo o la confrontación." } },
-    { val: des, max: { t: "Reflejo Relámpago", i: "⚡", d: "Agilidad mental y física milimétrica para reaccionar ante lo imprevisto." }, min: { t: "Pasos Torpes", i: "🗿", d: "Dificultad para adaptarte rápido o moverte con fluidez." } },
+    { val: des, max: { t: "Reflejo Relámpago", i: "⚡", d: "Agilidad mental y física milimétrica para rearchivar ante lo imprevisto." }, min: { t: "Pasos Torpes", i: "🗿", d: "Dificultad para adaptarte rápido o moverte con fluidez." } },
     { val: con, max: { t: "Fortaleza Eterna", i: "🛡️", d: "Inmune al cansancio; tu cuerpo y mente soportan largas jornadas de tensión." }, min: { t: "Salud Quebradiza", i: "🥀", d: "Propenso al agotamiento o la fatiga por sobrecarga." } },
     { val: int, max: { t: "Mente Omnisciente", i: "🧠", d: "Procesas datos, estructuras y teorías a una velocidad asombrosa." }, min: { t: "Pensamiento Enturbiado", i: "🌫️", d: "Te cuesta conectar conceptos complejos o mantener el rigor analítico." } },
     { val: sab, max: { t: "Oráculo Perspicaz", i: "🔮", d: "Intuición profunda para descifrar verdades ocultas y matices." }, min: { t: "Criterio a la Deriva", i: "🎈", d: "Desconectado del sentido común o con idealismos irrealizables." } },

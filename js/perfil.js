@@ -1,3 +1,4 @@
+// js/perfil.js
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc 
@@ -9,7 +10,7 @@ import {
 } from "./buscadorMisiones.js";
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
-import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 👈 Sistema de 30% Cicatriz / 70% Rasgo
+import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 👈 Sistema de recompensas dinámico
 
 // 1. Inicialización de Firebase
 const auth = getAuth(app);
@@ -72,24 +73,20 @@ async function cargarDatosAventurero(docRef) {
   // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
   renderizarEstadisticasAcordeon(data.estadisticas || {});
 
-  // 🩸✨ Renderizar Rasgos y Cicatrices
-  renderizarRasgosYCicatrices(data.rasgos || [], data.cicatrices || []);
+  // 🩸✨ Renderizar Rasgos y Cicatrices (desde estadísticas u objetos directos)
+  const rasgosOrigen = data.estadisticas?.rasgos || data.rasgos || {};
+  const cicatricesOrigen = data.estadisticas?.cicatrices || data.cicatrices || {};
+  renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
 
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
 }
 
 function actualizarBarraNivel(nivel, xpTotal) {
-  // Ajusta la fórmula si tu juego usa una meta fija o acumulativa diferente por nivel
-  const xpRequeridaPorNivel = 1000; // Ej: 1000 XP por cada nivel
-  
-  // XP que pertenecen al nivel actual
+  const xpRequeridaPorNivel = 1000;
   const xpEnNivelActual = xpTotal % xpRequeridaPorNivel;
-  
-  // Porcentaje de avance hacia el siguiente nivel (0 a 100)
   const porcentaje = Math.min(Math.floor((xpEnNivelActual / xpRequeridaPorNivel) * 100), 100);
 
-  // Selecciona el elemento de la barra (busca por ID o clase común)
   const barraProgreso = document.getElementById("char-xp-bar") 
     || document.getElementById("barra-xp") 
     || document.querySelector(".xp-bar-fill") 
@@ -99,41 +96,44 @@ function actualizarBarraNivel(nivel, xpTotal) {
     barraProgreso.style.width = `${porcentaje}%`;
   }
 
-  // Opcional: mostrar texto de experiencia ej. "350 / 1000 XP"
   const textoProgreso = document.getElementById("char-xp-next") || document.getElementById("xp-progreso-texto");
   if (textoProgreso) {
     textoProgreso.textContent = `${xpEnNivelActual} / ${xpRequeridaPorNivel} XP`;
   }
 }
 
-// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices visualmente
+// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices visualmente en el perfil
 function renderizarRasgosYCicatrices(rasgos, cicatrices) {
   const contenedorRasgos = document.getElementById("contenedor-rasgos");
   const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
 
+  // Convertir a Array si vienen guardados como Diccionarios/Objetos en Firestore
+  const listaRasgos = Array.isArray(rasgos) ? rasgos : Object.values(rasgos);
+  const listaCicatrices = Array.isArray(cicatrices) ? cicatrices : Object.values(cicatrices);
+
   if (contenedorRasgos) {
-    if (rasgos.length === 0) {
+    if (listaRasgos.length === 0) {
       contenedorRasgos.innerHTML = `<p class="sin-datos">Ningún rasgo obtenido aún.</p>`;
     } else {
-      contenedorRasgos.innerHTML = rasgos.map(r => `
-        <div class="badge-item rasgo-badge" title="${r.descripcion || ''}">
+      contenedorRasgos.innerHTML = listaRasgos.map(r => `
+        <div class="badge-item rasgo-badge" title="${r.desc || r.descripcion || ''}">
           <span class="icono">${r.icono || '✨'}</span>
           <span class="nombre">${r.nombre}</span>
-          <span class="contador">(x${r.acumulaciones || 1})</span>
+          <span class="contador">(x${r.contador || r.acumulaciones || 1})</span>
         </div>
       `).join('');
     }
   }
 
   if (contenedorCicatrices) {
-    if (cicatrices.length === 0) {
+    if (listaCicatrices.length === 0) {
       contenedorCicatrices.innerHTML = `<p class="sin-datos">Tu historial está limpio de cicatrices.</p>`;
     } else {
-      contenedorCicatrices.innerHTML = cicatrices.map(c => `
-        <div class="badge-item cicatriz-badge" title="${c.descripcion || ''}">
+      contenedorCicatrices.innerHTML = listaCicatrices.map(c => `
+        <div class="badge-item cicatriz-badge" title="${c.desc || c.descripcion || ''}">
           <span class="icono">${c.icono || '🩸'}</span>
           <span class="nombre">${c.nombre}</span>
-          <span class="contador">(x${c.acumulaciones || 1})</span>
+          <span class="contador">(x${c.contador || c.acumulaciones || 1})</span>
         </div>
       `).join('');
     }
@@ -229,24 +229,31 @@ async function actualizarEstadoMision(index, nuevoEstado) {
     const mision = misionesLocales[index];
     mision.estado = nuevoEstado;
 
+    const gananciaMarcapaginas = Math.floor(Math.random() * (mision.paginas || 1)) + 1;
+
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
       marcapaginas: increment(gananciaMarcapaginas)
     });
 
     if (nuevoEstado === "TERMINADA") {
-      const generoLibro = (mision.generos && mision.generos.length) ? mision.generos[0] : "Fantasía";
-      
-      // Tirada aleatoria del 30% Cicatriz / 70% Rasgo
-      const recompensa = await procesarRecompensaLectura(currentUserId, generoLibro);
+      const listaGeneros = (mision.generos && mision.generos.length) ? mision.generos : [(mision.genero || "Fantasía")];
+      const paginas = mision.paginas || 0;
 
-      if (recompensa) {
-        const textoTipo = recompensa.tipo === "rasgos" ? "✨ Rasgo Obtenido" : "🩸 Cicatriz Adquirida";
-        alert(`¡Misión Terminada!\n\n${textoTipo}: ${recompensa.item.icono} ${recompensa.item.nombre} (+${recompensa.contador})`);
+      // Tiradas aleatorias adaptadas a la cantidad de páginas y géneros
+      const resultadoRecompensa = await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
+
+      if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
+        let textoPremios = resultadoRecompensa.recompensas.map(r => {
+          const tipoIcono = r.tipo === "rasgos" ? "✨" : "🩸";
+          return `${tipoIcono} ${r.item.nombre} (+${r.contador})`;
+        }).join("\n");
+
+        alert(`¡Misión Terminada!\n\nSe realizaron ${resultadoRecompensa.totalTiradas} tiradas de huellas:\n${textoPremios}`);
       }
     }
 
-    // Recargar y actualizar vista completa (misiones + estadísticas)
+    // Recargar y actualizar vista completa (misiones + estadísticas + huellas)
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
@@ -369,7 +376,7 @@ function inicializarModalMisiones() {
           paginas: paginas,
           proclama: proclama,
           genero: generoPrincipal,
-          generos: generosChecked,
+          generos: generosChecked.length > 0 ? generosChecked : [generoPrincipal],
           portadaUrl: portadaUrl,
           creadorId: user.uid,
           creadorNombre: nombreAventurero,
@@ -399,6 +406,7 @@ function inicializarModalMisiones() {
             titulo: titulo,
             autor: autor,
             genero: generoPrincipal,
+            generos: nuevaMisionData.generos,
             paginas: paginas,
             portadaUrl: portadaUrl,
             fechaTerminado: new Date().toISOString()
@@ -406,11 +414,13 @@ function inicializarModalMisiones() {
 
           await registrarLibroEnBibliotecaYAtlas(user.uid, datosLibro);
 
-          // Asignar Rasgo/Cicatriz en Firestore
-          const recompensa = await procesarRecompensaLectura(user.uid, generoPrincipal);
+          // Asignar Rasgos/Cicatrices según géneros y páginas
+          const recompensa = await procesarRecompensaLectura(user.uid, nuevaMisionData.generos, paginas);
           let mensajeRecompensa = "";
-          if (recompensa) {
-            mensajeRecompensa = `\n\n${recompensa.tipo === "rasgos" ? "✨ Rasgo Obtenido" : "🩸 Cicatriz Adquirida"}: ${recompensa.item.icono} ${recompensa.item.nombre} (+${recompensa.contador})`;
+          
+          if (recompensa && recompensa.recompensas.length > 0) {
+            mensajeRecompensa = "\n\n✨ Recompensas obtenidas:\n" + 
+              recompensa.recompensas.map(r => `${r.tipo === "rasgos" ? "✨" : "🩸"} ${r.item.nombre} (+${r.contador})`).join("\n");
           }
 
           alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeRecompensa}\n\n📖 Se ha añadido el lomo a tu Biblioteca.`);
