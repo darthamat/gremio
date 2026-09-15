@@ -66,7 +66,7 @@ export const BANCO_HUELLAS = {
         ]
     },
 
-    historia: {
+    historica: {
         rasgos: [
             { id: "pensamiento_critico", nombre: "Pensamiento Crítico", icono: "🏛️", desc: "Capacidad para contrastar versiones y detectar sesgos en discursos actuales.", modificadores: { inteligencia: 2, sabiduria: 1 } },
             { id: "perspectiva_temporal", nombre: "Perspectiva Temporal", icono: "⏳", desc: "Entendimiento de que los problemas del presente son parte de ciclos largos.", modificadores: { sabiduria: 2, inteligencia: 1 } },
@@ -241,6 +241,61 @@ export const BANCO_HUELLAS = {
             { id: "rigidez_criterio", nombre: "Exigencia Inflexible", icono: "📐", desc: "Poco margen de tolerancia ante errores de forma o falta de profundidad.", modificadores: { carisma: -2, inteligencia: -1 } }
         ]
     },
+
+    ficcion: {
+    rasgos: [
+        { id: "empatia_narrativa", nombre: "Empatía Narrativa", icono: "🎭", desc: "Comprendes mejor las emociones y motivos de las personas a tu alrededor.", modificadores: { carisma: 1 } },
+        { id: "pensamiento_simbolico", nombre: "Pensamiento Simbólico", icono: "🔮", desc: "Ves metáforas y significados profundos en acontecimientos cotidianos.", modificadores: { sabiduria: 1 } },
+        { id: "creador_escenarios", nombre: "Creador de Escenarios", icono: "🎬", desc: "Tu mente anticipa múltiples formas en que puede desarrollarse una situación.", modificadores: { inteligencia: 1 } },
+        { id: "intuicion_dramatica", nombre: "Intuición Dramática", icono: "⚡", desc: "Detectas tensiones subyacentes e intenciones ocultas en una conversación.", modificadores: { sabiduria: 1 } },
+        { id: "camaleon_social", nombre: "Camaleón Social", icono: "🦎", desc: "Te adaptas con facilidad a distintos ambientes y grupos de personas.", modificadores: { carisma: 1 } },
+        { id: "resiliencia_heroica", nombre: "Resiliencia Heroica", icono: "🛡️", desc: "Encuentras motivación interna para seguir adelante tras un contratiempo.", modificadores: { constitucion: 1 } },
+        { id: "meticuloso_trama", nombre: "Ojo para la Trama", icono: "🧩", desc: "Encuentras coherencia y patrones en situaciones caóticas.", modificadores: { destreza: 1 } },
+        { id: "espiritu_aventurero", nombre: "Espíritu Aventurero", icono: "🗺️", desc: "Sientes impulso por explorar nuevos lugares y salir de tu zona de confort.", modificadores: { fuerza: 1 } },
+        { id: "narrador_nato", nombre: "Narrador Nato", icono: "🗣️", desc: "Expresas tus ideas e historias de forma envolvente y persuasiva.", modificadores: { carisma: 1 } },
+        { id: "agudeza_moral", nombre: "Agudeza Moral", icono: "⚖️", desc: "Evalúas los dilemas éticos con matices y sin caer en absolutos.", modificadores: { sabiduria: 1 } }
+    ],
+    cicatrices: [
+        { id: "evasion_realidad", nombre: "Evasión de la Realidad", icono: "☁️", desc: "Prefieres refugiarte en tus pensamientos antes que afrontar problemas reales.", modificadores: { constitucion: -1 } },
+        { id: "dramatismo", nombre: "Tendencia al Dramatismo", icono: "🎭", desc: "Magnificas pequeños inconvenientes como si fueran tragedias mayores.", modificadores: { carisma: -1 } },
+        { id: "idealismo_ingenuo", nombre: "Idealismo Ingenuo", icono: "🕊️", desc: "Esperas resoluciones perfectas y sufres desencantos al chocar con la realidad.", modificadores: { sabiduria: -1 } },
+        { id: "nostalgia_amarga", nombre: "Nostalgia Amarga", icono: "🥀", desc: "Te quedas anclado/a en momentos del pasado añorando lo que ya fue.", modificadores: { fuerza: -1 } },
+        { id: "sobrepensamiento", nombre: "Sobrepensamiento", icono: "🌀", desc: "Analizas en exceso interacciones pasadas buscando segundas intenciones.", modificadores: { inteligencia: -1 } },
+        { id: "inconstancia", nombre: "Inconstancia", icono: "🍃", desc: "Te entusiasmas rápido con nuevas ideas pero te cuesta mantener la disciplina.", modificadores: { destreza: -1 } },
+        { id: "procrastinacion_creativa", nombre: "Procrastinación Creativa", icono: "🛋️", desc: "Pospones responsabilidades pendientes imaginando otros proyectos.", modificadores: { constitucion: -1 } },
+        { id: "paralisis_dilema", nombre: "Parálisis por Dilema", icono: "❓", desc: "Te cuesta tomar decisiones firmes cuando hay varias opciones atractivas.", modificadores: { sabiduria: -1 } },
+        { id: "idealizacion_personas", nombre: "Idealización de Personas", icono: "⭐", desc: "Proyectas expectativas irreales sobre los demás y te decepcionas fácilmente.", modificadores: { carisma: -1 } },
+        { id: "desconexion_entorno", nombre: "Desconexión del Entorno", icono: "🌫️", desc: "Te abstraes tanto que pierdes la noción de los detalles prácticos inmediatos.", modificadores: { destreza: -1 } }
+    ]
+},
+
+no_ficcion: {
+    rasgos: [
+        { id: "pensamiento_critico", nombre: "Pensamiento Crítico", icono: "🧐", desc: "Cuestionas la información antes de darla por sentada.", modificadores: { inteligencia: 1 } },
+        { id: "rigor_analitico", nombre: "Rigor Analítico", icono: "📊", desc: "Desglosas problemas complejos en partes manejables con método.", modificadores: { inteligencia: 1 } },
+        { id: "autodidacta", nombre: "Espíritu Autodidacta", icono: "📚", desc: "Tienes facilidad y disciplina para aprender habilidades nuevas por tu cuenta.", modificadores: { sabiduria: 1 } },
+        { id: "autoconciencia", nombre: "Autoconciencia", icono: "🪞", desc: "Reconoces tus propias fortalezas, sesgos y puntos de mejora.", modificadores: { sabiduria: 1 } },
+        { id: "pensamiento_sistemico", nombre: "Visión Sistemática", icono: "⚙️", desc: "Entiendes cómo interactúan las piezas de un proceso o comunidad.", modificadores: { destreza: 1 } },
+        { id: "disciplina_focal", nombre: "Disciplina Focal", icono: "🎯", desc: "Mantienes el foco en tus metas a largo plazo sin distreerte.", modificadores: { constitucion: 1 } },
+        { id: "comunicacion_clara", nombre: "Claridad Expositiva", icono: "📢", desc: "Explicas conceptos complejos de manera sencilla y directa.", modificadores: { carisma: 1 } },
+        { id: "mentalidad_empirica", nombre: "Mentalidad Empírica", icono: "🔬", desc: "Valoras las evidencias observables y la experiencia práctica sobre las opiniones.", modificadores: { fuerza: 1 } },
+        { id: "resiliencia_realista", nombre: "Realismo Resiliente", icono: "⛰️", desc: "Aceptas los hechos difíciles tal como son y actúas para adaptarte.", modificadores: { constitucion: 1 } },
+        { id: "sintesis_informacion", nombre: "Capacidad de Síntesis", icono: "✂️", desc: "Extraes lo esencial de grandes volúmenes de datos o lecturas.", modificadores: { inteligencia: 1 } }
+    ],
+    cicatrices: [
+        { id: "escepticismo_rigido", nombre: "Escepticismo Rígido", icono: "🧱", desc: "Te cuesta aceptar ideas innovadoras si no vienen con pruebas inmediatas.", modificadores: { sabiduria: -1 } },
+        { id: "paralisis_analisis", nombre: "Parálisis por Análisis", icono: "⏳", desc: "Investigas tanto antes de actuar que pierdes la oportunidad de ejecutar.", modificadores: { fuerza: -1 } },
+        { id: "perfeccionismo_bloqueante", nombre: "Perfeccionismo Bloqueante", icono: "📐", desc: "Te exiges estándares tan altos que te cuesta dar por terminado un trabajo.", modificadores: { constitucion: -1 } },
+        { id: "frialdad_argumentativa", nombre: "Frialdad Argumentativa", icono: "❄️", desc: "Priorizas la lógica estricta descuidando la sensibilidad de los demás.", modificadores: { carisma: -1 } },
+        { id: "saturacion_datos", nombre: "Saturación de Datos", icono: "🤯", desc: "Sensación de abrumamiento por intentar abarcar demasiada información.", modificadores: { inteligencia: -1 } },
+        { id: "sabelotodo", nombre: "Actitud Académica", icono: "🎓", desc: "Tendencia a corregir a otros en detalles menores creando fricción social.", modificadores: { carisma: -1 } },
+        { id: "cinismo", nombre: "Cierto Cinismo", icono: "🖤", desc: "Dudas de la buena fe tras bastidores en proyectos u organizaciones.", modificadores: { sabiduria: -1 } },
+        { id: "rigidez_metodologica", nombre: "Rigidez Metodológica", icono: "📏", desc: "Te estresas cuando los planes improvisados se salen del esquema inicial.", modificadores: { destreza: -1 } },
+        { id: "fatiga_cognitiva", nombre: "Fatiga Cognitiva", icono: "💤", desc: "Agotamiento derivado de mantener una concentración mental prolongada.", modificadores: { constitucion: -1 } },
+        { id: "obsesión_control", nombre: "Necesidad de Control", icono: "🎛️", desc: "Dificultad para delegar tareas por temor a que no sigan las pautas exactas.", modificadores: { destreza: -1 } }
+    ]
+},
+
     generica: {
     rasgos: [
         { id: "observador", nombre: "Observador/a", icono: "👁️", desc: "Te fijas más en los detalles del entorno y en lo que la gente no dice.", modificadores: { sabiduria: 1 } },

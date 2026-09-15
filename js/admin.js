@@ -214,20 +214,34 @@ function actualizarHuellasPorGeneros() {
     const info = mapaGenerosGlobal[key];
     const keyPadre = info ? info.padre : key;
 
-    // Busca en BANCO_HUELLAS usando la clave seleccionada o su categoría padre
-    const huellas = BANCO_HUELLAS[key] || BANCO_HUELLAS[keyPadre];
+    // 🔍 Intenta buscar por clave seleccionada, clave padre o variaciones de minúsculas/guiones
+    const huellas = BANCO_HUELLAS[key] 
+                 || BANCO_HUELLAS[keyPadre]
+                 || BANCO_HUELLAS[key.toLowerCase()]
+                 || (keyPadre ? BANCO_HUELLAS[keyPadre.toLowerCase()] : null);
 
     if (huellas) {
+      // Extraer Rasgos (soporta string u objeto)
       if (Array.isArray(huellas.rasgos)) {
         huellas.rasgos.forEach(r => {
-          if (!listaRasgos.includes(r)) listaRasgos.push(r);
+          const nombreRasgo = typeof r === "object" ? (r.nombre || r.titulo || r.nombreRasgo || JSON.stringify(r)) : r;
+          if (nombreRasgo && !listaRasgos.includes(nombreRasgo)) {
+            listaRasgos.push(nombreRasgo);
+          }
         });
       }
+
+      // Extraer Cicatrices (soporta string u objeto)
       if (Array.isArray(huellas.cicatrices)) {
         huellas.cicatrices.forEach(c => {
-          if (!listaCicatrices.includes(c)) listaCicatrices.push(c);
+          const nombreCicatriz = typeof c === "object" ? (c.nombre || c.titulo || c.nombreCicatriz || JSON.stringify(c)) : c;
+          if (nombreCicatriz && !listaCicatrices.includes(nombreCicatriz)) {
+            listaCicatrices.push(nombreCicatriz);
+          }
         });
       }
+    } else {
+      console.warn(`⚠️ No se encontraron huellas para el género "${key}" ni para el padre "${keyPadre}". Revisa las claves en BANCO_HUELLAS.`);
     }
   });
 
@@ -361,15 +375,17 @@ function renderizarTags() {
   const contCicatrices = document.getElementById("container-cicatrices");
 
   if (contRasgos) {
-    contRasgos.innerHTML = listaRasgos.map((r, i) => 
-      `<span class="tag">✨ ${r} <span onclick="eliminarTag('rasgo', ${i})">&times;</span></span>`
-    ).join("");
+    contRasgos.innerHTML = listaRasgos.map((r, i) => {
+      const texto = typeof r === "object" ? (r.nombre || r.titulo || "") : r;
+      return `<span class="tag">✨ ${texto} <span onclick="eliminarTag('rasgo', ${i})">&times;</span></span>`;
+    }).join("");
   }
 
   if (contCicatrices) {
-    contCicatrices.innerHTML = listaCicatrices.map((c, i) => 
-      `<span class="tag" style="background:#5a1a1a;">👁️ ${c} <span onclick="eliminarTag('cicatriz', ${i})">&times;</span></span>`
-    ).join("");
+    contCicatrices.innerHTML = listaCicatrices.map((c, i) => {
+      const texto = typeof c === "object" ? (c.nombre || c.titulo || "") : c;
+      return `<span class="tag" style="background:#5a1a1a;">👁️ ${texto} <span onclick="eliminarTag('cicatriz', ${i})">&times;</span></span>`;
+    }).join("");
   }
 }
 
