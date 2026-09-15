@@ -6,7 +6,11 @@ import {
     getDocs, 
     query, 
     where, 
-    or 
+    or,
+    doc,
+    getDoc,
+    updateDoc,
+    arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { registrarLecturaLibre } from "./gestorLibros.js";
@@ -32,6 +36,27 @@ async function cargarBiblioteca() {
         
         estante.innerHTML = "";
 
+        // 1. OBTENER DATOS OFICIALES DEL AVENTURERO (Sincronización de Contadores)
+        const aventureroRef = doc(db, "aventureros", currentUser.uid);
+        const aventureroSnap = await getDoc(aventureroRef);
+        
+        if (aventureroSnap.exists()) {
+            const dataAventurero = aventureroSnap.data();
+            
+            const elemLibros = document.getElementById("total-libros");
+            const elemPaginas = document.getElementById("total-paginas");
+            const elemXp = document.getElementById("total-xp");
+            const elemPrestigio = document.getElementById("total-prestigio");
+            const elemMarcapaginas = document.getElementById("total-marcapaginas") || document.getElementById("contador-marcapaginas");
+
+            if (elemLibros) elemLibros.textContent = dataAventurero.librosCompletados || 0;
+            if (elemPaginas) elemPaginas.textContent = dataAventurero.paginasLeidas || 0;
+            if (elemXp) elemXp.textContent = `${dataAventurero.xp || 0} XP`;
+            if (elemPrestigio) elemPrestigio.textContent = dataAventurero.prestigio || 0;
+            if (elemMarcapaginas) elemMarcapaginas.textContent = dataAventurero.marcapaginas || 0;
+        }
+
+        // 2. CARGAR Y RENDERIZAR LOS LOMOS DE LA ESTANTERÍA
         const q = query(
             collection(db, "biblioteca"), 
             or(
@@ -42,35 +67,14 @@ async function cargarBiblioteca() {
         
         const snapshot = await getDocs(q);
 
-        let totalPaginas = 0;
-        let totalLibros = 0;
-        let totalPrestigio = 0;
-
         if (snapshot.empty) {
-            estante.innerHTML = `<p class="sin-datos">Tu estantería está vacía. Completa retos o añade libros para llenar tus pergaminos.</p>`;
+            estante.innerHTML = `<p class="sin-datos">Tu estantería está vacía. Completa retos o añade lecturas libres para llenar tus pergaminos.</p>`;
         } else {
             snapshot.forEach(docSnap => {
                 const libro = docSnap.data();
-                totalLibros++;
-                const paginasNum = Number(libro.paginas || 0);
-                const prestigioNum = Number(libro.prestigioGanado || paginasNum);
-
-                totalPaginas += paginasNum;
-                totalPrestigio += prestigioNum;
-                
                 renderizarLomoLibro(libro);
             });
         }
-
-        const elemLibros = document.getElementById("total-libros");
-        const elemPaginas = document.getElementById("total-paginas");
-        const elemXp = document.getElementById("total-xp");
-        const elemPrestigio = document.getElementById("total-prestigio");
-
-        if (elemLibros) elemLibros.textContent = totalLibros;
-        if (elemPaginas) elemPaginas.textContent = totalPaginas;
-        if (elemXp) elemXp.textContent = `${totalPaginas} XP`;
-        if (elemPrestigio) elemPrestigio.textContent = totalPrestigio;
 
     } catch (error) {
         console.error("Error al cargar la biblioteca:", error);
@@ -104,8 +108,9 @@ function renderizarLomoLibro(libro) {
     lomo.style.backgroundColor = colorFondo;
 
     let fechaTexto = "Fecha no registrada";
-    if (libro.fechaCompletado) {
-        const fechaObj = libro.fechaCompletado.toDate ? libro.fechaCompletado.toDate() : new Date(libro.fechaCompletado);
+    if (libro.fechaCompletado || libro.fechaTerminado) {
+        const fechaBruta = libro.fechaCompletado || libro.fechaTerminado;
+        const fechaObj = fechaBruta.toDate ? fechaBruta.toDate() : new Date(fechaBruta);
         if (!isNaN(fechaObj)) {
             fechaTexto = fechaObj.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
         }
@@ -128,7 +133,7 @@ function renderizarLomoLibro(libro) {
                     <hr class="tooltip-divisor">
                     <div class="tooltip-detalle">📄 <strong>${paginasNum}</strong> páginas</div>
                     <div class="tooltip-detalle">📅 Leído: <strong>${fechaTexto}</strong></div>
-                    ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : ''}
+                    ${esReto ? '<div class="tooltip-badge">📜 Reto del Gremio</div>' : '<div class="tooltip-badge badge-libre">📚 Lectura Libre</div>'}
                 </div>
             </div>
         `;
@@ -189,17 +194,37 @@ if (formLibro) {
         const autor = document.getElementById("autor").value.trim();
         const paginas = Number(document.getElementById("paginas").value) || 0;
         const color = document.getElementById("color") ? document.getElementById("color").value : "#8b263e";
+        const generoInput = document.getElementById("genero") ? document.getElementById("genero").value : "Fantasía";
 
         try {
+            // 1. Registrar libro en Biblioteca y actualizar XP, Prestigio, Marcapáginas
             const res = await registrarLecturaLibre(currentUser.uid, {
                 titulo,
                 autor,
                 paginas,
-                colorLomo: color
+                colorLomo: color,
+                genero: generoInput
             });
 
             if (res.exito) {
-                alert(`✨ ¡Lectura rápida registrada!\n\n🏆 Prestigio: +${res.prestigio}\n🔖 Marcapáginas: +${res.marcapaginas}\n⭐ XP: +${res.xp}`);
+                // 2. REGISTRAR TAMBIÉN EN LAS MISIONES SECUNDARIAS DEL PERFIL
+                const aventureroRef = doc(db, "aventureros", currentUser.uid);
+                const nuevaMisionSecundaria = {
+                    titulo: titulo,
+                    autor: autor,
+                    paginas: paginas,
+                    estado: "TERMINADA",
+                    generos: [generoInput],
+                    colorLomo: color,
+                    fechaCreacion: new Date().toISOString()
+                };
+
+                await updateDoc(aventureroRef, {
+                    misionesSecundarias: arrayUnion(nuevaMisionSecundaria)
+                });
+
+                alert(`✨ ¡Lectura registrada con éxito!\n\n🏆 Prestigio: +${res.prestigio}\n🔖 Marcapáginas: +${res.marcapaginas}\n⭐ XP: +${res.xp}`);
+                
                 if (modal) modal.classList.add("oculto");
                 formLibro.reset();
                 await cargarBiblioteca();
@@ -207,7 +232,7 @@ if (formLibro) {
                 alert("Ocurrió un error al registrar el libro.");
             }
         } catch (error) {
-            console.error("Error al guardar el libro manual:", error);
+            console.error("Error al guardar la lectura libre:", error);
             alert("Ocurrió un error al registrar el libro.");
         }
     });
