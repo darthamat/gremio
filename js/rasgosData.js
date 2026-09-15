@@ -240,11 +240,8 @@ export const BANCO_HUELLAS = {
             { id: "peso_tradicion", nombre: "Inhibición Creativa", icono: "🗿", desc: "Sentimiento de que todo lo genial ya ha sido dicho por mentes del pasado.", modificadores: { fuerza: -1, constitucion: -2 } },
             { id: "rigidez_criterio", nombre: "Exigencia Inflexible", icono: "📐", desc: "Poco margen de tolerancia ante errores de forma o falta de profundidad.", modificadores: { carisma: -2, inteligencia: -1 } }
         ]
-    }
-};
-
-// Huellas genéricas, básicas y prosaicas aplicables a cualquier tipo de lectura
-export const HUELLAS_GENERICAS = {
+    },
+    generica: {
     rasgos: [
         { id: "observador", nombre: "Observador/a", icono: "👁️", desc: "Te fijas más en los detalles del entorno y en lo que la gente no dice.", modificadores: { sabiduria: 1 } },
         { id: "valentia", nombre: "Valentía", icono: "🦁", desc: "Afrontas los momentos de tensión cotidiana con mayor entereza.", modificadores: { fuerza: 1 } },
@@ -270,4 +267,5 @@ export const HUELLAS_GENERICAS = {
         { id: "pesimista", nombre: "Toque Pesimista", icono: "☁️", desc: "Inclinación a pensar primero en lo que puede salir mal." , modificadores: { carisma: -1 } },
     
     ]
-};
+}
+}
