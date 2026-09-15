@@ -320,7 +320,6 @@ async function cargarMisionesSecundariasGlobales() {
   contenedor.innerHTML = "";
 
   try {
-    // Se realiza la lectura de todas las misiones activas en el tablero
     const q = query(collection(db, "misionesSecundarias"), where("activa", "==", true));
     const snapshot = await getDocs(q);
 
@@ -421,22 +420,37 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const esCreador = data.creadorId === usuarioSesionId;
     const paginas = Number(data.paginas) || 0;
 
-    // 1. Recompensas de la Misión
+    // 1. Extraer Rasgos y Cicatrices prometidos por la misión
+    const rasgosObtenidos = data.rasgosPrometidos || data.rasgosOtorga || [];
+    const cicatricesObtenidas = data.cicatricesPrometidas || data.cicatricesOtorga || [];
+
+    // 2. Recompensas Generales
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 2. Actualizar perfil del aventurero
-    const userRef = doc(db, "aventureros", usuarioSesionId);
-    await updateDoc(userRef, {
+    // 3. Objeto de actualización de perfil
+    const updateData = {
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1)
-    });
+    };
 
-    // 3. REGISTRAR EN LA BIBLIOTECA Y DIBUJAR EN EL ATLAS
+    // Añadir los rasgos/cicatrices si la misión los contenía
+    if (rasgosObtenidos.length > 0) {
+      updateData.rasgos = arrayUnion(...rasgosObtenidos);
+    }
+    if (cicatricesObtenidas.length > 0) {
+      updateData.cicatrices = arrayUnion(...cicatricesObtenidas);
+    }
+
+    // Actualizar aventurero en Firestore
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    await updateDoc(userRef, updateData);
+
+    // 4. REGISTRAR EN LA BIBLIOTECA Y DIBUJAR EN EL ATLAS
     const datosLibro = {
       id: misionId,
       titulo: data.titulo,
@@ -449,18 +463,23 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
 
     await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
 
-    // 4. Marcar la misión como completada por el usuario actual
+    // Mensaje de feedback de rasgos obtenidos
+    let msgHuellas = "";
+    if (rasgosObtenidos.length > 0) msgHuellas += `\n✨ Rasgos Impregnados: ${rasgosObtenidos.join(", ")}`;
+    if (cicatricesObtenidas.length > 0) msgHuellas += `\n👁️ Cicatrices Marcadas: ${cicatricesObtenidas.join(", ")}`;
+
+    // 5. Marcar la misión como completada por el usuario actual
     if (esCreador) {
       await updateDoc(misionRef, {
         activa: false,
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Has completado tu Misión Secundaria!\n\nAl ser el creador, la misión ha quedado concluida para el Cónclave y el libro se ha incorporado a tu Biblioteca y Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+      alert(`🎉 ¡Has completado tu Misión Secundaria!\n\nAl ser el creador, la misión ha quedado concluida para el Cónclave y el libro se ha incorporado a tu Biblioteca y Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
     } else {
       await updateDoc(misionRef, {
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
     }
 
     await cargarMisionesSecundariasGlobales();
@@ -503,7 +522,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       autor: "Desconocido",
       portadaUrl: "https://via.placeholder.com/150x220?text=Sin+Portada",
       paginas: puntos || 0,
-      genero: "Fantasía"
+      genero: "Fantasía",
+      rasgosOtorga: [],
+      cicatricesOtorga: []
     };
 
     if (retoSnap.exists()) {
@@ -514,7 +535,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
         autor: data.autor || "Desconocido",
         portadaUrl: data.portadaUrl || data.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
         paginas: Number(data.paginas) || puntos || 0,
-        genero: data.genero || "Fantasía"
+        genero: data.genero || "Fantasía",
+        rasgosOtorga: data.rasgosOtorga || [],
+        cicatricesOtorga: data.cicatricesOtorga || []
       };
     }
 
@@ -524,19 +547,33 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    const userRef = doc(db, "aventureros", usuarioSesionId);
-    await updateDoc(userRef, { 
+    const updateData = { 
       retosCompletados: arrayUnion(retoId),
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1)
-    });
+    };
+
+    // Impregnar rasgos si el reto principal también los incluye
+    if (datosReto.rasgosOtorga.length > 0) {
+      updateData.rasgos = arrayUnion(...datosReto.rasgosOtorga);
+    }
+    if (datosReto.cicatricesOtorga.length > 0) {
+      updateData.cicatrices = arrayUnion(...datosReto.cicatricesOtorga);
+    }
+
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    await updateDoc(userRef, updateData);
 
     await completarRetoGremio(usuarioSesionId, datosReto);
 
-    alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
+    let msgHuellas = "";
+    if (datosReto.rasgosOtorga.length > 0) msgHuellas += `\n✨ Rasgos: ${datosReto.rasgosOtorga.join(", ")}`;
+    if (datosReto.cicatricesOtorga.length > 0) msgHuellas += `\n👁️ Cicatrices: ${datosReto.cicatricesOtorga.join(", ")}`;
+
+    alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
 
     await cargarYRenderizarRetos();
 

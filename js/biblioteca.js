@@ -237,3 +237,16 @@ if (formLibro) {
         }
     });
 }
+
+import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  // Inicializar el buscador de Google Books
+  inicializarBuscadorGremio();
+
+  document.getElementById("btn-abrir-buscador")?.addEventListener("click", () => {
+    abrirBuscadorGremio();
+  });
+
+  // Aquí sigue el resto de tu código de biblioteca.js...
+});

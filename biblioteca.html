@@ -8,10 +8,16 @@
 </head>
 <body>
 
-  <!-- Encabezado con navegación -->
+  <!-- Encabezado con los dos botones integrados -->
   <header class="header-biblioteca">
     <a href="perfil.html" class="btn-regresar">⬅ Volver al Perfil</a>
     <h1>📜 Librería de Hazañas</h1>
+    
+    <!-- Tu botón bien integrado aquí -->
+    <button id="btn-abrir-buscador" class="btn-secundario">
+      🔍 Registrar Nueva Obra (Google Books)
+    </button>
+    
     <button id="btn-abrir-modal" class="btn-agregar">+ Registrar Libro Leído</button>
   </header>
 
@@ -29,7 +35,7 @@
       <span class="stat-num" id="total-xp">0</span>
       <span class="stat-label">XP Ganada</span>
     </div>
-      <div class="stat-card">
+    <div class="stat-card">
       <span class="stat-num" id="total-prestigio">0</span>
       <span class="stat-label">Prestigio Ganado</span>
     </div>
@@ -37,9 +43,7 @@
 
   <!-- Estantería de Madera Virtual -->
   <main class="estanteria-contenedor">
-    <div id="estante-libros" class="estante">
-      <!-- Los lomos de los libros se insertarán dinámicamente aquí -->
-    </div>
+    <div id="estante-libros" class="estante"></div>
     <div class="tabla-madera"></div>
   </main>
 
@@ -66,6 +70,20 @@
     </div>
   </div>
 
+  <!-- TU SCRIPT (Colocado correctamente al final del body) -->
+  <script type="module">
+    import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./js/buscadorGremio.js";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      inicializarBuscadorGremio();
+
+      document.getElementById("btn-abrir-buscador")?.addEventListener("click", () => {
+        abrirBuscadorGremio();
+      });
+    });
+  </script>
+
+  <!-- Script secundario de la biblioteca -->
   <script type="module" src="js/biblioteca.js"></script>
 </body>
 </html>

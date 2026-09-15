@@ -45,12 +45,18 @@ async function cargarDatosAventurero(docRef) {
   const data = snap.data();
   misionesLocales = data.misionesSecundarias || [];
 
-  // Datos de texto y estadísticas básicas
+  // Datos básicos
+  const nivel = data.nivel || 1;
+  const xpActual = data.xp || 0;
+
   if (document.getElementById("char-name")) document.getElementById("char-name").textContent = data.nombre || "Aventurero";
-  if (document.getElementById("char-level")) document.getElementById("char-level").textContent = data.nivel || 1;
-  if (document.getElementById("char-xp")) document.getElementById("char-xp").textContent = `${data.xp || 0} XP`;
-  
-  // 🔖 CORRECCIÓN: Renderizar Marcapáginas en pantalla
+  if (document.getElementById("char-level")) document.getElementById("char-level").textContent = nivel;
+  if (document.getElementById("char-xp")) document.getElementById("char-xp").textContent = `${xpActual} XP`;
+
+  // 📈 ACTUALIZACIÓN DE LA BARRA DE PROGRESIÓN DE NIVEL
+  actualizarBarraNivel(nivel, xpActual);
+
+  // 🔖 Renderizar Marcapáginas
   const elMarcapaginas = document.getElementById("char-marcapaginas") || document.getElementById("contador-marcapaginas");
   if (elMarcapaginas) {
     elMarcapaginas.textContent = data.marcapaginas || 0;
@@ -66,11 +72,38 @@ async function cargarDatosAventurero(docRef) {
   // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
   renderizarEstadisticasAcordeon(data.estadisticas || {});
 
-  // 🩸✨ CORRECCIÓN: Renderizar Rasgos y Cicatrices en el Perfil
+  // 🩸✨ Renderizar Rasgos y Cicatrices
   renderizarRasgosYCicatrices(data.rasgos || [], data.cicatrices || []);
 
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
+}
+
+function actualizarBarraNivel(nivel, xpTotal) {
+  // Ajusta la fórmula si tu juego usa una meta fija o acumulativa diferente por nivel
+  const xpRequeridaPorNivel = 1000; // Ej: 1000 XP por cada nivel
+  
+  // XP que pertenecen al nivel actual
+  const xpEnNivelActual = xpTotal % xpRequeridaPorNivel;
+  
+  // Porcentaje de avance hacia el siguiente nivel (0 a 100)
+  const porcentaje = Math.min(Math.floor((xpEnNivelActual / xpRequeridaPorNivel) * 100), 100);
+
+  // Selecciona el elemento de la barra (busca por ID o clase común)
+  const barraProgreso = document.getElementById("char-xp-bar") 
+    || document.getElementById("barra-xp") 
+    || document.querySelector(".xp-bar-fill") 
+    || document.querySelector(".progress-bar");
+
+  if (barraProgreso) {
+    barraProgreso.style.width = `${porcentaje}%`;
+  }
+
+  // Opcional: mostrar texto de experiencia ej. "350 / 1000 XP"
+  const textoProgreso = document.getElementById("char-xp-next") || document.getElementById("xp-progreso-texto");
+  if (textoProgreso) {
+    textoProgreso.textContent = `${xpEnNivelActual} / ${xpRequeridaPorNivel} XP`;
+  }
 }
 
 // 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices visualmente
