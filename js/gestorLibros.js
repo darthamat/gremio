@@ -139,6 +139,8 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
 
 /**
  * 🏆 2. COMPLETAR RETO DEL GREMIO (Desde retos.js)
+ * NOTA DE ARQUITECTURA: retos.js ya incrementa XP/Páginas/Prestigio del aventurero.
+ * Esta función solo registra la obra en las colecciones de Biblioteca, Estantería y Atlas.
  */
 export async function completarRetoGremio(usuarioUid, datosReto) {
   try {
@@ -181,30 +183,26 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       retoId: retoId || null
     }, { merge: true });
 
-    // C. Documento del aventurero
+    // C. Añadir libro a la estantería del aventurero (sin duplicar contadores de XP/Páginas)
     const userRef = doc(db, "aventureros", usuarioUid);
-    const actualizacionAventurero = {
-      xp: increment(paginas),
-      paginasLeidas: increment(paginas),
-      librosCompletados: increment(1),
-      prestigio: increment(paginas)
-    };
-
-    if (retoId) {
-      actualizacionAventurero.retosCompletados = arrayUnion(retoId);
-      actualizacionAventurero.retosAceptados = arrayUnion(retoId);
-    }
-
-    await updateDoc(userRef, actualizacionAventurero);
+    await updateDoc(userRef, {
+      estanteria: arrayUnion({
+        id: libroId,
+        titulo: datosReto.titulo || datosReto.libro,
+        autor: datosReto.autor || "Desconocido",
+        paginas: paginas,
+        colorLomo: colorLomo
+      })
+    });
 
     // D. Iluminar Hexágono en el Atlas
     await actualizarAtlasGenero(usuarioUid, genero, datosReto.titulo || datosReto.libro);
 
-    console.log(`✅ Reto '${retoId}' completado y registrado para el aventurero ${usuarioUid}`);
+    console.log(`✅ Reto '${retoId}' registrado en Biblioteca, Estantería y Atlas para el aventurero ${usuarioUid}`);
     return { exito: true, libroId };
 
   } catch (error) {
-    console.error("❌ Error al completar reto en gestorLibros:", error);
+    console.error("❌ Error al registrar reto en gestorLibros:", error);
     return { exito: false, error };
   }
 }
@@ -290,14 +288,16 @@ export async function unirseAMisionSecundaria(userId, misionId) {
 
 /**
  * 🗺️ 5. MISIONES SECUNDARIAS -> BIBLIOTECA Y ATLAS
- * Guarda en aventureros/{userId}/misLibros, en la colección global 'biblioteca' y actualiza el Atlas.
+ * Guarda en aventureros/{userId}/misLibros, en la colección global 'biblioteca', añade a la estantería y actualiza el Atlas.
  */
 export async function registrarLibroEnBibliotecaYAtlas(userId, datosLibro) {
   try {
     const libroId = datosLibro.id || generarIdLibro(datosLibro);
     const genero = datosLibro.genero || "Fantasía";
+    const generoNorm = genero.toLowerCase().trim();
     const paginas = Number(datosLibro.paginas) || 0;
     const portada = datosLibro.portadaUrl || datosLibro.portada || "https://via.placeholder.com/150x220?text=Sin+Portada";
+    const colorLomo = datosLibro.colorLomo || COLORES_GENERO_LOMO[generoNorm] || COLORES_GENERO_LOMO["default"];
 
     // 1. Biblioteca Personal (misLibros)
     const libroRef = doc(db, `aventureros/${userId}/misLibros`, libroId);
@@ -324,10 +324,22 @@ export async function registrarLibroEnBibliotecaYAtlas(userId, datosLibro) {
       totalLectores: increment(1)
     }, { merge: true });
 
-    // 3. Atlas (Pinta Hexágono por género)
+    // 3. Estantería del Perfil
+    const userRef = doc(db, "aventureros", userId);
+    await updateDoc(userRef, {
+      estanteria: arrayUnion({
+        id: libroId,
+        titulo: datosLibro.titulo,
+        autor: datosLibro.autor || "Desconocido",
+        paginas: paginas,
+        colorLomo: colorLomo
+      })
+    });
+
+    // 4. Atlas (Pinta Hexágono por género)
     await actualizarAtlasGenero(userId, genero, datosLibro.titulo);
 
-    console.log(`✅ Misión Secundaria "${datosLibro.titulo}" guardada en misLibros, biblioteca global y registrada en el Atlas.`);
+    console.log(`✅ Misión Secundaria "${datosLibro.titulo}" registrada en misLibros, biblioteca global, estantería y Atlas.`);
     return { exito: true };
   } catch (error) {
     console.error("❌ Error registrando libro en biblioteca/atlas:", error);

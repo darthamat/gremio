@@ -83,26 +83,37 @@ function calcularNumeroTiradas(paginas = 0) {
  * @param {string|string[]} generos - Género o array de géneros del libro.
  * @param {number} [paginas=0] - Cantidad de páginas del libro leído.
  */
+/**
+ * Procesa la recompensa de lectura realizando tiradas fijadas por la longitud del libro.
+ */
 export async function procesarRecompensaLectura(userId, generos, paginas = 0) {
   const listaGeneros = Array.isArray(generos) ? generos : [generos || "fantasia"];
-  const tiradasPorPaginas = calcularNumeroTiradas(paginas);
   
-  // Realizamos tiradas por cada género multiplicado por el multiplicador de longitud
-  const totalTiradas = Math.max(1, listaGeneros.length * tiradasPorPaginas);
+  // 🔴 CORRECCIÓN 1: Las tiradas dependen SOLO del número de páginas. 
+  // Los géneros amplían la variedad del pool, no multiplican las tiradas.
+  const totalTiradas = calcularNumeroTiradas(paginas);
   
   const pool = obtenerHuellasDisponibles(listaGeneros);
+  
+  // Clonamos los pools para ir sacando (splice) elementos sin repetir en la misma tirada
+  const poolRasgos = [...pool.rasgos];
+  const poolCicatrices = [...pool.cicatrices];
+
   const obtenciones = [];
 
   for (let i = 0; i < totalTiradas; i++) {
     const tiradaDado = Math.floor(Math.random() * 100) + 1;
     const esCicatriz = tiradaDado <= 30; // 30% probabilidad
 
-    if (esCicatriz && pool.cicatrices.length > 0) {
-      const idx = Math.floor(Math.random() * pool.cicatrices.length);
-      obtenciones.push({ tipo: "cicatrices", item: pool.cicatrices[idx] });
-    } else if (pool.rasgos.length > 0) {
-      const idx = Math.floor(Math.random() * pool.rasgos.length);
-      obtenciones.push({ tipo: "rasgos", item: pool.rasgos[idx] });
+    // 🔴 CORRECCIÓN 2: Usamos .splice() para extraer el elemento y evitar repetir el mismo en la misma sesión
+    if (esCicatriz && poolCicatrices.length > 0) {
+      const idx = Math.floor(Math.random() * poolCicatrices.length);
+      const [itemObtenido] = poolCicatrices.splice(idx, 1);
+      obtenciones.push({ tipo: "cicatrices", item: itemObtenido });
+    } else if (poolRasgos.length > 0) {
+      const idx = Math.floor(Math.random() * poolRasgos.length);
+      const [itemObtenido] = poolRasgos.splice(idx, 1);
+      obtenciones.push({ tipo: "rasgos", item: itemObtenido });
     }
   }
 

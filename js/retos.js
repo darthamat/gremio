@@ -1,3 +1,4 @@
+// js/retos.js
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
   getFirestore, 
@@ -18,13 +19,18 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioSesionId = null;
+let ejecucionEnProceso = false; // 🛡️ Banderola global para evitar colisiones de peticiones
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
+  
+  // Evitar ejecuciones duplicadas si auth dispara el evento más de una vez
+  if (usuarioSesionId === user.uid) return;
   usuarioSesionId = user.uid;
+
   await cargarYRenderizarRetos();
   await cargarMisionesSecundariasGlobales();
 });
@@ -243,10 +249,10 @@ async function cargarYRenderizarRetos() {
         const btnTerminar = document.getElementById("btn-terminar");
 
         if (btnAceptar && !esAceptadoActual) {
-          btnAceptar.addEventListener("click", () => aceptarReto(retoActual.id));
+          btnAceptar.onclick = () => aceptarReto(retoActual.id);
         }
         if (btnTerminar) {
-          btnTerminar.addEventListener("click", (e) => terminarReto(retoActual.id, recompensaPuntos, e.target));
+          btnTerminar.onclick = (e) => terminarReto(retoActual.id, recompensaPuntos, e.currentTarget);
         }
       }
     }
@@ -294,13 +300,14 @@ async function cargarYRenderizarRetos() {
           contenedorPasados.appendChild(item);
         });
 
+        // Eventos corregidos usando asignaciones limpias
         contenedorPasados.querySelectorAll(".btn-completar-pasado").forEach(btn => {
-          btn.addEventListener("click", async (e) => {
+          btn.onclick = async (e) => {
             const boton = e.currentTarget;
             const idReto = boton.getAttribute("data-id");
             const puntos = Number(boton.getAttribute("data-puntos")) || 0;
             await terminarReto(idReto, puntos, boton);
-          });
+          };
         });
       }
     }
@@ -376,13 +383,13 @@ async function cargarMisionesSecundariasGlobales() {
       contenedor.appendChild(card);
     });
 
-    // Eventos
+    // Asignación limpia de eventos onclick
     contenedor.querySelectorAll(".btn-aceptar-secundaria").forEach(btn => {
-      btn.addEventListener("click", (e) => aceptarMisionSecundaria(e.currentTarget.getAttribute("data-id")));
+      btn.onclick = (e) => aceptarMisionSecundaria(e.currentTarget.getAttribute("data-id"));
     });
 
     contenedor.querySelectorAll(".btn-completar-secundaria").forEach(btn => {
-      btn.addEventListener("click", (e) => completarMisionSecundaria(e.currentTarget.getAttribute("data-id"), e.currentTarget));
+      btn.onclick = (e) => completarMisionSecundaria(e.currentTarget.getAttribute("data-id"), e.currentTarget);
     });
 
   } catch (err) {
@@ -403,8 +410,11 @@ async function aceptarMisionSecundaria(misionId) {
   }
 }
 
-// Completar Misión Secundaria
+// Completar Misión Secundaria (CON GUARDIA ANTI-DUPLICADOS)
 async function completarMisionSecundaria(misionId, elementoBoton) {
+  if (ejecucionEnProceso) return;
+  ejecucionEnProceso = true;
+
   if (elementoBoton) {
     elementoBoton.disabled = true;
     elementoBoton.textContent = "⌛ Registrando en el Atlas...";
@@ -414,22 +424,22 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const misionRef = doc(db, "misionesSecundarias", misionId);
     const misionSnap = await getDoc(misionRef);
 
-    if (!misionSnap.exists()) return;
+    if (!misionSnap.exists()) {
+      ejecucionEnProceso = false;
+      return;
+    }
 
     const data = misionSnap.data();
     const esCreador = data.creadorId === usuarioSesionId;
     const paginas = Number(data.paginas) || 0;
 
-    // 1. Extraer Rasgos y Cicatrices prometidos por la misión
     const rasgosObtenidos = data.rasgosPrometidos || data.rasgosOtorga || [];
     const cicatricesObtenidas = data.cicatricesPrometidas || data.cicatricesOtorga || [];
 
-    // 2. Recompensas Generales
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 3. Objeto de actualización de perfil
     const updateData = {
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
@@ -438,7 +448,6 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       librosCompletados: increment(1)
     };
 
-    // Añadir los rasgos/cicatrices si la misión los contenía
     if (rasgosObtenidos.length > 0) {
       updateData.rasgos = arrayUnion(...rasgosObtenidos);
     }
@@ -446,11 +455,9 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       updateData.cicatrices = arrayUnion(...cicatricesObtenidas);
     }
 
-    // Actualizar aventurero en Firestore
     const userRef = doc(db, "aventureros", usuarioSesionId);
     await updateDoc(userRef, updateData);
 
-    // 4. REGISTRAR EN LA BIBLIOTECA Y DIBUJAR EN EL ATLAS
     const datosLibro = {
       id: misionId,
       titulo: data.titulo,
@@ -463,12 +470,10 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
 
     await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
 
-    // Mensaje de feedback de rasgos obtenidos
     let msgHuellas = "";
     if (rasgosObtenidos.length > 0) msgHuellas += `\n✨ Rasgos Impregnados: ${rasgosObtenidos.join(", ")}`;
     if (cicatricesObtenidas.length > 0) msgHuellas += `\n👁️ Cicatrices Marcadas: ${cicatricesObtenidas.join(", ")}`;
 
-    // 5. Marcar la misión como completada por el usuario actual
     if (esCreador) {
       await updateDoc(misionRef, {
         activa: false,
@@ -488,6 +493,8 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     console.error("Error al completar la misión secundaria:", error);
     alert("Ocurrió un error al registrar la misión.");
     if (elementoBoton) elementoBoton.disabled = false;
+  } finally {
+    ejecucionEnProceso = false;
   }
 }
 
@@ -504,9 +511,12 @@ async function aceptarReto(retoId) {
   }
 }
 
+// Completar Reto Principal (CORREGIDO PARA EVITAR DOBLE GUARDADO)
 async function terminarReto(retoId, puntos, elementoBoton = null) {
+  if (ejecucionEnProceso) return;
+  ejecucionEnProceso = true;
+
   if (elementoBoton) {
-    if (elementoBoton.disabled) return;
     elementoBoton.disabled = true;
     elementoBoton.dataset.textoOriginal = elementoBoton.textContent;
     elementoBoton.textContent = "⌛ Reclamando recompensas...";
@@ -547,6 +557,8 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
+    // 🔴 1. Marcar reto como completado en el perfil del usuario
+    const userRef = doc(db, "aventureros", usuarioSesionId);
     const updateData = { 
       retosCompletados: arrayUnion(retoId),
       xp: increment(gananciaXP),
@@ -556,7 +568,6 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       librosCompletados: increment(1)
     };
 
-    // Impregnar rasgos si el reto principal también los incluye
     if (datosReto.rasgosOtorga.length > 0) {
       updateData.rasgos = arrayUnion(...datosReto.rasgosOtorga);
     }
@@ -564,9 +575,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       updateData.cicatrices = arrayUnion(...datosReto.cicatricesOtorga);
     }
 
-    const userRef = doc(db, "aventureros", usuarioSesionId);
     await updateDoc(userRef, updateData);
 
+    // 🔴 2. Registrar en Biblioteca / Atlas a través del gestor
     await completarRetoGremio(usuarioSesionId, datosReto);
 
     let msgHuellas = "";
@@ -585,5 +596,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       elementoBoton.disabled = false;
       elementoBoton.textContent = elementoBoton.dataset.textoOriginal || "✨ Marcar Misión Completada";
     }
+  } finally {
+    ejecucionEnProceso = false;
   }
 }
