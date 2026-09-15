@@ -818,3 +818,9 @@
   display: inline-block;
   margin: 2px;
 }
+
+.xp-bar-fill {
+  height: 100%;
+  background-color: #ffd700; /* Color de la barra */
+  transition: width 0.4s ease-in-out; /* Transición animada */
+}

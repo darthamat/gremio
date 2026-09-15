@@ -8,6 +8,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
+// 🔑 IMPORTACIÓN DEL BANCO DE HUELLAS CENTRALIZADO
+import { BANCO_HUELLAS } from "./rasgosData.js";
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -16,20 +19,6 @@ const CLOUDINARY_CLOUD_NAME = "dwuokewzr";
 const CLOUDINARY_UPLOAD_PRESET = "portadas";
 const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 const PORTADA_DEFAULT = "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400"; // Imagen por defecto si falla la subida
-
-// Configuración de rasgos/cicatrices por género base
-const HUELLAS_POR_GENERO = {
-  fantasia: { rasgos: ["Mente Imaginativa", "Aura Maravillosa"], cicatrices: ["Evasionista", "Voz de Leyenda"] },
-  terror: { rasgos: ["Valentia Inquebrantable", "Sentidos Alerta"], cicatrices: ["Trauma Oscuro", "Sombras Persistentes"] },
-  poesia: { rasgos: ["Sensibilidad Profunda", "Espíritu Poético"], cicatrices: ["Corazón Melancólico", "Anhelo Inconsolable"] },
-  clasicos: { rasgos: ["Sabiduría Atemporal", "Pensamiento Noble"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
-  ficcion: { rasgos: ["Imaginación", "Pensamiento Inocente"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
-  no_ficcion: { rasgos: ["Conocimiento", "Pensamiento Crítico"], cicatrices: ["Carga del Pasado", "Rigidez Moral"] },
-  filosofia: { rasgos: ["Criterio Propio", "Mente Inquisitiva"], cicatrices: ["Duda Existencial", "Espíritu Inquieto"] },
-  historica: { rasgos: ["Perspectiva Épica", "Conciencia del Tiempo"], cicatrices: ["Memoria Pesada", "Cicatriz de Eras"] },
-  ciencia_ficcion: { rasgos: ["Visión Futurista", "Curiosidad Cósmica"], cicatrices: ["Desconexión Humana", "Vértigo Digital"] },
-  romance: { rasgos: ["Empatía Profunda", "Lazos Affectivos"], cicatrices: ["Corazón Frágil", "Melancolía Amarga"] }
-};
 
 // Elementos DOM
 const form = document.getElementById("form-crear-reto");
@@ -216,6 +205,7 @@ function renderizarTagsGeneros() {
   });
 }
 
+// 🔄 ACTULIZACIÓN CORREGIDA: Usa BANCO_HUELLAS importado de rasgosData.js
 function actualizarHuellasPorGeneros() {
   listaRasgos = [];
   listaCicatrices = [];
@@ -224,13 +214,20 @@ function actualizarHuellasPorGeneros() {
     const info = mapaGenerosGlobal[key];
     const keyPadre = info ? info.padre : key;
 
-    if (HUELLAS_POR_GENERO[keyPadre]) {
-      HUELLAS_POR_GENERO[keyPadre].rasgos.forEach(r => {
-        if (!listaRasgos.includes(r)) listaRasgos.push(r);
-      });
-      HUELLAS_POR_GENERO[keyPadre].cicatrices.forEach(c => {
-        if (!listaCicatrices.includes(c)) listaCicatrices.push(c);
-      });
+    // Busca en BANCO_HUELLAS usando la clave seleccionada o su categoría padre
+    const huellas = BANCO_HUELLAS[key] || BANCO_HUELLAS[keyPadre];
+
+    if (huellas) {
+      if (Array.isArray(huellas.rasgos)) {
+        huellas.rasgos.forEach(r => {
+          if (!listaRasgos.includes(r)) listaRasgos.push(r);
+        });
+      }
+      if (Array.isArray(huellas.cicatrices)) {
+        huellas.cicatrices.forEach(c => {
+          if (!listaCicatrices.includes(c)) listaCicatrices.push(c);
+        });
+      }
     }
   });
 
@@ -477,30 +474,30 @@ if (form) {
       };
 
       // Estructura para la Colección Biblioteca (Global)
-  const datosBiblioteca = {
-  titulo,
-  autor,
-  paginas,
-  genero: arrayGeneros[0] || "general",
-  generos: arrayGeneros,
-  portadaUrl: finalPortadaUrl,
-  portada: finalPortadaUrl,
-  descripcion,
-  colorLomo: "#8b263e", // O el color seleccionado
-  esReto: true,
-  tipoOrigen: "RETO_GREMIO",
-  proponente,
-  retoId: idHistorico,   // ✅ Guarda 'reto26_09' en lugar de 'actual'
-  conteoLectores: 0,     // ✅ Inicializa el contador
-  lectores: []           // ✅ Array con los IDs de los aventureros
-};
+      const datosBiblioteca = {
+        titulo,
+        autor,
+        paginas,
+        genero: arrayGeneros[0] || "general",
+        generos: arrayGeneros,
+        portadaUrl: finalPortadaUrl,
+        portada: finalPortadaUrl,
+        descripcion,
+        colorLomo: "#8b263e",
+        esReto: true,
+        tipoOrigen: "RETO_GREMIO",
+        proponente,
+        retoId: idHistorico,
+        conteoLectores: 0,
+        lectores: []
+      };
 
-const batch = writeBatch(db);
-batch.set(doc(db, "retos", "actual"), datosDelReto);
-batch.set(doc(db, "retos", idHistorico), datosDelReto);
-batch.set(doc(db, "biblioteca", libroId), datosBiblioteca, { merge: true });
+      const batch = writeBatch(db);
+      batch.set(doc(db, "retos", "actual"), datosDelReto);
+      batch.set(doc(db, "retos", idHistorico), datosDelReto);
+      batch.set(doc(db, "biblioteca", libroId), datosBiblioteca, { merge: true });
 
-await batch.commit();
+      await batch.commit();
 
       mensajeEstado.innerText = `✅ ¡Reto y libro publicados con éxito!`;
       mensajeEstado.style.color = "#4CAF50";
