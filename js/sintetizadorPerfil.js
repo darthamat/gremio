@@ -1,71 +1,100 @@
-// sintetizadorPerfil.js
+/**
+ * js/sintetizadorPerfil.js
+ * Genera resúmenes narrativos y arquetipos del perfil del lector
+ * basándose en rasgos, cicatrices y atributos D&D acumulados.
+ */
 
-export function generarResumenEvolucion(huellasMap = {}) {
-    const listaHuellas = Object.values(huellasMap);
+import { calcularEstadoAventurero, calcularStatsTotales } from "./sistemaGamificacion.js";
 
-    if (listaHuellas.length === 0) {
-        return {
-            tituloArquetipo: "Aventurero lector Neófito",
-            resumenTextual: "Aún no has cruzado suficientes páginas para que los libros dejen marcas profundas en tu carácter. Tu viaje apenas comienza."
-        };
-    }
+/**
+ * Genera la narrativa de evolución del Aventurero Lector.
+ * @param {Object} estadisticas - Objeto proveniente de Firestore: { rasgos: {}, cicatrices: {}, atributos: {} }
+ * @returns {Object} { tituloArquetipo, resumenTextual, estadoActual, statsTotales }
+ */
+export function generarResumenEvolucion(estadisticas = {}) {
+  const rasgosMap = estadisticas.rasgos || {};
+  const cicatricesMap = estadisticas.cicatrices || {};
+  const atributosBase = estadisticas.atributos || {};
 
-    // 1. Separar ganancias y cargas
-    const ganancias = listaHuellas.filter(h => h.tipo === "ganancia").sort((a, b) => b.nivel - a.nivel);
-    const cargas = listaHuellas.filter(h => h.tipo === "carga").sort((a, b) => b.nivel - a.nivel);
+  const listaRasgos = Object.entries(rasgosMap).map(([id, data]) => ({ id, ...data }));
+  const listaCicatrices = Object.entries(cicatricesMap).map(([id, data]) => ({ id, ...data }));
 
-    // 2. Extraer las huellas más influyentes (mayor nivel)
-    const topGanancias = ganancias.slice(0, 2);
-    const topCargas = cargas.slice(0, 2);
-
-    // 3. Determinar el Arquetipo según la combinación
-    const tituloArquetipo = determinarArquetipo(topGanancias, topCargas);
-
-    // 4. Construir el texto fluido estilo "Cronista"
-    let texto = "Tras tus continuos viajes a través de las páginas, tu mente ha experimentado una transformación evidente. ";
-
-    if (topGanancias.length > 0) {
-        const nombresG = topGanancias.map(g => `<strong>${g.nombre.toLowerCase()}</strong> (Nivel +${g.nivel})`).join(" y ");
-        texto += `La lectura constante ha cultivado en ti una notable ${nombresG}. Te has convertido en una persona mucho más reflexiva y capaz de comprender matices que a otros se les escapan. `;
-    }
-
-    if (topCargas.length > 0) {
-        const nombresC = topCargas.map(c => `<strong>${c.nombre.toLowerCase()}</strong> (Nivel +${c.nivel})`).join(" y ");
-        texto += `Sin embargo, cada viaje deja su huella: tantas historias complejas han traído consigo cierta inclinación hacia la ${nombresC}, haciéndote percibir el mundo cotidiano con una distancia o inquietud singular. `;
-    }
-
-    // Mensaje de cierre equilibrado
-    texto += "No vuelves de un libro siendo la misma persona; te transformas en alguien más complejo, despierto y lleno de matices.";
-
+  // Si no hay huellas ni cicatrices registradas
+  if (listaRasgos.length === 0 && listaCicatrices.length === 0) {
     return {
-        tituloArquetipo,
-        resumenTextual: texto
+      tituloArquetipo: "Neófito de las Letras",
+      resumenTextual: "Aún no has cruzado suficientes páginas para que las lecturas dejen marcas en tu carácter. Tu viaje como aventurero apenas comienza.",
+      estadoActual: calcularEstadoAventurero(atributosBase, [], [])
     };
+  }
+
+  // 1. Calcular stats totales acumuladas y estado actual
+  const statsTotales = calcularStatsTotales(atributosBase, listaRasgos, listaCicatrices);
+  const estadoActual = calcularEstadoAventurero(statsTotales, listaRasgos, listaCicatrices);
+
+  // 2. Extraer los rasgos y cicatrices más destacados por contador
+  const topRasgos = [...listaRasgos].sort((a, b) => (b.contador || 1) - (a.contador || 1)).slice(0, 2);
+  const topCicatrices = [...listaCicatrices].sort((a, b) => (b.contador || 1) - (a.contador || 1)).slice(0, 2);
+
+  // 3. Determinar el arquetipo basado en las huellas más influyentes (Corrige el error de parámetro)
+  const tituloArquetipo = determinarArquetipoNarrativo(topRasgos, topCicatrices, estadoActual);
+
+  // 4. Construcción del texto fluido estilo "Cronista"
+  let texto = "Tras tus travesías a través de las páginas, tu mente ha experimentado una transformación evidente. ";
+
+  if (topRasgos.length > 0) {
+    const nombresR = topRasgos
+      .map(r => `<strong>${r.nombre}</strong> (x${r.contador || 1})`)
+      .join(" y ");
+    texto += `La lectura constante ha forjado en ti rasgos como ${nombresR}, otorgándote una perspicacia y sensibilidad singulares ante el mundo. `;
+  }
+
+  if (topCicatrices.length > 0) {
+    const nombresC = topCicatrices
+      .map(c => `<strong>${c.nombre}</strong> (x${c.contador || 1})`)
+      .join(" y ");
+    texto += `Sin embargo, cada historia profunda exige su tributo: cargas con la marca de ${nombresC}, lo que añade matices de cautela, distancia o dilemas a tu carácter. `;
+  }
+
+  texto += `Actualmente, tu espíritu se manifiesta bajo la forma de un <strong>${estadoActual.titulo}</strong>. No vuelves de un libro siendo la misma persona: te transformas en un aventurero más despierto y complejo.`;
+
+  return {
+    tituloArquetipo,
+    resumenTextual: texto,
+    estadoActual,
+    statsTotales
+  };
 }
 
-// Algoritmo para asignar un arquetipo dinámico
-function determinarArquetipo(topGanancias, topCargas) {
-    const principalG = topGanancias[0]?.id || "";
-    const principalC = topCargas[0]?.id || "";
+/**
+ * Algoritmo para determinar el arquetipo dinámico combinando
+ * huellas dominantes y el estado actual del aventurero.
+ */
+function determinarArquetipoNarrativo(topRasgos = [], topCicatrices = [], estadoActual = {}) {
+  const principalR = (topRasgos[0]?.id || "").toLowerCase();
+  const principalC = (topCicatrices[0]?.id || "").toLowerCase();
 
-    if (principalG.includes("imaginativ") || principalG.includes("vision")) {
-        if (principalC.includes("desconexion") || principalC.includes("melancolia")) return "El Soñador Distante";
-        return "El Visionario Onírico";
+  if (principalR.includes("imaginativ") || principalR.includes("vision") || principalR.includes("sueño")) {
+    if (principalC.includes("paralisis") || principalC.includes("existencial")) return "El Soñador Distante";
+    return "El Visionario Onírico";
+  }
+
+  if (principalR.includes("critico") || principalR.includes("analit") || principalR.includes("erudito")) {
+    if (principalC.includes("cinismo") || principalC.includes("escepticismo") || principalC.includes("frialdad")) {
+      return "El Filósofo Desilusionado";
     }
+    return "El Analista Perspicaz";
+  }
 
-    if (principalG.includes("critico") || principalG.includes("rigor") || principalG.includes("cientifico")) {
-        if (principalC.includes("cinismo") || principalC.includes("escepticismo")) return "El Filósofo Desilusionado";
-        return "El Analista Perspicaz";
-    }
+  if (principalR.includes("valentia") || principalR.includes("resiliencia") || principalR.includes("voluntad")) {
+    if (principalC.includes("hipervigilancia") || principalC.includes("paranoia")) return "El Centinela Alerta";
+    return "El Guardián Inquebrantable";
+  }
 
-    if (principalG.includes("valentia") || principalG.includes("resiliencia")) {
-        if (principalC.includes("hipervigilancia") || principalC.includes("ansiedad")) return "El Estratega Alerta";
-        return "El Guardián Inquebrantable";
-    }
+  if (principalR.includes("sensibilidad") || principalR.includes("poeti") || principalR.includes("empatia")) {
+    return "El Místico Empático";
+  }
 
-    if (principalG.includes("sensibilidad") || principalG.includes("empatia")) {
-        return "El Místico Empático";
-    }
-
-    return "El Viajero de Mil Almas";
+  // Fallback al título de estado dinámico si no hay coincidencia directa
+  return estadoActual.titulo || "El Viajero de Mil Almas";
 }
