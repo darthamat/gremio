@@ -71,23 +71,15 @@
 
 
 <div class="xp-bar-container">
-  <!-- La barra interna que crece en ancho -->
-  <div id="char-xp-bar" class="xp-bar-fill" style="width: 0%;"></div>
+  <div class="xp-bar-header">
+    <span class="xp-title">Progreso de Nivel</span>
+    <span id="char-xp-next" class="xp-text">14 / 327 XP</span>
+  </div>
+  <div class="xp-bar-track">
+    <!-- Importante: clase xp-bar-fill e ID char-xp-bar -->
+    <div id="char-xp-bar" class="xp-bar-fill" style="width: 4%;"></div>
+  </div>
 </div>
-<span id="char-xp-next">0 / 1000 XP</span>
-
-
-
-                <!-- <div class="xp-bar-container">
-                    <div class="xp-bar-header">
-                        <span class="xp-title">Progreso de Nivel</span>
-                        <span id="char-xp-next">0 / 1000 XP</span>
-                        <span class="xp-text"><span id="xp-current">0</span> / <span id="xp-next-level">100</span> XP</span>
-                    </div>
-                    <div class="xp-bar-track">
-                        <div class="xp-bar-fill" id="xp-fill" style="width: 0%;"></div>
-                    </div>
-                </div> -->
 
                 <!-- Métricas de Lectura -->
                 <div class="reading-stats-row">
@@ -146,12 +138,12 @@
             <!-- Panel Desplegable -->
             <div id="panel-contenido" class="panel-desplegable oculto">
                 
-                <!-- Contenido: Estadísticas -->
-                <div id="tab-estadisticas" class="tab-contenido oculto">
-                    <div id="acordeon-estadisticas"></div>
-                    <h2>Estadísticas Generales</h2>
-                    <p>Aquí puedes mostrar gráficos o desglose detallado de lecturas, hábitos y récords.</p>
-                </div>
+                
+<!-- Contenido: Pestaña Estadísticas -->
+<div id="tab-estadisticas" class="tab-contenido oculto">
+    <!-- El script perfilEstadisticas.js generará aquí todo el acordeón con atributos, rasgos y cicatrices -->
+    <div id="acordeon-estadisticas"></div>
+</div
 
                 <!-- Contenido: Mochila -->
                 <div id="tab-mochila" class="tab-contenido oculto">

@@ -10,7 +10,8 @@ import {
 } from "./buscadorMisiones.js";
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
-import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 👈 Sistema de recompensas dinámico
+import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
+import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js"; // 👈 Lógica centralizada de nivel
 
 // 1. Inicialización de Firebase
 const auth = getAuth(app);
@@ -39,6 +40,7 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // Carga y renderiza los datos del usuario desde Firestore
+// Carga y renderiza los datos del usuario desde Firestore
 async function cargarDatosAventurero(docRef) {
   const snap = await getDoc(docRef);
   if (!snap.exists()) return;
@@ -46,16 +48,15 @@ async function cargarDatosAventurero(docRef) {
   const data = snap.data();
   misionesLocales = data.misionesSecundarias || [];
 
-  // Datos básicos
-  const nivel = data.nivel || 1;
   const xpActual = data.xp || 0;
 
-  if (document.getElementById("char-name")) document.getElementById("char-name").textContent = data.nombre || "Aventurero";
-  if (document.getElementById("char-level")) document.getElementById("char-level").textContent = nivel;
-  if (document.getElementById("char-xp")) document.getElementById("char-xp").textContent = `${xpActual} XP`;
+  if (document.getElementById("char-name")) {
+    document.getElementById("char-name").textContent = data.nombre || "Aventurero";
+  }
 
-  // 📈 ACTUALIZACIÓN DE LA BARRA DE PROGRESIÓN DE NIVEL
-  actualizarBarraNivel(nivel, xpActual);
+  // 📈 ACTUALIZACIÓN CENTRALIZADA DE NIVEL Y BARRA
+  // Le pasamos solo el número de XP acumulada (xpActual) que es lo que espera controlNivel.js
+  actualizarBarraNivelUI(xpActual);
 
   // 🔖 Renderizar Marcapáginas
   const elMarcapaginas = document.getElementById("char-marcapaginas") || document.getElementById("contador-marcapaginas");
@@ -71,76 +72,102 @@ async function cargarDatosAventurero(docRef) {
   }
 
   // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
-  renderizarEstadisticasAcordeon(data.estadisticas || {});
-
-  // 🩸✨ Renderizar Rasgos y Cicatrices (desde estadísticas u objetos directos)
+  // Fusionamos el objeto de estadísticas con los rasgos/cicatrices raíz
   const rasgosOrigen = data.estadisticas?.rasgos || data.rasgos || {};
   const cicatricesOrigen = data.estadisticas?.cicatrices || data.cicatrices || {};
+
+  const objetoEstadisticasCompleto = {
+    ...data.estadisticas,
+    rasgos: rasgosOrigen,
+    cicatrices: cicatricesOrigen
+  };
+
+  // 1. Inyectar acordeón con la suma correcta de contadores
+  renderizarEstadisticasAcordeon(objetoEstadisticasCompleto);
+
+  // 2. Renderizar los badges dentro de la interfaz
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
 
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
 }
 
-function actualizarBarraNivel(nivel, xpTotal) {
-  const xpRequeridaPorNivel = 1000;
-  const xpEnNivelActual = xpTotal % xpRequeridaPorNivel;
-  const porcentaje = Math.min(Math.floor((xpEnNivelActual / xpRequeridaPorNivel) * 100), 100);
-
-  const barraProgreso = document.getElementById("char-xp-bar") 
-    || document.getElementById("barra-xp") 
-    || document.querySelector(".xp-bar-fill") 
-    || document.querySelector(".progress-bar");
-
-  if (barraProgreso) {
-    barraProgreso.style.width = `${porcentaje}%`;
-  }
-
-  const textoProgreso = document.getElementById("char-xp-next") || document.getElementById("xp-progreso-texto");
-  if (textoProgreso) {
-    textoProgreso.textContent = `${xpEnNivelActual} / ${xpRequeridaPorNivel} XP`;
-  }
-}
-
-// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices visualmente en el perfil
-function renderizarRasgosYCicatrices(rasgos, cicatrices) {
+// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices (Resoluciion Total)
+function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const contenedorRasgos = document.getElementById("contenedor-rasgos");
   const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
 
-  // Convertir a Array si vienen guardados como Diccionarios/Objetos en Firestore
-  const listaRasgos = Array.isArray(rasgos) ? rasgos : Object.values(rasgos);
-  const listaCicatrices = Array.isArray(cicatrices) ? cicatrices : Object.values(cicatrices);
+  const procesarLista = (datos) => {
+    if (!datos) return [];
+    
+    // Si viene como Array
+    if (Array.isArray(datos)) {
+      return datos.map(item => {
+        if (typeof item === 'string') {
+          return { nombre: item, contador: 1, icono: '✨' };
+        }
+        return {
+          nombre: item.nombre || item.titulo || item.rasgo || item.cicatriz || item.nombreRasgo || item.id || "Desconocido",
+          contador: item.contador || item.acumulaciones || item.nivel || item.cantidad || 1,
+          icono: item.icono,
+          desc: item.desc || item.descripcion || ''
+        };
+      });
+    }
 
+    // Si viene como Objeto { "Mente Analítica": { contador: 1 } } o { "Mente Analítica": 1 }
+    return Object.entries(datos).map(([key, val]) => {
+      if (typeof val === 'object' && val !== null) {
+        return {
+          nombre: val.nombre || val.titulo || val.rasgo || key,
+          contador: val.contador || val.acumulaciones || val.nivel || val.cantidad || 1,
+          icono: val.icono,
+          desc: val.desc || val.descripcion || ''
+        };
+      }
+      return {
+        nombre: key,
+        contador: typeof val === 'number' ? val : 1,
+        icono: null,
+        desc: ''
+      };
+    });
+  };
+
+  const listaRasgos = procesarLista(rasgos);
+  const listaCicatrices = procesarLista(cicatrices);
+
+  // Renderizar Rasgos
   if (contenedorRasgos) {
     if (listaRasgos.length === 0) {
       contenedorRasgos.innerHTML = `<p class="sin-datos">Ningún rasgo obtenido aún.</p>`;
     } else {
       contenedorRasgos.innerHTML = listaRasgos.map(r => `
-        <div class="badge-item rasgo-badge" title="${r.desc || r.descripcion || ''}">
+        <div class="badge-item rasgo-badge" title="${r.desc}">
           <span class="icono">${r.icono || '✨'}</span>
           <span class="nombre">${r.nombre}</span>
-          <span class="contador">(x${r.contador || r.acumulaciones || 1})</span>
+          <span class="contador">(+${r.contador})</span>
         </div>
       `).join('');
     }
   }
 
+  // Renderizar Cicatrices
   if (contenedorCicatrices) {
     if (listaCicatrices.length === 0) {
       contenedorCicatrices.innerHTML = `<p class="sin-datos">Tu historial está limpio de cicatrices.</p>`;
     } else {
       contenedorCicatrices.innerHTML = listaCicatrices.map(c => `
-        <div class="badge-item cicatriz-badge" title="${c.desc || c.descripcion || ''}">
+        <div class="badge-item cicatriz-badge" title="${c.desc}">
           <span class="icono">${c.icono || '🩸'}</span>
           <span class="nombre">${c.nombre}</span>
-          <span class="contador">(x${c.contador || c.acumulaciones || 1})</span>
+          <span class="contador">(+${c.contador})</span>
         </div>
       `).join('');
     }
   }
 }
 
-// Lógica de pestañas / acordeón
 function inicializarAcordeon() {
   const botones = document.querySelectorAll(".acordeon-botones .btn-tab:not(.btn-enlace)");
   const panelContenido = document.getElementById("panel-contenido");
@@ -171,7 +198,6 @@ function inicializarAcordeon() {
   });
 }
 
-// Renderiza las misiones con botones de Completar / Cancelar
 function renderizarMisiones(misiones) {
   const contenedor = document.getElementById("contenedor-misiones");
   if (!contenedor) return;
@@ -223,24 +249,32 @@ function renderizarMisiones(misiones) {
   });
 }
 
-// Cambia el estado de la misión y aplica la tirada de Rasgo/Cicatriz al completar
 async function actualizarEstadoMision(index, nuevoEstado) {
   try {
     const mision = misionesLocales[index];
     mision.estado = nuevoEstado;
 
-    const gananciaMarcapaginas = Math.floor(Math.random() * (mision.paginas || 1)) + 1;
+    const paginas = mision.paginas || 0;
+    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+    const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
+    // 1. Obtener datos actuales de Firestore
+    const userSnap = await getDoc(currentUserDocRef);
+    const userData = userSnap.exists() ? userSnap.data() : {};
+
+    // 2. Comprobar si sube de nivel y disparar el modal automático de controlNivel.js
+    const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
+
+    // 3. Guardar en Firestore la XP incrementada y el nuevo Nivel
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
+      xp: increment(gananciaXP),
+      nivel: nuevoNivel,
       marcapaginas: increment(gananciaMarcapaginas)
     });
 
     if (nuevoEstado === "TERMINADA") {
       const listaGeneros = (mision.generos && mision.generos.length) ? mision.generos : [(mision.genero || "Fantasía")];
-      const paginas = mision.paginas || 0;
-
-      // Tiradas aleatorias adaptadas a la cantidad de páginas y géneros
       const resultadoRecompensa = await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
 
       if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
@@ -249,11 +283,13 @@ async function actualizarEstadoMision(index, nuevoEstado) {
           return `${tipoIcono} ${r.item.nombre} (+${r.contador})`;
         }).join("\n");
 
-        alert(`¡Misión Terminada!\n\nSe realizaron ${resultadoRecompensa.totalTiradas} tiradas de huellas:\n${textoPremios}`);
+        alert(`🎉 ¡Misión Terminada!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas\n\nSe realizaron ${resultadoRecompensa.totalTiradas} tiradas de huellas:\n${textoPremios}`);
+      } else {
+        alert(`🎉 ¡Misión Terminada!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
       }
     }
 
-    // Recargar y actualizar vista completa (misiones + estadísticas + huellas)
+    // 4. Volver a cargar la tarjeta para actualizar los textos y la barra de XP
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
@@ -262,7 +298,6 @@ async function actualizarEstadoMision(index, nuevoEstado) {
   }
 }
 
-// Cancela o elimina la misión secundaria
 async function eliminarMisionSecundaria(index) {
   if (!confirm("¿Deseas quitar esta misión de tu lista?")) return;
 
@@ -278,7 +313,6 @@ async function eliminarMisionSecundaria(index) {
   }
 }
 
-// Inicializa todos los eventos del modal de búsqueda y guardado de misiones
 function inicializarModalMisiones() {
   const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
   const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
@@ -393,12 +427,14 @@ function inicializarModalMisiones() {
           const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
           const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
+          // Comprobar y calcular nuevo nivel con la XP ganada
+          const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
+
           await updateDoc(userRef, {
             xp: increment(gananciaXP),
+            nivel: nuevoNivel,
             prestigio: increment(gananciaPrestigio),
-            marcapaginas: increment(gananciaMarcapaginas),
-            paginasLeidas: increment(paginas),
-            librosCompletados: increment(1)
+            marcapaginas: increment(gananciaMarcapaginas)
           });
 
           const datosLibro = {
@@ -414,7 +450,6 @@ function inicializarModalMisiones() {
 
           await registrarLibroEnBibliotecaYAtlas(user.uid, datosLibro);
 
-          // Asignar Rasgos/Cicatrices según géneros y páginas
           const recompensa = await procesarRecompensaLectura(user.uid, nuevaMisionData.generos, paginas);
           let mensajeRecompensa = "";
           
