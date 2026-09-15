@@ -151,7 +151,7 @@ async function cargarYRenderizarRetos() {
       retoActual.mensajeProponente || 
       retoActual.mensaje || 
       retoActual.proclama || 
-      `Por orden del Archimago Aurelius Vane, convoco a todos los miembros a explorar esta obra.`;
+      `Por orden del Archimago Aurelius Vane, yo, la gran Lectora Lady Elena Astralis, en nombre de ${proponenteNombre}, convoco a todos los miembros a explorar esta obra.`;
 
     const objetivoAdmin = retoActual.objetivoAdmin || 
       `Completar la lectura íntegra del tomo antes de que termine el ciclo mensual y compartir vuestras reflexiones en la Taberna de la Tinta.`;
