@@ -197,7 +197,8 @@ async function actualizarEstadoMision(index, nuevoEstado) {
     mision.estado = nuevoEstado;
 
     await updateDoc(currentUserDocRef, {
-      misionesSecundarias: misionesLocales
+      misionesSecundarias: misionesLocales,
+      marcapaginas: increment(gananciaMarcapaginas)
     });
 
     if (nuevoEstado === "TERMINADA") {
