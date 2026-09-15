@@ -24,7 +24,7 @@ export const BANCO_HUELLAS = {
 
     poesia: {
         rasgos: [
-            { id: "sensibilidad_linguistica", nombre: "Sensibilidad Lingüística", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje.", modificadores: { carisma: 2, inteligencia: 1 } },
+            { id: "sensibilidad_linguistica", nombre: "Sensibilidad", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje.", modificadores: { carisma: 2, inteligencia: 1 } },
             { id: "inteligencia_emocional", nombre: "Inteligencia Emocional", icono: "🖤", desc: "Capacidad para descifrar estados de ánimo complejos y matices no verbales.", modificadores: { sabiduria: 2, carisma: 1 } },
             { id: "pensamiento_metaforico", nombre: "Pensamiento Metafórico", icono: "🌙", desc: "Facilidad para trazar analogías entre conceptos abstractos y la realidad.", modificadores: { inteligencia: 2, sabiduria: 1 } },
             { id: "sintesis_expresiva", nombre: "Síntesis Expresiva", icono: "✒️", desc: "Habilidad para transmitir grandes ideas utilizando las palabras precisas.", modificadores: { carisma: 2, inteligencia: 1 } },
