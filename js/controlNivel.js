@@ -1,29 +1,48 @@
-import { calcularEstadoAventurero } from "./sistemaEstados.js";
+// js/controlNivel.js
+import { calcularEstadoAventurero, calcularStatsTotales } from "./sistemaGamificacion.js";
 
-export function comprobarYMostrarSubidaNivel(usuarioData, xpGanada) {
-    const xpActual = usuarioData.xp || 0;
+/**
+ * Comprueba si el aventurero sube de nivel tras ganar XP y muestra el modal con su nuevo estado.
+ * @param {Object} usuarioData - Datos completos del usuario en Firestore.
+ * @param {number} xpGanada - Cantidad de XP obtenida recientemente.
+ * @returns {number} Nuevo nivel del usuario (o el actual si no subió).
+ */
+export function comprobarYMostrarSubidaNivel(usuarioData = {}, xpGanada = 0) {
+    const xpActual = (usuarioData.xp || 0) + xpGanada;
     const nivelActual = usuarioData.nivel || 1;
     
-    // Ejemplo: Cada nivel requiere (Nivel * 1000) XP
+    // Umbral de XP: Nivel * 1000
     const xpNecesaria = nivelActual * 1000; 
 
     if (xpActual >= xpNecesaria) {
         const nuevoNivel = nivelActual + 1;
+
+        // Extraer y transformar rasgos, cicatrices y atributos
+        const estadisticas = usuarioData.estadisticas || {};
+        const atributosBase = usuarioData.atributos || estadisticas.atributos || {};
         
-        // 1. Obtener el estado/arquetipo dinámico actual
-        const estado = calcularEstadoAventurero(
-            usuarioData.estadisticas, 
-            usuarioData.rasgos, 
-            usuarioData.cicatrices
-        );
+        const rasgosMap = usuarioData.rasgos || estadisticas.rasgos || {};
+        const cicatricesMap = usuarioData.cicatrices || estadisticas.cicatrices || {};
 
-        // 2. Rellenar los datos en el Modal
-        document.getElementById("modal-nuevo-nivel").textContent = `NIVEL ${nuevoNivel}`;
-        document.getElementById("modal-icono-estado").textContent = estado.icono;
-        document.getElementById("modal-titulo-estado").textContent = estado.titulo;
-        document.getElementById("modal-desc-estado").textContent = `"${estado.descripcion}"`;
+        const listaRasgos = Object.entries(rasgosMap).map(([id, data]) => ({ id, ...data }));
+        const listaCicatrices = Object.entries(cicatricesMap).map(([id, data]) => ({ id, ...data }));
 
-        // 3. Mostrar Modal
+        // 1. Recalcular stats finales y estado dinámico
+        const statsTotales = calcularStatsTotales(atributosBase, listaRasgos, listaCicatrices);
+        const estado = calcularEstadoAventurero(statsTotales, listaRasgos, listaCicatrices);
+
+        // 2. Rellenar los datos en el Modal HTML
+        const elNuevoNivel = document.getElementById("modal-nuevo-nivel");
+        const elIcono = document.getElementById("modal-icono-estado");
+        const elTitulo = document.getElementById("modal-titulo-estado");
+        const elDesc = document.getElementById("modal-desc-estado");
+
+        if (elNuevoNivel) elNuevoNivel.textContent = `NIVEL ${nuevoNivel}`;
+        if (elIcono) elIcono.textContent = estado.icono;
+        if (elTitulo) elTitulo.textContent = estado.titulo;
+        if (elDesc) elDesc.textContent = `"${estado.descripcion}"`;
+
+        // 3. Mostrar el Modal
         const modal = document.getElementById("modal-subida-nivel");
         if (modal) modal.classList.remove("oculto");
 
@@ -33,7 +52,8 @@ export function comprobarYMostrarSubidaNivel(usuarioData, xpGanada) {
     return nivelActual;
 }
 
-// Evento para cerrar el modal
+// Event Listener para cerrar el modal de nivel
 document.getElementById("btn-cerrar-nivel")?.addEventListener("click", () => {
-    document.getElementById("modal-subida-nivel").classList.add("oculto");
+    const modal = document.getElementById("modal-subida-nivel");
+    if (modal) modal.classList.add("oculto");
 });
