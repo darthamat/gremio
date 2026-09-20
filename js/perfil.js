@@ -235,7 +235,9 @@ async function completarMisionLocal(index) {
       misionesSecundarias: misionesLocales,
       xp: increment(gananciaXP),
       nivel: nuevoNivel,
-      marcapaginas: increment(gananciaMarcapaginas)
+      marcapaginas: increment(gananciaMarcapaginas),
+      paginasLeidas: increment(paginas),          // <--- Suma las páginas del libro
+  librosCompletados: increment(1)             // <--- Suma 1 al libro completado
     });
 
     const listaGeneros = mision.generos || [mision.genero || "Fantasía"];
