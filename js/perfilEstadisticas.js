@@ -165,7 +165,7 @@ export function renderizarEstadisticasAcordeon(datos) {
     <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:0.8rem;">✨ Rasgos Adquiridos</h3>
     <div id="contenedor-rasgos" class="lista-huellas" style="margin-bottom:1.5rem;"></div>
     
-    <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:0.8rem;">🩸 Cicatrices de Batalla</h3>
+    <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:0.8rem;">🩸 Cicatrices Emocionales</h3>
     <div id="contenedor-cicatrices" class="lista-huellas"></div>
   `;
   contenedor.appendChild(divBadges);
