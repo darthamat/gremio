@@ -1,19 +1,13 @@
 // js/perfil.js
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
-  getFirestore, doc, getDoc, updateDoc, increment, collection, addDoc 
+  getFirestore, doc, getDoc, updateDoc, increment 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
-import { 
-  buscarEnGoogleBooks, 
-  limpiarSeleccionBuscador 
-} from "./buscadorMisiones.js";
-import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 
-// Inicialización de Firebase
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -21,7 +15,7 @@ let currentUserId = null;
 let currentUserDocRef = null;
 let misionesLocales = [];
 
-// Control de Estado de Autenticación
+// Auth Listener
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -33,12 +27,12 @@ onAuthStateChanged(auth, async (user) => {
 
   await cargarDatosAventurero(currentUserDocRef);
   inicializarAcordeon();
-  inicializarModalMisiones();
   inicializarCerrarSesion();
   inicializarAvatar();
+  inicializarBotonMisionPersonal();
 });
 
-// Carga y renderiza los datos del usuario desde Firestore
+// Carga de datos del perfil
 async function cargarDatosAventurero(docRef) {
   const snap = await getDoc(docRef);
   if (!snap.exists()) return;
@@ -46,134 +40,83 @@ async function cargarDatosAventurero(docRef) {
   const data = snap.data();
   misionesLocales = data.misionesSecundarias || [];
 
-  const xpActual = data.xp || 0;
-
   if (document.getElementById("char-name")) {
     document.getElementById("char-name").textContent = data.nombre || "Aventurero";
   }
 
-  // Actualización de Nivel y Barra
-  actualizarBarraNivelUI(xpActual);
+  actualizarBarraNivelUI(data.xp || 0);
 
-  // Marcapáginas
   const elMarcapaginas = document.getElementById("char-marcapaginas") || document.getElementById("contador-marcapaginas");
   if (elMarcapaginas) {
     elMarcapaginas.textContent = data.marcapaginas || 0;
   }
 
-  // Avatar
   const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
   if (avatarImg) {
     const defaultAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
     avatarImg.src = data.avatarUrl || data.avatar || defaultAvatar;
   }
 
-  // Carga de Rasgos y Cicatrices
   const rasgosOrigen = data.estadisticas?.rasgos || data.rasgos || {};
   const cicatricesOrigen = data.estadisticas?.cicatrices || data.cicatrices || {};
 
-  const objetoEstadisticasCompleto = {
+  renderizarEstadisticasAcordeon({
     ...data.estadisticas,
     rasgos: rasgosOrigen,
     cicatrices: cicatricesOrigen
-  };
+  });
 
-  // 1. Inyecta los Atributos, Tooltips, Rasgos y Cicatrices dentro del Acordeón
-  renderizarEstadisticasAcordeon(objetoEstadisticasCompleto);
-
-  // 2. Dibuja los Badges dentro de sus contenedores
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
-
-  // 3. Renderiza las misiones secundarias
   renderizarMisiones(misionesLocales);
 }
 
-// Muestra los Badges de Rasgos y Cicatrices
-// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices con formato de Sumatorio (+X)
+// Visualización de Badges
 function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const contenedorRasgos = document.getElementById("contenedor-rasgos");
   const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
 
   const procesarLista = (datos) => {
     if (!datos) return [];
-    
     if (Array.isArray(datos)) {
-      return datos.map(item => {
-        if (typeof item === 'string') {
-          return { nombre: item, acumulaciones: 1, icono: '✨' };
-        }
-        const cant = Number(item.contador || item.acumulaciones || item.nivel || item.cantidad) || 1;
-        return {
-          nombre: item.nombre || item.titulo || item.rasgo || item.cicatriz || "Desconocido",
-          acumulaciones: cant,
-          icono: item.icono,
-          desc: item.desc || item.descripcion || ''
-        };
-      });
+      return datos.map(item => typeof item === 'string' 
+        ? { nombre: item, acumulaciones: 1, icono: '✨' }
+        : {
+            nombre: item.nombre || item.titulo || "Desconocido",
+            acumulaciones: Number(item.contador || item.acumulaciones || 1),
+            icono: item.icono || '✨',
+            desc: item.desc || item.descripcion || ''
+          }
+      );
     }
-
-    if (typeof datos === 'object') {
-      return Object.entries(datos).map(([key, val]) => {
-        if (typeof val === 'object' && val !== null) {
-          const cant = Number(val.contador || val.acumulaciones || val.nivel || val.cantidad) || 1;
-          return {
-            nombre: val.nombre || val.titulo || key,
-            acumulaciones: cant,
-            icono: val.icono,
-            desc: val.desc || val.descripcion || ''
-          };
-        }
+    return Object.entries(datos).map(([key, val]) => {
+      if (typeof val === 'object' && val !== null) {
         return {
-          nombre: key,
-          acumulaciones: typeof val === 'number' ? val : 1,
-          icono: null,
-          desc: ''
+          nombre: val.nombre || key,
+          acumulaciones: Number(val.contador || val.acumulaciones || 1),
+          icono: val.icono || '✨',
+          desc: val.desc || ''
         };
-      });
-    }
-
-    return [];
+      }
+      return { nombre: key, acumulaciones: typeof val === 'number' ? val : 1, icono: '✨', desc: '' };
+    });
   };
 
-  const listaRasgos = procesarLista(rasgos);
-  const listaCicatrices = procesarLista(cicatrices);
-
-  // Renderizado de Rasgos (+X)
   if (contenedorRasgos) {
-    if (listaRasgos.length === 0) {
-      contenedorRasgos.innerHTML = `<p style="color:#718096; font-size:0.9rem;">Ningún rasgo obtenido aún.</p>`;
-    } else {
-      contenedorRasgos.innerHTML = listaRasgos.map(r => {
-        const sumatorio = r.acumulaciones >= 0 ? `+${r.acumulaciones}` : `${r.acumulaciones}`;
-        return `
-          <div class="item-huella rasgo" title="${r.desc}">
-            <span>${r.icono || '✨'}</span>
-            <strong>${r.nombre} ${sumatorio}</strong>
-          </div>
-        `;
-      }).join('');
-    }
+    const lista = procesarLista(rasgos);
+    contenedorRasgos.innerHTML = lista.length === 0 
+      ? `<p style="color:#718096; font-size:0.9rem;">Ningún rasgo obtenido aún.</p>`
+      : lista.map(r => `<div class="item-huella rasgo" title="${r.desc}"><span>${r.icono}</span><strong>${r.nombre} +${r.acumulaciones}</strong></div>`).join('');
   }
 
-  // Renderizado de Cicatrices (+X)
   if (contenedorCicatrices) {
-    if (listaCicatrices.length === 0) {
-      contenedorCicatrices.innerHTML = `<p style="color:#718096; font-size:0.9rem;">Tu historial está limpio de cicatrices.</p>`;
-    } else {
-      contenedorCicatrices.innerHTML = listaCicatrices.map(c => {
-        const sumatorio = c.acumulaciones >= 0 ? `+${c.acumulaciones}` : `${c.acumulaciones}`;
-        return `
-          <div class="item-huella cicatriz" title="${c.desc}">
-            <span>${c.icono || '🩸'}</span>
-            <strong>${c.nombre} ${sumatorio}</strong>
-          </div>
-        `;
-      }).join('');
-    }
+    const lista = procesarLista(cicatrices);
+    contenedorCicatrices.innerHTML = lista.length === 0 
+      ? `<p style="color:#718096; font-size:0.9rem;">Tu historial está limpio de cicatrices.</p>`
+      : lista.map(c => `<div class="item-huella cicatriz" title="${c.desc}"><span>${c.icono || '🩸'}</span><strong>${c.nombre} +${c.acumulaciones}</strong></div>`).join('');
   }
 }
 
-// Control del Acordeón y Pestañas
+// Control de Acordeón
 function inicializarAcordeon() {
   const botones = document.querySelectorAll(".acordeon-botones .btn-tab:not(.btn-enlace)");
   const panelContenido = document.getElementById("panel-contenido");
@@ -185,9 +128,7 @@ function inicializarAcordeon() {
 
       if (!tabObjetivo) return;
 
-      const yaEstaActivo = boton.classList.contains("activo");
-
-      if (yaEstaActivo) {
+      if (boton.classList.contains("activo")) {
         boton.classList.remove("activo");
         panelContenido.classList.add("oculto");
         document.querySelectorAll(".tab-contenido").forEach(tc => tc.classList.add("oculto"));
@@ -204,7 +145,7 @@ function inicializarAcordeon() {
   });
 }
 
-// Misiones Secundarias
+// Renderizado de Misiones en Perfil
 function renderizarMisiones(misiones) {
   const contenedor = document.getElementById("contenedor-misiones");
   if (!contenedor) return;
@@ -212,7 +153,11 @@ function renderizarMisiones(misiones) {
   contenedor.innerHTML = "";
 
   if (!misiones || misiones.length === 0) {
-    contenedor.innerHTML = `<p class="sin-datos">No tienes misiones registradas actualmente.</p>`;
+    contenedor.innerHTML = `
+      <div class="sin-misiones-box">
+        <p class="sin-datos">No tienes exploraciones de portales activas.</p>
+        <a href="misiones.html" class="btn-ir-tablon">⚔️ Explorar Portales Comunitarios</a>
+      </div>`;
     return;
   }
 
@@ -226,40 +171,33 @@ function renderizarMisiones(misiones) {
       <div class="mision-info">
         <strong>${mision.titulo}</strong>
         <small>${mision.autor}</small>
-        <p>📖 ${mision.paginas} páginas | Estado: <strong>${mision.estado}</strong></p>
-        ${mision.proclama ? `<p class="proclama">"${mision.proclama}"</p>` : ''}
-        ${mision.generos && mision.generos.length ? `<p><small>🏷️ ${mision.generos.join(', ')}</small></p>` : ''}
+        <p>📖 ${mision.paginas} págs | Estado: <strong>${mision.estado}</strong></p>
+        ${mision.esGrupal ? `<p class="badge-grupo">👥 Exploración en Grupo (+Puntos Clan)</p>` : ''}
       </div>
       <div class="mision-acciones-btn">
-        ${!esTerminada ? `
-          <button class="btn-accion btn-completar" data-index="${index}">
-            ✅ Terminar
-          </button>
-        ` : ''}
-        <button class="btn-accion btn-cancelar" data-index="${index}">
-          ❌ ${esTerminada ? 'Eliminar' : 'Cancelar'}
-        </button>
+        ${!esTerminada ? `<button class="btn-accion btn-completar" data-index="${index}">✅ Completar Lectura</button>` : ''}
+        <button class="btn-accion btn-cancelar" data-index="${index}">❌ ${esTerminada ? 'Eliminar' : 'Abandonar'}</button>
       </div>
     `;
 
     const btnCompletar = tarjeta.querySelector(".btn-completar");
     if (btnCompletar) {
-      btnCompletar.addEventListener("click", () => actualizarEstadoMision(index, "TERMINADA"));
+      btnCompletar.addEventListener("click", () => completarMisionLocal(index));
     }
 
     const btnCancelar = tarjeta.querySelector(".btn-cancelar");
     if (btnCancelar) {
-      btnCancelar.addEventListener("click", () => eliminarMisionSecundaria(index));
+      btnCancelar.addEventListener("click", () => eliminarMisionLocal(index));
     }
 
     contenedor.appendChild(tarjeta);
   });
 }
 
-async function actualizarEstadoMision(index, nuevoEstado) {
+async function completarMisionLocal(index) {
   try {
     const mision = misionesLocales[index];
-    mision.estado = nuevoEstado;
+    mision.estado = "TERMINADA";
 
     const paginas = mision.paginas || 0;
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
@@ -270,6 +208,15 @@ async function actualizarEstadoMision(index, nuevoEstado) {
 
     const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
 
+    // Si es una misión compartida en grupo, otorgar Puntos de Clan adicionales
+    let bonusClanText = "";
+    if (mision.esGrupal && userData.clanId) {
+      const clanRef = doc(db, "clanes", userData.clanId);
+      const puntosExtraClan = Math.ceil(paginas * 0.5);
+      await updateDoc(clanRef, { puntosClan: increment(puntosExtraClan) });
+      bonusClanText = `\n🛡️ ¡+${puntosExtraClan} Puntos aportados a tu Clan por lectura compartida!`;
+    }
+
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
       xp: increment(gananciaXP),
@@ -277,231 +224,29 @@ async function actualizarEstadoMision(index, nuevoEstado) {
       marcapaginas: increment(gananciaMarcapaginas)
     });
 
-    if (nuevoEstado === "TERMINADA") {
-      const listaGeneros = (mision.generos && mision.generos.length) ? mision.generos : [(mision.genero || "Fantasía")];
-      const resultadoRecompensa = await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
+    const listaGeneros = mision.generos || [mision.genero || "Fantasía"];
+    const resultado = await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
 
-      if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
-        let textoPremios = resultadoRecompensa.recompensas.map(r => {
-          const tipoIcono = r.tipo === "rasgos" ? "✨" : "🩸";
-          return `${tipoIcono} ${r.item.nombre} (+${r.contador})`;
-        }).join("\n");
-
-        alert(`🎉 ¡Misión Terminada!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas\n\nSe realizaron ${resultadoRecompensa.totalTiradas} tiradas de huellas:\n${textoPremios}`);
-      } else {
-        alert(`🎉 ¡Misión Terminada!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas`);
-      }
-    }
-
+    alert(`🎉 ¡Portal Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${bonusClanText}`);
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
-    console.error("Error al actualizar la misión:", error);
-    alert("❌ No se pudo actualizar el estado de la misión.");
+    console.error("Error al completar la misión:", error);
+    alert("❌ Error al procesar la misión.");
   }
 }
 
-async function eliminarMisionSecundaria(index) {
+async function eliminarMisionLocal(index) {
   if (!confirm("¿Deseas quitar esta misión de tu lista?")) return;
-
-  try {
-    misionesLocales.splice(index, 1);
-    await updateDoc(currentUserDocRef, {
-      misionesSecundarias: misionesLocales
-    });
-    renderizarMisiones(misionesLocales);
-  } catch (error) {
-    console.error("Error al eliminar la misión:", error);
-    alert("❌ Ocurrió un error al intentar eliminar la misión.");
-  }
-}
-
-function inicializarModalMisiones() {
-  const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
-  const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
-  const modal = document.getElementById("modal-buscador-mision");
-
-  const inputBuscar = document.getElementById("input-buscar-libro");
-  const btnBuscar = document.getElementById("btn-ejecutar-busqueda");
-  const contenedorResultados = document.getElementById("resultados-busqueda-libros");
-
-  const inputPortadaFile = document.getElementById("mision-portada-file");
-  const previewPortada = document.getElementById("mision-preview-portada");
-  const formConfirmar = document.getElementById("form-confirmar-mision");
-  const btnGuardar = document.getElementById("btn-guardar-mision");
-
-  if (btnAbrir && modal) {
-    btnAbrir.addEventListener("click", () => modal.classList.remove("oculto"));
-  }
-
-  if (btnCerrar && modal) {
-    btnCerrar.addEventListener("click", () => {
-      modal.classList.add("oculto");
-      limpiarFormularioLocal();
-    });
-  }
-
-  if (btnBuscar && inputBuscar) {
-    btnBuscar.addEventListener("click", (e) => {
-      e.preventDefault();
-      buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
-    });
-
-    inputBuscar.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
-      }
-    });
-  }
-
-  if (inputPortadaFile) {
-    inputPortadaFile.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          if (previewPortada) {
-            previewPortada.src = event.target.result;
-            previewPortada.style.display = "block";
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-
-  if (formConfirmar) {
-    formConfirmar.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const user = auth.currentUser;
-      if (!user) {
-        alert("Debes estar autenticado para registrar una misión.");
-        return;
-      }
-
-      if (btnGuardar) {
-        btnGuardar.disabled = true;
-        btnGuardar.textContent = "⌛ Guardando Misión...";
-      }
-
-      try {
-        const userRef = doc(db, "aventureros", user.uid);
-        const userSnap = await getDoc(userRef);
-        const userData = userSnap.exists() ? userSnap.data() : {};
-        const nombreAventurero = userData.nombre || user.displayName || "Un Aventurero";
-
-        const titulo = document.getElementById("mision-titulo").value.trim();
-        const autor = document.getElementById("mision-autor").value.trim();
-        const paginas = parseInt(document.getElementById("mision-paginas").value, 10) || 0;
-        const proclama = document.getElementById("mision-proclama").value.trim();
-        const estado = document.getElementById("mision-estado").value;
-        
-        const inputPortadaUrl = document.getElementById("mision-portada-url")?.value || "";
-        const previewSrc = previewPortada?.src || "";
-        const portadaUrl = inputPortadaUrl || (previewSrc !== window.location.href ? previewSrc : "https://via.placeholder.com/150x220?text=Sin+Portada");
-
-        const generosChecked = Array.from(document.querySelectorAll('input[name="genero"]:checked')).map(cb => cb.value);
-        const generoPrincipal = generosChecked.length > 0 ? generosChecked[0] : "Fantasía";
-
-        const estaCompletada = (estado === "TERMINADA");
-
-        const nuevaMisionData = {
-          titulo: titulo,
-          autor: autor,
-          paginas: paginas,
-          proclama: proclama,
-          genero: generoPrincipal,
-          generos: generosChecked.length > 0 ? generosChecked : [generoPrincipal],
-          portadaUrl: portadaUrl,
-          creadorId: user.uid,
-          creadorNombre: nombreAventurero,
-          activa: !estaCompletada,
-          usuariosAceptaron: [user.uid],
-          usuariosCompletaron: estaCompletada ? [user.uid] : [],
-          fechaCreacion: new Date().toISOString()
-        };
-
-        const docMisionRef = await addDoc(collection(db, "misionesSecundarias"), nuevaMisionData);
-
-        if (estaCompletada) {
-          const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
-          const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
-          const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
-
-          const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
-
-          await updateDoc(userRef, {
-            xp: increment(gananciaXP),
-            nivel: nuevoNivel,
-            prestigio: increment(gananciaPrestigio),
-            marcapaginas: increment(gananciaMarcapaginas)
-          });
-
-          const datosLibro = {
-            id: docMisionRef.id,
-            titulo: titulo,
-            autor: autor,
-            genero: generoPrincipal,
-            generos: nuevaMisionData.generos,
-            paginas: paginas,
-            portadaUrl: portadaUrl,
-            fechaTerminado: new Date().toISOString()
-          };
-
-          await registrarLibroEnBibliotecaYAtlas(user.uid, datosLibro);
-
-          const recompensa = await procesarRecompensaLectura(user.uid, nuevaMisionData.generos, paginas);
-          let mensajeRecompensa = "";
-          
-          if (recompensa && recompensa.recompensas.length > 0) {
-            mensajeRecompensa = "\n\n✨ Recompensas obtenidas:\n" + 
-              recompensa.recompensas.map(r => `${r.tipo === "rasgos" ? "✨" : "🩸"} ${r.item.nombre} (+${r.contador})`).join("\n");
-          }
-
-          alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeRecompensa}\n\n📖 Se ha añadido el lomo a tu Biblioteca.`);
-        } else {
-          alert("⚔️ Misión Secundaria registrada con éxito.");
-        }
-
-        if (modal) modal.classList.add("oculto");
-        limpiarFormularioLocal();
-        await cargarDatosAventurero(currentUserDocRef);
-
-      } catch (error) {
-        console.error("Error al registrar la misión en el perfil:", error);
-        alert("❌ Hubo un fallo al registrar la misión secundaria.");
-      } finally {
-        if (btnGuardar) {
-          btnGuardar.disabled = false;
-          btnGuardar.textContent = "💾 Registrar Misión";
-        }
-      }
-    });
-  }
-}
-
-function limpiarFormularioLocal() {
-  limpiarSeleccionBuscador();
-  const formConfirmar = document.getElementById("form-confirmar-mision");
-  const contenedorResultados = document.getElementById("resultados-busqueda-libros");
-  const previewPortada = document.getElementById("mision-preview-portada");
-
-  if (formConfirmar) {
-    formConfirmar.reset();
-    formConfirmar.classList.add("oculto");
-  }
-  if (contenedorResultados) contenedorResultados.style.display = "none";
-  if (previewPortada) previewPortada.style.display = "none";
+  misionesLocales.splice(index, 1);
+  await updateDoc(currentUserDocRef, { misionesSecundarias: misionesLocales });
+  renderizarMisiones(misionesLocales);
 }
 
 function inicializarCerrarSesion() {
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
-    btnLogout.addEventListener("click", () => {
-      signOut(auth).then(() => window.location.href = "index.html");
-    });
+    btnLogout.addEventListener("click", () => signOut(auth).then(() => window.location.href = "index.html"));
   }
 }
 
@@ -517,37 +262,40 @@ function inicializarAvatar() {
     const file = e.target.files[0];
     if (!file) return;
 
-    const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
-
     try {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (avatarImg) avatarImg.src = event.target.result;
-      };
-      reader.readAsDataURL(file);
-
-      const cloudName = "dwuokewzr";
-      const uploadPreset = "avatar_users";
-
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("upload_preset", uploadPreset);
+      formData.append("upload_preset", "avatar_users");
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/dwuokewzr/image/upload`, {
         method: "POST",
         body: formData
       });
 
-      if (!res.ok) throw new Error("Error al subir la imagen a Cloudinary");
-
+      if (!res.ok) throw new Error("Error en subida de avatar");
       const data = await res.json();
       await updateDoc(currentUserDocRef, { avatarUrl: data.secure_url });
-
-      alert("✨ ¡Avatar actualizado con éxito!");
-
-    } catch (error) {
-      console.error("Error al actualizar el avatar:", error);
-      alert("❌ No se pudo subir el avatar.");
+      alert("✨ Avatar actualizado");
+      await cargarDatosAventurero(currentUserDocRef);
+    } catch (err) {
+      console.error(err);
+      alert("❌ Fallo al cambiar el avatar");
     }
+  });
+}
+
+function inicializarBotonMisionPersonal() {
+  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal");
+  if (!btnAbrir) return;
+
+  btnAbrir.addEventListener("click", () => {
+    // Opción A: Redirigir directamente al tablón comunitario que acabamos de crear
+    window.location.href = "misiones.html";
+    
+    /* 
+      Opción B (Si prefieres mantener un modal propio en el perfil para lecturas 100% personales):
+      const modal = document.getElementById("modal-mision-personal");
+      if (modal) modal.classList.remove("oculto");
+    */
   });
 }

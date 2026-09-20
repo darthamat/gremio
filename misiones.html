@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablón de Portales y Misiones | Clan de Lectura</title>
+  
+  <!-- Estilos base y de la aplicación -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/perfil.css">
+  <link rel="stylesheet" href="css/acordeon-estadisticas.css">
+  
+  <!-- Fuentes épicas (Cinzel) -->
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* Estilos específicos para el tablón de misiones */
+    .tablon-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    
+    .tablon-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+      padding-bottom: 15px;
+    }
+
+    .tablon-header h1 {
+      font-family: 'Cinzel', serif;
+      color: #ffd700;
+      font-size: 1.8rem;
+    }
+
+    /* Tarjetas de Portales Comunitarios */
+    .mision-portal-card {
+      display: flex;
+      gap: 20px;
+      background: #121926;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 15px;
+      align-items: center;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .mision-portal-card:hover {
+      border-color: #ffd700;
+      transform: translateY(-2px);
+    }
+
+    .portal-portada {
+      width: 80px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+    }
+
+    .portal-detalles {
+      flex-grow: 1;
+    }
+
+    .portal-detalles h3 {
+      font-family: 'Cinzel', serif;
+      color: #ffd700;
+      margin-bottom: 5px;
+      font-size: 1.2rem;
+    }
+
+    .portal-detalles .autor {
+      color: #a0aec0;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .portal-detalles .proclama {
+      font-style: italic;
+      color: #cbd5e0;
+      font-size: 0.85rem;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 10px;
+      border-left: 3px solid #ffd700;
+      border-radius: 4px;
+      margin-bottom: 8px;
+    }
+
+    .portal-meta {
+      font-size: 0.8rem;
+      color: #718096;
+    }
+
+    .portal-accion {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 160px;
+    }
+
+    .btn-unirse {
+      background: linear-gradient(135deg, #ffd700, #cca600);
+      color: #0d131d;
+      font-weight: bold;
+      border: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: filter 0.2s;
+      font-family: 'Cinzel', serif;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .btn-unirse:hover {
+      filter: brightness(1.15);
+    }
+
+    .btn-unido {
+      background: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+      border: 1px solid #4ade80;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    /* Estilos del Modal reutilizados */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-overlay.oculto { display: none; }
+    .modal-contenido {
+      background: #121926;
+      border: 2px solid #ffd700;
+      padding: 25px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body class="cuerpo-fantasia">
+
+  <div class="tablon-container">
+    
+    <!-- Cabecera del Tablón -->
+    <div class="tablon-header">
+      <div>
+        <h1>📜 Tablón de Portales Comunitarios</h1>
+        <p style="color: #a0aec0; font-size: 0.9rem;">Únete a expediciones grupales o abre un nuevo portal para viajar en compañía y ganar Puntos de Clan.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button id="btn-abrir-buscador-mision" class="btn-unirse">✨ Abrir Portal</button>
+        <a href="perfil.html" class="btn-unirse" style="background: #253346; color: #fff; text-decoration: none; display:inline-flex; align-items:center;">🛡️ Mi Perfil</a>
+      </div>
+    </div>
+
+    <!-- Lista de Misiones de la Comunidad -->
+    <div id="tablon-misiones-lista">
+      <!-- Se carga dinámicamente desde js/misiones.js -->
+      <p style="color: #a0aec0; text-align: center;">Invocando portales del multiverso literario...</p>
+    </div>
+
+  </div>
+
+  <!-- MODAL: CREAR / BUSCAR PORTAL DE LECTURA -->
+  <div id="modal-buscador-mision" class="modal-overlay oculto">
+    <div class="modal-contenido">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="color: #ffd700; font-family: 'Cinzel', serif;">Abrir un Nuevo Portal</h2>
+        <button id="btn-cerrar-modal-mision" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+
+      <!-- Buscador Google Books -->
+      <div style="margin-bottom: 15px;">
+        <label style="color: #a0aec0; font-size: 0.85rem; display:block; margin-bottom: 5px;">Buscar libro en Google Books:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="input-buscar-libro" placeholder="Título o autor..." style="flex-grow: 1; padding: 10px; background: #0d131d; border: 1px solid #2a3a52; color: #fff; border-radius: 6px;">
+          <button id="btn-ejecutar-busqueda" class="btn-unirse" style="padding: 10px 15px;">🔍 Buscar</button>
+        </div>
+        <div id="resultados-busqueda-libros" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
+      </div>
+
+      <!-- Formulario de Confirmación del Portal -->
+      <form id="form-crear-portal">
+        <div style="margin-bottom: 12px;">
+          <label style="color:#a0aec0; font-size:0.85rem;">Título del Libro:</label>
+          <input type="text" id="mision-titulo" required style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <label style="color:#a0aec0; font-size:0.85rem;">Autor:</label>
+          <input type="text" id="mision-autor" required style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+          <div style="flex: 1;">
+            <label style="color:#a0aec0; font-size:0.85rem;">Páginas:</label>
+            <input type="number" id="mision-paginas" required min="1" style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
+          </div>
+          <div style="flex: 2;">
+            <label style="color:#a0aec0; font-size:0.85rem;">URL de Portada:</label>
+            <input type="url" id="mision-portada-url" placeholder="https://..." style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label style="color:#a0aec0; font-size:0.85rem;">Proclama de Expedición (Motivación o notas):</label>
+          <textarea id="mision-proclama" rows="2" placeholder="Ej: ¡Vamos a conquistar este clásico juntos!" style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;"></textarea>
+        </div>
+
+        <!-- Géneros literarios -->
+        <div style="margin-bottom: 20px;">
+          <label style="color:#a0aec0; font-size:0.85rem; display:block; margin-bottom:5px;">Géneros:</label>
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: #fff;">
+            <label><input type="checkbox" name="genero" value="Fantasía" checked> Fantasía</label>
+            <label><input type="checkbox" name="genero" value="Ciencia Ficción"> Ciencia Ficción</label>
+            <label><input type="checkbox" name="genero" value="Misterio"> Misterio</label>
+            <label><input type="checkbox" name="genero" value="Historia"> Historia</label>
+            <label><input type="checkbox" name="genero" value="Romance"> Romance</label>
+          </div>
+        </div>
+
+        <div style="text-align: right;">
+          <button type="submit" id="btn-guardar-mision" class="btn-unirse" style="width: 100%; padding: 12px;">✨ Lanzar Portal al Multiverso</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Script principal del Tablón -->
+  <script type="module" src="js/misiones.js"></script>
+</body>
+</html>
