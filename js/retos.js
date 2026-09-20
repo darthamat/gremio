@@ -14,12 +14,13 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { completarRetoGremio, registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
+import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 🎲 Importamos el motor estocástico
 
 const auth = getAuth(app);
 const db = getFirestore(app);
 
 let usuarioSesionId = null;
-let ejecucionEnProceso = false; // 🛡️ Banderola global para evitar colisiones de peticiones
+let ejecucionEnProceso = false; // 🛡️ Banderola anti-doble clic
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -27,7 +28,6 @@ onAuthStateChanged(auth, async (user) => {
     return;
   }
   
-  // Evitar ejecuciones duplicadas si auth dispara el evento más de una vez
   if (usuarioSesionId === user.uid) return;
   usuarioSesionId = user.uid;
 
@@ -300,7 +300,6 @@ async function cargarYRenderizarRetos() {
           contenedorPasados.appendChild(item);
         });
 
-        // Eventos asignados limpiamente
         contenedorPasados.querySelectorAll(".btn-completar-pasado").forEach(btn => {
           btn.onclick = async (e) => {
             const boton = e.currentTarget;
@@ -431,37 +430,31 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const data = misionSnap.data();
     const esCreador = data.creadorId === usuarioSesionId;
     const paginas = Number(data.paginas) || 0;
-
-    const rasgosObtenidos = Array.isArray(data.rasgosPrometidos || data.rasgosOtorga) ? (data.rasgosPrometidos || data.rasgosOtorga) : [];
-    const cicatricesObtenidas = Array.isArray(data.cicatricesPrometidas || data.cicatricesOtorga) ? (data.cicatricesPrometidas || data.cicatricesOtorga) : [];
+    const genero = data.genero || "Fantasía";
 
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
+    // 1. Guardar experiencia y métricas principales
     const userRef = doc(db, "aventureros", usuarioSesionId);
-
-    // 1. Guardar experiencia y estadísticas
-    const updateData = {
+    await updateDoc(userRef, {
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1)
-    };
+    });
 
-    // Guardar rasgos/cicatrices en huellas.rasgos / huellas.cicatrices si existen
-    if (rasgosObtenidos.length > 0) updateData["huellas.rasgos"] = arrayUnion(...rasgosObtenidos);
-    if (cicatricesObtenidas.length > 0) updateData["huellas.cicatrices"] = arrayUnion(...cicatricesObtenidas);
+    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz (70% Rasgo, 30% Cicatriz según el género y páginas)
+    const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    await updateDoc(userRef, updateData);
-
-    // 2. Registrar libro en Atlas y Biblioteca
+    // 3. Registrar libro en Atlas y Biblioteca
     const datosLibro = {
       id: misionId,
       titulo: data.titulo,
       autor: data.autor,
-      genero: data.genero || "Fantasía",
+      genero: genero,
       paginas: paginas,
       portadaUrl: data.portadaUrl || "https://via.placeholder.com/150x220?text=Sin+Portada",
       fechaTerminado: new Date().toISOString()
@@ -469,13 +462,17 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
 
     await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
 
-    // 3. Notificación de alerta
-    const nombresRasgos = rasgosObtenidos.map(r => typeof r === 'object' ? r.nombre : r);
-    const nombresCicatrices = cicatricesObtenidas.map(c => typeof c === 'object' ? c.nombre : c);
-
+    // 4. Formatear mensaje de huellas para la alerta
     let msgHuellas = "";
-    if (nombresRasgos.length > 0) msgHuellas += `\n✨ Rasgos Impregnados: ${nombresRasgos.join(", ")}`;
-    if (nombresCicatrices.length > 0) msgHuellas += `\n👁️ Cicatrices Marcadas: ${nombresCicatrices.join(", ")}`;
+    if (resRecompensa && resRecompensa.recompensas) {
+      resRecompensa.recompensas.forEach(r => {
+        if (r.tipo === "rasgos") {
+          msgHuellas += `\n✨ Rasgo Impregnado: ${r.item.nombre}`;
+        } else {
+          msgHuellas += `\n👁️ Cicatriz Marcada: ${r.item.nombre}`;
+        }
+      });
+    }
 
     if (esCreador) {
       await updateDoc(misionRef, {
@@ -535,9 +532,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       autor: "Desconocido",
       portadaUrl: "https://via.placeholder.com/150x220?text=Sin+Portada",
       paginas: puntos || 0,
-      genero: "Fantasía",
-      rasgosOtorga: [],
-      cicatricesOtorga: []
+      genero: "Fantasía"
     };
 
     if (retoSnap.exists()) {
@@ -548,48 +543,45 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
         autor: data.autor || "Desconocido",
         portadaUrl: data.portadaUrl || data.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
         paginas: Number(data.paginas) || puntos || 0,
-        genero: data.genero || "Fantasía",
-        rasgosOtorga: Array.isArray(data.rasgosOtorga) ? data.rasgosOtorga : [],
-        cicatricesOtorga: Array.isArray(data.cicatricesOtorga) ? data.cicatricesOtorga : []
+        genero: data.genero || "Fantasía"
       };
     }
 
     const paginas = datosReto.paginas;
+    const genero = datosReto.genero;
 
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 🔴 1. Otorgar XP, Prestigio y Huellas (en huellas.rasgos / huellas.cicatrices) en el perfil del usuario
+    // 1. Otorgar XP, Prestigio y Contadores en Firestore
     const userRef = doc(db, "aventureros", usuarioSesionId);
-    const updateData = { 
+    await updateDoc(userRef, { 
       retosCompletados: arrayUnion(retoId),
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
       librosCompletados: increment(1)
-    };
+    });
 
-    if (datosReto.rasgosOtorga.length > 0) {
-      updateData["huellas.rasgos"] = arrayUnion(...datosReto.rasgosOtorga);
-    }
-    if (datosReto.cicatricesOtorga.length > 0) {
-      updateData["huellas.cicatrices"] = arrayUnion(...datosReto.cicatricesOtorga);
-    }
+    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz (70% Rasgo, 30% Cicatriz según el género)
+    const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    await updateDoc(userRef, updateData);
-
-    // 🔴 2. Registrar en Biblioteca / Atlas a través del gestor
+    // 3. Registrar en Biblioteca y Atlas
     await completarRetoGremio(usuarioSesionId, datosReto);
 
-    // 🔴 3. Notificar con alerta las huellas ganadas
-    const nombresRasgos = datosReto.rasgosOtorga.map(r => typeof r === 'object' ? r.nombre : r);
-    const nombresCicatrices = datosReto.cicatricesOtorga.map(c => typeof c === 'object' ? c.nombre : c);
-
+    // 4. Formatear mensaje de huellas para la alerta
     let msgHuellas = "";
-    if (nombresRasgos.length > 0) msgHuellas += `\n✨ Rasgos: ${nombresRasgos.join(", ")}`;
-    if (nombresCicatrices.length > 0) msgHuellas += `\n👁️ Cicatrices: ${nombresCicatrices.join(", ")}`;
+    if (resRecompensa && resRecompensa.recompensas) {
+      resRecompensa.recompensas.forEach(r => {
+        if (r.tipo === "rasgos") {
+          msgHuellas += `\n✨ Rasgo Obtenido: ${r.item.nombre}`;
+        } else {
+          msgHuellas += `\n👁️ Cicatriz Obtenida: ${r.item.nombre}`;
+        }
+      });
+    }
 
     alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
 
