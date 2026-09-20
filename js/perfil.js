@@ -7,7 +7,8 @@ import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
-import { buscarEnGoogleBooks, limpiarSeleccionBuscador } from "./buscadorMisiones.js";
+import { buscarEnGoogleBooks, limpiarSeleccionBuscador, inicializarFormularioMisiones } from "./buscadorMisiones.js";
+
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -23,6 +24,14 @@ onAuthStateChanged(auth, async (user) => {
     return;
     inicializarModalMisionPerfil();
   }
+
+  if (currentUserId) {
+  inicializarFormularioMisiones(currentUserId, async (nuevaMision) => {
+    // Esto se ejecuta justo después de guardar con éxito la misión
+    alert("🎉 ¡Misión secundaria aceptada con éxito!");
+    await cargarDatosAventurero(currentUserDocRef); // Refresca el acordeón y la lista en pantalla
+  });
+}
 
   currentUserId = user.uid;
   currentUserDocRef = doc(db, "aventureros", user.uid);
@@ -318,8 +327,8 @@ function inicializarBotonMisionPersonal() {
 
 function inicializarModalMisionPerfil() {
   const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
+  const modal = document.getElementById("modal-buscador-mision"); // Tu modal HTML del buscador
   const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
-  const modal = document.getElementById("modal-buscador-mision");
 
   const inputBuscar = document.getElementById("input-buscar-libro");
   const btnBuscar = document.getElementById("btn-ejecutar-busqueda");
@@ -327,17 +336,17 @@ function inicializarModalMisionPerfil() {
 
   if (!btnAbrir || !modal) return;
 
-  // Abrir modal
+  // Abrir modal de búsqueda
   btnAbrir.addEventListener("click", () => {
     modal.classList.remove("oculto");
-    modal.style.display = "flex"; // Por si usas display flex para centrar
+    modal.style.display = "flex";
   });
 
   // Cerrar modal
   const cerrarModalFn = () => {
     modal.classList.add("oculto");
     modal.style.display = "none";
-    limpiarSeleccionBuscador();
+    if (typeof limpiarSeleccionBuscador === 'function') limpiarSeleccionBuscador();
     if (contenedorResultados) {
       contenedorResultados.innerHTML = "";
       contenedorResultados.style.display = "none";
@@ -346,20 +355,25 @@ function inicializarModalMisionPerfil() {
 
   if (btnCerrar) btnCerrar.addEventListener("click", cerrarModalFn);
 
-  // Ejecutar búsqueda con Google Books
+  // Ejecutar búsqueda conectada a Google Books
   if (btnBuscar && inputBuscar) {
-    btnBuscar.addEventListener("click", (e) => {
+    const ejecutarBusqueda = (e) => {
       e.preventDefault();
+      const query = inputBuscar.value.trim();
+      if (!query) return;
       if (contenedorResultados) contenedorResultados.style.display = "block";
-      buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
-    });
-
-    inputBuscar.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (contenedorResultados) contenedorResultados.style.display = "block";
-        buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
+      
+      // Llama a tu script externo del buscador pasando el contenedor
+      if (typeof buscarEnGoogleBooks === 'function') {
+        buscarEnGoogleBooks(query, contenedorResultados);
+      } else {
+        console.error("La función buscarEnGoogleBooks no está disponible.");
       }
+    };
+
+    btnBuscar.addEventListener("click", ejecutarBusqueda);
+    inputBuscar.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") ejecutarBusqueda(e);
     });
   }
 }
