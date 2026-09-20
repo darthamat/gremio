@@ -60,7 +60,12 @@ export function renderizarAtributosAcordeon(contenedor, rasgos = {}, cicatrices 
     { clave: "constitucion", nombre: "Constitución", icono: "🛡️" },
     { clave: "inteligencia", nombre: "Inteligencia", icono: "🧠" },
     { clave: "sabiduria", nombre: "Sabiduría", icono: "📜" },
-    { clave: "carisma", nombre: "Carisma", icono: "👑" }
+    { clave: "carisma", nombre: "Carisma", icono: "👑" },
+    // Nuevos atributos añadidos
+  { clave: "suerte", nombre: "Suerte", icono: "🍀" },
+  { clave: "fatiga", nombre: "Fatiga", icono: "💤" },
+  { clave: "mente", nombre: "Mente", icono: "🔮" },
+  { clave: "corazon", nombre: "Corazón", icono: "❤️" }
   ];
 
   const listaR = normalizarListaEfectos(rasgos);

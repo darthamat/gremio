@@ -2,10 +2,10 @@
 export const BANCO_HUELLAS = {
     fantasia: {
         rasgos: [
-            { id: "worldbuilding_mental", nombre: "Pensamiento Cósmico", icono: "🌌", desc: "Capacidad para conceptualizar sistemas complejos, mitologías y reglas internas.", modificadores: { inteligencia: 2, sabiduria: 1 } },
+            { id: "worldbuilding_mental", nombre: "Pensamiento Cósmico", icono: "🌌", desc: "Capacidad para conceptualizar sistemas complejos, mitologías y reglas internas.", modificadores: { inteligencia: 2, mente: 1 } },
             { id: "imaginacion_epica", nombre: "Visión Épica", icono: "⚔️", desc: "Facilidad para proyectar escenarios a gran escala y metas trascendentales.", modificadores: { carisma: 2, fuerza: 1 } },
             { id: "reconocimiento_arquetipos", nombre: "Comprensión Arquetípica", icono: "👑", desc: "Habilidad para identificar roles, patrones morales y arcos de viaje en las personas.", modificadores: { sabiduria: 2, carisma: 1 } },
-            { id: "pensamiento_magico", nombre: "Asombro Activo", icono: "✨", desc: "Disposición a encontrar maravilla y misterio en lo cotidiano.", modificadores: { sabiduria: 2, inteligencia: 1 } },
+            { id: "pensamiento_magico", nombre: "Asombro Activo", icono: "✨", desc: "Disposición a encontrar maravilla y misterio en lo cotidiano.", modificadores: { sabiduria: 2, corazon: 1 } },
             { id: "simbolismo_mitico", nombre: "Intuición Mítica", icono: "🐉", desc: "Decodificación natural de símbolos, leyendas y alegorías históricas.", modificadores: { inteligencia: 2, sabiduria: 1 } },
             { id: "moral_heroica", nombre: "Criterio Heroico", icono: "🛡️", desc: "Inclinación por mantener ideales de honor, lealtad y rectitud frente a la adversidad.", modificadores: { constitucion: 2, carisma: 1 } },
             { id: "flexibilidad_ontologica", nombre: "Mente Maleable", icono: "🌀", desc: "Facilidad para asimilar reglas de existencia totalmente distintas a las reales.", modificadores: { inteligencia: 2, destreza: 1 } },
@@ -16,18 +16,18 @@ export const BANCO_HUELLAS = {
         cicatrices: [
             { id: "evasion_fantastica", nombre: "Evasionismo", icono: "🏰", desc: "Tendencia a retirarte a mundos imaginarios cuando la realidad se vuelve gris.", modificadores: { sabiduria: -2, constitucion: -1 } },
             { id: "nostalgia_por_lo_inexistente", nombre: "Anhelo Irreal", icono: "🌙", desc: "Sentimiento de añoranza por lugares, épocas o reinos que nunca existieron.", modificadores: { carisma: -1, destreza: -1 } },
-            { id: "maniqueismo_moral", nombre: "Dualismo Rígido", icono: "☯️", desc: "Dificultad para procesar la amoralidad o los grises éticos del mundo real.", modificadores: { sabiduria: -2, inteligencia: -1 } },
+            { id: "maniqueismo_moral", nombre: "Dualismo Rígido", icono: "☯️", desc: "Dificultad para procesar la amoralidad o los grises éticos del mundo real.", modificadores: { sabiduria: -2, mente: -1 } },
             { id: "espera_de_destino", nombre: "Parálisis del Elegido", icono: "⏳", desc: "Sensación de estar esperando una llamada trascendental mientras descuidas lo cotidiano.", modificadores: { fuerza: -1, constitucion: -2 } },
-            { id: "desconexión_prosaica", nombre: "Rechazo a lo Mundano", icono: "🌪️", desc: "Frustración o desinterés ante las tareas rutinarias y burocráticas.", modificadores: { carisma: -2, destreza: -1 } }
+            { id: "desconexión_prosaica", nombre: "Rechazo a lo Mundano", icono: "🌪️", desc: "Frustración o desinterés ante las tareas rutinarias y burocráticas.", modificadores: { carisma: -2, fatiga: -1 } }
         ]
     },
 
     poesia: {
         rasgos: [
-            { id: "sensibilidad_linguistica", nombre: "Sensibilidad", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje.", modificadores: { carisma: 2, inteligencia: 1 } },
+            { id: "sensibilidad_linguistica", nombre: "Sensibilidad", icono: "✍️", desc: "Aprecio agudo por el ritmo, la métrica y las sutilezas del lenguaje.", modificadores: { corazon: 2, inteligencia: 1 } },
             { id: "inteligencia_emocional", nombre: "Inteligencia Emocional", icono: "🖤", desc: "Capacidad para descifrar estados de ánimo complejos y matices no verbales.", modificadores: { sabiduria: 2, carisma: 1 } },
-            { id: "pensamiento_metaforico", nombre: "Pensamiento Metafórico", icono: "🌙", desc: "Facilidad para trazar analogías entre conceptos abstractos y la realidad.", modificadores: { inteligencia: 2, sabiduria: 1 } },
-            { id: "sintesis_expresiva", nombre: "Síntesis Expresiva", icono: "✒️", desc: "Habilidad para transmitir grandes ideas utilizando las palabras precisas.", modificadores: { carisma: 2, inteligencia: 1 } },
+            { id: "pensamiento_metaforico", nombre: "Pensamiento Metafórico", icono: "🌙", desc: "Facilidad para trazar analogías entre conceptos abstractos y la realidad.", modificadores: { corazon: 2, sabiduria: 1 } },
+            { id: "sintesis_expresiva", nombre: "Síntesis Expresiva", icono: "✒️", desc: "Habilidad para transmitir grandes ideas utilizando las palabras precisas.", modificadores: { corazon: 2, inteligencia: 1 } },
             { id: "atencion_estetica", nombre: "Atención Estética", icono: "🎨", desc: "Capacidad para encontrar valor poético y belleza en detalles cotidianos.", modificadores: { sabiduria: 1, destreza: 1 } },
             { id: "escucha_profunda", nombre: "Escucha Empática", icono: "🕊️", desc: "Receptividad aumentada ante la vulnerabilidad y el discurso ajeno.", modificadores: { carisma: 2, sabiduria: 1 } },
             { id: "riqueza_lexica", nombre: "Vocabulario Evocador", icono: "📖", desc: "Dominio de términos connotativos y precisión verbal al expresarte.", modificadores: { inteligencia: 2, carisma: 1 } },
@@ -36,8 +36,8 @@ export const BANCO_HUELLAS = {
             { id: "resonancia_humana", nombre: "Resonancia Humana", icono: "🕯️", desc: "Comprensión intuitiva del sufrimiento y la alegría universal.", modificadores: { sabiduria: 2, carisma: 1 } }
         ],
         cicatrices: [
-            { id: "melancolia_reflexiva", nombre: "Tendencia Melancólica", icono: "🌧️", desc: "Propensión a la nostalgia injustificada por momentos e ideas del pasado.", modificadores: { fuerza: -1, constitucion: -2 } },
-            { id: "vulnerabilidad_expuesta", nombre: "Sensibilidad Aumentada", icono: "🥀", desc: "Mayor susceptibilidad a la rudeza, la prisa o el cinismo del entorno.", modificadores: { constitucion: -2, carisma: -1 } },
+            { id: "melancolia_reflexiva", nombre: "Tendencia Melancólica", icono: "🌧️", desc: "Propensión a la nostalgia injustificada por momentos e ideas del pasado.", modificadores: { fuerza: -1, corazon: -2 } },
+            { id: "vulnerabilidad_expuesta", nombre: "Sensibilidad Aumentada", icono: "🥀", desc: "Mayor susceptibilidad a la rudeza, la prisa o el cinismo del entorno.", modificadores: { corazon: -2, mente: -1 } },
             { id: "idealismo_inviable", nombre: "Idealismo Estético", icono: "🫧", desc: "Frustración recurrente cuando la realidad prosaica rompe tus expectativas.", modificadores: { sabiduria: -2, destreza: -1 } },
             { id: "introversion_severa", nombre: "Refugio Interior", icono: "🗝️", desc: "Tendencia a aislarte en tus propios pensamientos ante la saturación social.", modificadores: { carisma: -2, fuerza: -1 } },
             { id: "sobrepensamiento_afectivo", nombre: "Sobreanálisis Emocional", icono: "🕸️", desc: "Dificultad para vivir las relaciones sin desarmar intelectualmente cada gesto.", modificadores: { sabiduria: -1, constitucion: -1 } }
@@ -308,7 +308,43 @@ no_ficcion: {
         { id: "curioso", nombre: "Curiosidad", icono: "💡", desc: "Sientes ganas de investigar temas nuevos por tu propia cuenta.", modificadores: { inteligencia: 1 } },
         { id: "organizado", nombre: "Mente Organizada", icono: "🗂️", desc: "Estructuras mejor tus ideas, notas y tareas del día a día.", modificadores: { destreza: 1 } },
         { id: "pragmatico", nombre: "Pragmatismo", icono: "🛠️", desc: "Buscas soluciones prácticas directas en lugar de dar vueltas.", modificadores: { fuerza: 1 } }
-    ],
+    , { 
+  id: "intuicion_afortunada", 
+  nombre: "Intuición Afortunada", 
+  icono: "🍀", 
+  desc: "Capacidad para tomar decisiones correctas guiado por un extraño sentido del timing y la buena fortuna.", 
+  modificadores: { suerte: 2, mente: 1 } 
+},
+{ 
+  id: "resistencia_mental", 
+  nombre: "Claridad Sostenida", 
+  icono: "🔮", 
+  desc: "Habilidad para mantener el foco intelectual incluso cuando las horas de estudio o lectura acumulan el cansancio.", 
+  modificadores: { mente: 2, fatiga: 1 } // Nota: La fatiga positiva o resistencia a la fatiga equilibra el cansancio
+},
+{ 
+  id: "fortaleza_emocional", 
+  nombre: "Corazón Templado", 
+  icono: "❤️", 
+  desc: "Madurez afectiva para procesar impactos dramáticos o finales desgarradores sin perder la estabilidad.", 
+  modificadores: { corazon: 2, constitucion: 1 } 
+},
+{ 
+  id: "golpe_de_suerte", 
+  nombre: "azar_calculado", 
+  nombre: "Audacia del Azar", 
+  icono: "🎲", 
+  desc: "Disposición a apostar por caminos creativos poco convencionales y salir beneficiado por la casualidad.", 
+  modificadores: { suerte: 2, destreza: 1 } 
+},
+{ 
+  id: "vitalidad_renovada", 
+  nombre: "Segundo Aliento", 
+  icono: "⚡", 
+  desc: "Capacidad para sacudirse el cansancio mental y recuperar la energía tras dar con una lectura apasionante.", 
+  modificadores: { fatiga: 2, corazon: 1 } 
+}
+      ],
     cicatrices: [
         { id: "miedoso", nombre: "Miedoso/a", icono: "😨", desc: "Te sobresaltas con más facilidad o dudas antes de tomar riesgos.", modificadores: { fuerza: -1 } },
         { id: "ansiedad", nombre: "Ansiedad Anticipatoria", icono: "🌊", desc: "Sensación de prisa o inquietud anticipada ante el futuro.", modificadores: { constitucion: -1 } },
@@ -320,7 +356,41 @@ no_ficcion: {
         { id: "testarudo", nombre: "Testarudez", icono: "🛡️", desc: "Te aferras firmemente a tus opiniones iniciales aun cuando surgen dudas.", modificadores: { sabiduria: -1 } },
         { id: "cansancio_mental", nombre: "Cansancio Mental", icono: "🔋", desc: "Sensación de fatiga intelectual al acumular demasiada información." , modificadores: { inteligencia: -1 } },
         { id: "pesimista", nombre: "Toque Pesimista", icono: "☁️", desc: "Inclinación a pensar primero en lo que puede salir mal." , modificadores: { carisma: -1 } },
-    
+    { 
+  id: "fatiga_cognitiva", 
+  nombre: "Agotamiento Crónico", 
+  icono: "💤", 
+  desc: "Sensación de pesadez mental y falta de chispa tras un consumo excesivo de información densa.", 
+  modificadores: { fatiga: -2, mente: -1 } 
+},
+{ 
+  id: "corazon_vulnerable", 
+  nombre: "Corazón Empedernido", 
+  icono: "🥀", 
+  desc: "Resistencia inconsciente a conectar emocionalmente con historias tristes por miedo a sufrir.", 
+  modificadores: { corazon: -2, carisma: -1 } 
+},
+{ 
+  id: "mala_racha_cronica", 
+  nombre: "Escepticismo del Azar", 
+  icono: "🌧️", 
+  desc: "Tendencia a subestimar el factor suerte, esperando siempre el peor giro imprevisto en los planes.", 
+  modificadores: { suerte: -2, sabiduria: -1 } 
+},
+{ 
+  id: "saturacion_mental", 
+  nombre: "Niebla Mental", 
+  icono: "🌫️", 
+  desc: "Dificultad temporal para retener conceptos abstractos complejos debido al exceso de estímulos.", 
+  modificadores: { mente: -2, inteligencia: -1 } 
+},
+{ 
+  id: "desgaste_afectivo", 
+  nombre: "Empatía Agotada", 
+  icono: "🔋", 
+  desc: "Sensación de fatiga emocional al procesar demasiados dramas o tramas intensas seguidas.", 
+  modificadores: { corazon: -1, fatiga: -2 } 
+}
     ]
 }
 }
