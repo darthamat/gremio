@@ -820,4 +820,80 @@
   display: inline-block;
   margin: 2px;
 }
+/* Contenedor del Atributo */
+.card-atributo {
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
 
+.card-atributo:hover {
+  transform: translateY(-2px);
+}
+
+/* Tooltip Emergente */
+.tooltip-atributo {
+  visibility: hidden;
+  opacity: 0;
+  width: 220px;
+  background-color: #121820;
+  color: #e0e0e0;
+  text-align: left;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 1px solid #4a6fa5;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  
+  /* Posicionamiento flotante sobre la tarjeta */
+  position: absolute;
+  z-index: 10;
+  bottom: 115%;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  /* Transición suave */
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  pointer-events: none;
+}
+
+/* Flechita inferior del tooltip */
+.tooltip-atributo::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -6px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: #121820 transparent transparent transparent;
+}
+
+/* Mostrar tooltip al pasar el ratón */
+.card-atributo:hover .tooltip-atributo {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Estilos internos del desglose */
+.tooltip-atributo .tt-titulo {
+  font-weight: bold;
+  color: #ffd700;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+.tooltip-atributo .tt-linea {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+}
+.tooltip-atributo .tt-positivo { color: #4CAF50; }
+.tooltip-atributo .tt-negativo { color: #F44336; }
+.tooltip-atributo .tt-total {
+  font-weight: bold;
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  margin-top: 6px;
+  padding-top: 4px;
+}

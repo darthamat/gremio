@@ -40,7 +40,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 // Carga y renderiza los datos del usuario desde Firestore
-// Carga y renderiza los datos del usuario desde Firestore
 async function cargarDatosAventurero(docRef) {
   const snap = await getDoc(docRef);
   if (!snap.exists()) return;
@@ -55,7 +54,6 @@ async function cargarDatosAventurero(docRef) {
   }
 
   // 📈 ACTUALIZACIÓN CENTRALIZADA DE NIVEL Y BARRA
-  // Le pasamos solo el número de XP acumulada (xpActual) que es lo que espera controlNivel.js
   actualizarBarraNivelUI(xpActual);
 
   // 🔖 Renderizar Marcapáginas
@@ -72,7 +70,6 @@ async function cargarDatosAventurero(docRef) {
   }
 
   // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
-  // Fusionamos el objeto de estadísticas con los rasgos/cicatrices raíz
   const rasgosOrigen = data.estadisticas?.rasgos || data.rasgos || {};
   const cicatricesOrigen = data.estadisticas?.cicatrices || data.cicatrices || {};
 
@@ -88,11 +85,121 @@ async function cargarDatosAventurero(docRef) {
   // 2. Renderizar los badges dentro de la interfaz
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
 
+  // 3. 📊 RENDERIZAR ATRIBUTOS PRINCIPALES CON TOOLTIP DESGLOSADO
+  const rasgosLista = Array.isArray(rasgosOrigen) ? rasgosOrigen : Object.values(rasgosOrigen);
+  const cicatricesLista = Array.isArray(cicatricesOrigen) ? cicatricesOrigen : Object.values(cicatricesOrigen);
+  renderizarAtributosConTooltip("contenedor-atributos", rasgosLista, cicatricesLista);
+
   // Renderizar Lista de Misiones Secundarias
   renderizarMisiones(misionesLocales);
 }
 
-// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices (Resoluciion Total)
+// 📊 Lógica de Desglose y Tooltip de Atributos Principales (Base 10 + Modificadores)
+function generarDesgloseAtributo(statClave, rasgosEquipados = [], cicatricesEquipadas = []) {
+  const base = 10;
+  let desglosesHTML = `<div class="tt-linea"><span>Puntuación Base:</span> <span>${base}</span></div>`;
+  let modificadorTotal = 0;
+
+  // Normalizador auxiliar para acceder a modificadores
+  const obtenerModificadores = (item) => {
+    if (!item || typeof item !== 'object') return {};
+    return item.modificadores || item.stats || {};
+  };
+
+  // 1. Revisar Modificadores por Rasgos
+  rasgosEquipados.forEach(rasgo => {
+    const mods = obtenerModificadores(rasgo);
+    if (mods[statClave] !== undefined) {
+      const val = Number(mods[statClave]) || 0;
+      if (val !== 0) {
+        modificadorTotal += val;
+        const signo = val > 0 ? `+${val}` : `${val}`;
+        const claseColor = val > 0 ? "tt-positivo" : "tt-negativo";
+        const nombreItem = rasgo.nombre || rasgo.titulo || "Rasgo";
+        desglosesHTML += `<div class="tt-linea"><span>✨ ${nombreItem}:</span> <span class="${claseColor}">${signo}</span></div>`;
+      }
+    }
+  });
+
+  // 2. Revisar Modificadores por Cicatrices
+  cicatricesEquipadas.forEach(cicatriz => {
+    const mods = obtenerModificadores(cicatriz);
+    if (mods[statClave] !== undefined) {
+      const val = Number(mods[statClave]) || 0;
+      if (val !== 0) {
+        modificadorTotal += val;
+        const signo = val > 0 ? `+${val}` : `${val}`;
+        const claseColor = val > 0 ? "tt-positivo" : "tt-negativo";
+        const nombreItem = cicatriz.nombre || cicatriz.titulo || "Cicatriz";
+        desglosesHTML += `<div class="tt-linea"><span>🩸 ${nombreItem}:</span> <span class="${claseColor}">${signo}</span></div>`;
+      }
+    }
+  });
+
+  const totalFinal = base + modificadorTotal;
+  const signoMod = modificadorTotal >= 0 ? `+${modificadorTotal}` : `${modificadorTotal}`;
+
+  desglosesHTML += `
+    <div class="tt-linea tt-total">
+      <span>Valor Final:</span> 
+      <span class="${modificadorTotal >= 0 ? 'tt-positivo' : 'tt-negativo'}">${totalFinal} (${signoMod})</span>
+    </div>
+  `;
+
+  return { totalFinal, modificadorTotal, desglosesHTML };
+}
+
+// ⚔️ Renderiza visualmente la cuadrícula de los 6 atributos principales
+export function renderizarAtributosConTooltip(contenedorId, rasgosEquipados = [], cicatricesEquipadas = []) {
+  const contenedor = document.getElementById(contenedorId);
+  if (!contenedor) return;
+
+  const listaAtributos = [
+    { clave: "fuerza", nombre: "Fuerza", icono: "⚔️" },
+    { clave: "destreza", nombre: "Destreza", icono: "🗡️" },
+    { clave: "constitucion", nombre: "Constitución", icono: "🛡️" },
+    { clave: "inteligencia", nombre: "Inteligencia", icono: "🧠" },
+    { clave: "sabiduria", nombre: "Sabiduría", icono: "📜" },
+    { clave: "carisma", nombre: "Carisma", icono: "👑" }
+  ];
+
+  contenedor.innerHTML = "";
+
+  listaAtributos.forEach(attr => {
+    const { totalFinal, modificadorTotal, desglosesHTML } = generarDesgloseAtributo(
+      attr.clave, 
+      rasgosEquipados, 
+      cicatricesEquipadas
+    );
+
+    const signoVisual = modificadorTotal > 0 ? `+${modificadorTotal}` : `${modificadorTotal}`;
+    const claseBonus = modificadorTotal > 0 ? "tt-positivo" : (modificadorTotal < 0 ? "tt-negativo" : "");
+
+    const card = document.createElement("div");
+    card.className = "card-atributo";
+    card.innerHTML = `
+      <!-- Tooltip Desglose -->
+      <div class="tooltip-atributo">
+        <div class="tt-titulo">${attr.icono} Desglose de ${attr.nombre}</div>
+        ${desglosesHTML}
+      </div>
+
+      <!-- Contenido de la Tarjeta del Atributo -->
+      <div class="attr-header">
+        <span>${attr.icono} ${attr.nombre}</span>
+      </div>
+      <div class="attr-valor">${totalFinal}</div>
+      <div class="attr-subtext">
+        <small>Base: 10</small>
+        <span class="${claseBonus}" style="font-weight:bold; margin-left: 4px;">${signoVisual}</span>
+      </div>
+    `;
+
+    contenedor.appendChild(card);
+  });
+}
+
+// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices
 function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const contenedorRasgos = document.getElementById("contenedor-rasgos");
   const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
@@ -100,7 +207,6 @@ function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const procesarLista = (datos) => {
     if (!datos) return [];
     
-    // Si viene como Array
     if (Array.isArray(datos)) {
       return datos.map(item => {
         if (typeof item === 'string') {
@@ -115,7 +221,6 @@ function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
       });
     }
 
-    // Si viene como Objeto { "Mente Analítica": { contador: 1 } } o { "Mente Analítica": 1 }
     return Object.entries(datos).map(([key, val]) => {
       if (typeof val === 'object' && val !== null) {
         return {
@@ -137,7 +242,6 @@ function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const listaRasgos = procesarLista(rasgos);
   const listaCicatrices = procesarLista(cicatrices);
 
-  // Renderizar Rasgos
   if (contenedorRasgos) {
     if (listaRasgos.length === 0) {
       contenedorRasgos.innerHTML = `<p class="sin-datos">Ningún rasgo obtenido aún.</p>`;
@@ -152,7 +256,6 @@ function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
     }
   }
 
-  // Renderizar Cicatrices
   if (contenedorCicatrices) {
     if (listaCicatrices.length === 0) {
       contenedorCicatrices.innerHTML = `<p class="sin-datos">Tu historial está limpio de cicatrices.</p>`;
@@ -258,14 +361,11 @@ async function actualizarEstadoMision(index, nuevoEstado) {
     const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 1. Obtener datos actuales de Firestore
     const userSnap = await getDoc(currentUserDocRef);
     const userData = userSnap.exists() ? userSnap.data() : {};
 
-    // 2. Comprobar si sube de nivel y disparar el modal automático de controlNivel.js
     const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
 
-    // 3. Guardar en Firestore la XP incrementada y el nuevo Nivel
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
       xp: increment(gananciaXP),
@@ -289,7 +389,6 @@ async function actualizarEstadoMision(index, nuevoEstado) {
       }
     }
 
-    // 4. Volver a cargar la tarjeta para actualizar los textos y la barra de XP
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
@@ -427,7 +526,6 @@ function inicializarModalMisiones() {
           const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
           const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-          // Comprobar y calcular nuevo nivel con la XP ganada
           const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
 
           await updateDoc(userRef, {
