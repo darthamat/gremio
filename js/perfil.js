@@ -53,6 +53,18 @@ async function cargarDatosAventurero(docRef) {
     elMarcapaginas.textContent = data.marcapaginas || 0;
   }
 
+  const elPaginas = document.getElementById("char-paginas");
+  if (elPaginas) {
+    elPaginas.textContent = data.paginasLeidas || data.paginas || 0;
+  }
+
+  const elLibros = document.getElementById("char-libros");
+  if (elLibros) {
+    // Si cuentas los libros por misiones terminadas o por un campo directo en la BD:
+    const librosTerminados = data.librosCompletados || misionesLocales.filter(m => m.estado === 'TERMINADA').length;
+    elLibros.textContent = librosTerminados;
+  }
+
   const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
   if (avatarImg) {
     const defaultAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
