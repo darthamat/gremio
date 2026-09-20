@@ -24,28 +24,22 @@
             <h2>Ficha del Aventurero Lector</h2>
         </header>
 
-        <!-- SECCIÓN SUPERIOR (SIN ATRIBUTOS ARRIBA) -->
+        <!-- SECCIÓN SUPERIOR -->
         <section class="profile-top-section">
-            
-            <!-- Columna Izquierda: Avatar con selector de archivo -->
             <div class="avatar-card" id="avatar-container">
                 <div class="avatar-frame">
                     <img id="char-avatar" class="avatar-img" src="img/default-avatar.jpg" alt="Avatar del Aventurero">
                 </div>
-                
                 <button id="btn-cambiar-avatar" class="btn-avatar" type="button">✨ Cambiar foto</button>
                 <input type="file" id="input-avatar-file" accept="image/*" class="hidden-input" style="display: none;">
             </div>
 
-            <!-- Columna Derecha: Características e Información General -->
             <div class="character-info-panel">
-                
                 <div class="header-info">
                     <h1 id="char-name">Cargando aventurero...</h1>
                     <span class="char-class" id="char-class">Iniciado</span>
                 </div>
 
-                <!-- Economía y Progreso General -->
                 <div class="meta-stats-grid">
                     <div class="stat-badge">
                         <span class="stat-label">Nivel</span>
@@ -65,7 +59,6 @@
                     </div>
                 </div>
 
-                <!-- Barra de Progreso de Experiencia -->
                 <div class="xp-bar-container">
                     <div class="xp-bar-header">
                         <span class="xp-title">Progreso de Nivel</span>
@@ -76,7 +69,6 @@
                     </div>
                 </div>
 
-                <!-- Métricas de Lectura -->
                 <div class="reading-stats-row">
                     <div class="reading-stat">
                         <span>📖 Páginas Leídas:</span>
@@ -87,7 +79,6 @@
                         <strong id="char-books">0</strong>
                     </div>
                 </div>
-
             </div>
         </section>
 
@@ -98,38 +89,30 @@
                     <span>Estadísticas</span>
                     <i class="flecha">▼</i>
                 </button>
-                
                 <button class="btn-tab" data-tab="mochila">
                     <span>Mochila</span>
                     <i class="flecha">▼</i>
                 </button>
-                
                 <button class="btn-tab" data-tab="misiones">
                     <span>Misiones</span>
                     <i class="flecha">▼</i>
                 </button>
-
                 <a href="biblioteca.html" target="_blank" class="btn-tab btn-enlace">
                     <span>Biblioteca</span>
                     <i class="flecha-enlace">↗</i>
                 </a>
             </div>
 
-            <!-- Panel Desplegable -->
             <div id="panel-contenido" class="panel-desplegable oculto">
-                
-                <!-- Contenido: Pestaña Estadísticas (AQUÍ SE DIBUJAN LOS ATRIBUTOS CON TOOLTIPS) -->
                 <div id="tab-estadisticas" class="tab-contenido oculto">
                     <div id="acordeon-estadisticas"></div>
                 </div>
 
-                <!-- Contenido: Mochila -->
                 <div id="tab-mochila" class="tab-contenido oculto">
                     <h2>Mochila de Objetos</h2>
                     <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
                 </div>
 
-                <!-- Contenido: Misiones / Lecturas Libres -->
                 <div id="tab-misiones" class="tab-contenido oculto">
                     <div class="misiones-header-tab">
                         <h2>Misiones y Lecturas Libres</h2>
@@ -141,97 +124,118 @@
                         <!-- Se rellenará dinámicamente -->
                     </div>
                 </div>
-
             </div>
         </section>
 
-        <!-- Modal Búsqueda de Libros / Misiones -->
+        <!-- ==========================================================================
+             MODAL DE REGISTRO DE LECTURA LIBRE / MISIÓN (ESTILO PERGAMINO RPG)
+             ========================================================================== -->
         <div id="modal-buscador-mision" class="modal-overlay oculto">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <h3>📜 Registrar Lectura Libre / Misión</h3>
-                    <button id="btn-cerrar-modal-mision" class="btn-cerrar-modal">&times;</button>
-                </div>
-                
-                <div class="modal-body">
-                    <div class="search-box-group">
-                        <input type="text" id="input-buscar-libro" placeholder="Buscar por título, autor o ISBN..." />
-                        <button id="btn-ejecutar-busqueda" class="btn-buscar">🔍 Buscar</button>
-                    </div>
+          <div class="modal-mision-content admin-container" style="max-width: 750px; margin: 30px auto; max-height: 90vh; overflow-y: auto; position: relative;">
+            
+            <!-- Botón de cierre -->
+            <button type="button" id="btn-cerrar-modal-mision" class="btn-cerrar-modal" style="position: absolute; top: 15px; right: 20px; font-size: 1.5rem; background: none; border: none; cursor: pointer;">&times;</button>
 
-                    <div id="resultados-busqueda-libros" class="resultados-busqueda-list" style="display:none;"></div>
+            <h2 style="font-family: 'Cinzel', serif; color: var(--texto-pergamino, #3b2219); border-bottom: 2px solid #8b5a2b; padding-bottom: 10px; margin-top: 0;">
+              📜 Registrar Lectura Libre / Misión
+            </h2>
 
-                    <form id="form-confirmar-mision" class="form-confirmar-mision oculto">
-                        <hr class="divisor-modal" />
-                        
-                        <div class="preview-container">
-                            <img id="mision-preview-portada" src="" alt="Portada" style="display:none; max-width:100px; border-radius:6px;" />
-                            <div class="subida-file-group">
-                                <label for="mision-portada-file">O sube tu propia portada (Cloudinary):</label>
-                                <input type="file" id="mision-portada-file" accept="image/*" />
-                                <input type="hidden" id="mision-portada-url" />
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Título:</label>
-                            <input type="text" id="mision-titulo" required />
-                        </div>
-
-                        <div class="form-group">
-                            <label>Autor:</label>
-                            <input type="text" id="mision-autor" required />
-                        </div>
-
-                        <div class="form-group">
-                            <label>Páginas:</label>
-                            <input type="number" id="mision-paginas" required />
-                        </div>
-
-                        <div class="form-group">
-                            <label>Proclama / Impresiones:</label>
-                            <textarea id="mision-proclama" rows="2" placeholder="Notas o impresiones sobre esta lectura..."></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Estado:</label>
-                            <select id="mision-estado">
-                                <option value="EN_PROGRESO">⚔️ En Progreso</option>
-                                <option value="TERMINADA">✅ Completada</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                          <label>🔮 Géneros / Círculos de Conocimiento:</label>
-                          <div class="tags-selector-container" id="generos-container">
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Fantasía"> 🗡️ Fantasía</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Ciencia Ficción"> 🚀 Sci-Fi</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Filosofía"> 📜 Filosofía</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Historia"> 🏛️ Historia</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Misterio"> 🕵️ Misterio</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Desarrollo Personal"> 🧠 Mente</label>
-                            <label class="tag-checkbox"><input type="checkbox" name="genero" value="Terror"> 👁️ Terror</label>
-                          </div>
-                        </div>
-
-                        <div class="form-group">
-                          <label for="mision-rasgos">✨ Rasgos Adquiridos / Aprendizajes:</label>
-                          <input type="text" id="mision-rasgos" placeholder="Ej: Pensamiento Crítico +1, Resiliencia Estoica, Mente Analítica..." />
-                          <small class="form-help">Escribe las virtudes o habilidades ganadas con este libro (separadas por comas).</small>
-                        </div>
-
-                        <div class="form-group">
-                          <label for="mision-cicatrices">💥 Cicatrices de Aventurero / Impacto Emocional:</label>
-                          <textarea id="mision-cicatrices" rows="2" placeholder="Ej: Corazón Roto por el final, Obsesión Estratégica, Fatiga Mental tras batalla conceptual..."></textarea>
-                          <small class="form-help">Escribe los traumas, giros de guión impactantes o secuelas emocionales de este viaje.</small>
-                        </div>
-
-                        <button type="submit" id="btn-guardar-mision" class="btn-guardar-mision">
-                            💾 Registrar Misión
-                        </button>
-                    </form>
-                </div>
+            <!-- BUSCADOR GOOGLE BOOKS -->
+            <div class="form-group buscador-container" style="position: relative; margin-bottom: 15px;">
+              <label for="input-buscar-libro">🔍 Buscar Libro en Google Books:</label>
+              <div class="buscador-box" style="display: flex; gap: 10px;">
+                <input type="text" id="input-buscar-libro" placeholder="Escribe el nombre del libro o autor..." style="flex: 1;">
+                <button type="button" id="btn-ejecutar-busqueda" class="btn-secundario">Buscar</button>
+              </div>
+              <div id="resultados-busqueda-libros" class="resultados-busqueda" style="display: none;"></div>
             </div>
+
+            <hr style="border-color: #8b5a2b; margin: 20px 0;">
+
+            <!-- FORMULARIO DE MISIÓN -->
+            <form id="form-registrar-mision-libre">
+              
+              <div class="form-group">
+                <label for="titulo-mision">Título del Libro:</label>
+                <input type="text" id="titulo-mision" placeholder="Ej: La Sombra del Viento" required>
+              </div>
+
+              <div class="form-row" style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                  <label for="autor-mision">Autor(es):</label>
+                  <input type="text" id="autor-mision" placeholder="Ej: Carlos Ruiz Zafón" required>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                  <label for="paginas-mision">Número de Páginas:</label>
+                  <input type="number" id="paginas-mision" min="1" placeholder="Ej: 576" required>
+                </div>
+              </div>
+
+              <!-- PORTADA Y PREVISUALIZACIÓN -->
+              <div class="form-group">
+                <label for="portada-mision-file">O sube tu propia portada (Cloudinary / Archivo):</label>
+                <input type="file" id="portada-mision-file" accept="image/*">
+                <input type="hidden" id="portada-mision-url">
+                <img id="preview-portada-mision" class="preview-portada" alt="Previsualización de Portada" style="display: none; max-width: 100px; margin-top: 8px; border: 2px solid #8b5a2b; border-radius: 4px;">
+              </div>
+
+              <!-- ESTADO DE LA MISIÓN -->
+              <div class="form-row" style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                  <label for="estado-mision">Estado:</label>
+                  <select id="estado-mision">
+                    <option value="en_progreso">⚔️ En Progreso</option>
+                    <option value="completada">✅ Completada</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- PROCLAMA / IMPRESIONES -->
+              <div class="form-group">
+                <label for="proclama-mision">Proclama / Impresiones (Reseña personal):</label>
+                <textarea id="proclama-mision" rows="3" placeholder="¿Qué sensaciones te ha dejado este viaje literario?"></textarea>
+              </div>
+
+              <!-- GÉNEROS / CÍRCULOS DE CONOCIMIENTO -->
+              <div class="form-group">
+                <label>🔮 Géneros / Círculos de Conocimiento:</label>
+                <div id="generos-tags-contenedor-mision" class="tag-container" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7;"></div>
+                <select id="select-generos-mision" style="width: 100%; margin-bottom: 8px;">
+                  <option value="">Selecciona o añade géneros...</option>
+                </select>
+              </div>
+
+              <!-- SECCIÓN DE HUELLAS (RASGOS Y CICATRICES) -->
+              <div class="seccion-huellas" style="border: 2px dashed #8b5a2b; padding: 15px; border-radius: 6px; background: rgba(139, 90, 43, 0.05); margin-bottom: 15px;">
+                <label style="font-weight: bold; color: #3b2219;">🎭 Rasgos y Cicatrices de la Travesía:</label>
+                
+                <div style="margin-top: 10px;">
+                  <small><strong>Rasgos Adquiridos:</strong></small>
+                  <div id="container-rasgos-mision" class="tag-container"></div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                  <small><strong>Cicatrices Emocionales:</strong></small>
+                  <div id="container-cicatrices-mision" class="tag-container"></div>
+                </div>
+
+                <div style="margin-top: 12px; display: flex; gap: 8px;">
+                  <input type="text" id="input-nueva-huella-mision" placeholder="Añade rasgo o cicatriz..." style="flex:1;">
+                  <select id="select-tipo-huella-mision" style="padding: 5px;">
+                    <option value="rasgo">Rasgo</option>
+                    <option value="cicatriz">Cicatriz</option>
+                  </select>
+                  <button type="button" id="btn-add-huella-mision" class="btn-secundario">+ Añadir</button>
+                </div>
+              </div>
+
+              <!-- BOTÓN DE GUARDADO FINAL -->
+              <button type="submit" class="btn-crear" id="btn-guardar-mision-libre" style="width: 100%;">
+                💾 Registrar Misión en el Grimorio
+              </button>
+
+            </form>
+          </div>
         </div>
 
     </main>
@@ -239,6 +243,5 @@
     <!-- Conexión de Scripts modulados -->
     <script type="module" src="js/perfil.js"></script>
     <script type="module" src="js/sintetizadorPerfil.js"></script>
-    
 </body>
 </html>

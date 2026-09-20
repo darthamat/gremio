@@ -508,3 +508,172 @@
 /* Clases de Utilidad */
 .oculto { display: none !important; }
 .btn-enlace { text-decoration: none; }
+
+/* ==========================================================================
+   🔮 MODAL Y BUSCADOR DE MISIONES LIBRES (INTEGRACIÓN RPG)
+   ========================================================================== */
+
+/* Fondo oscuro translúcido con efecto místico */
+#modal-buscador-mision {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(12, 9, 18, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+#modal-buscador-mision.oculto {
+  display: none !important;
+  opacity: 0;
+}
+
+/* Tarjeta interna del modal (Estilo Pergamino/Inventario RPG) */
+.modal-mision-content {
+  background: linear-gradient(135deg, #1e1929 0%, #140e1b 100%);
+  border: 2px solid #c5a059;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 650px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(197, 160, 89, 0.2);
+  color: #e0d8c3;
+  padding: 2rem;
+  position: relative;
+  font-family: 'Georgia', serif;
+}
+
+/* Títulos y textos dentro del modal */
+.modal-mision-content h2, 
+.modal-mision-content h3 {
+  font-family: 'Cinzel', serif;
+  color: #ffd700;
+  margin-top: 0;
+  border-bottom: 1px solid #4a385c;
+  padding-bottom: 8px;
+}
+
+/* Botón de cierre (X) */
+#btn-cerrar-modal-mision {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  background: #2a2238;
+  border: 1px solid #c5a059;
+  color: #c5a059;
+  font-size: 1.1rem;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+#btn-cerrar-modal-mision:hover {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #e74c3c;
+}
+
+/* Controles del buscador (Inputs y Botones) */
+.modal-mision-content input[type="text"],
+.modal-mision-content select,
+.modal-mision-content textarea {
+  width: 100%;
+  background: #0f0a14;
+  border: 1px solid #4a385c;
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: #e0d8c3;
+  font-size: 0.95rem;
+  margin-top: 6px;
+  margin-bottom: 12px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.modal-mision-content input[type="text"]:focus,
+.modal-mision-content select:focus,
+.modal-mision-content textarea:focus {
+  border-color: #c5a059;
+  box-shadow: 0 0 8px rgba(197, 160, 89, 0.3);
+}
+
+/* Botón de acción principal dentro del modal */
+.modal-mision-content button.btn-accion,
+#btn-ejecutar-busqueda {
+  background: linear-gradient(180deg, #dbb061 0%, #b58d3d 100%);
+  color: #120c18;
+  font-family: 'Cinzel', serif;
+  font-weight: bold;
+  border: 1px solid #ffd700;
+  border-radius: 6px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+#btn-ejecutar-busqueda:hover,
+.modal-mision-content button.btn-accion:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+/* Contenedor de resultados de Google Books */
+#resultados-busqueda-libros {
+  max-height: 260px;
+  overflow-y: auto;
+  margin-top: 0.5rem;
+  border: 1px solid #4a385c;
+  border-radius: 6px;
+  background: #0f0a14;
+  display: none;
+}
+
+/* Elemento individual de libro encontrado */
+.item-libro-resultado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border-bottom: 1px solid #231b2e;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.item-libro-resultado:hover {
+  background: #2a2038;
+}
+
+.item-libro-resultado img {
+  width: 45px;
+  height: 65px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #4a385c;
+}
+
+.item-libro-info h4 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffd700;
+  margin: 0 0 4px 0;
+}
+
+.item-libro-info p {
+  font-size: 0.8rem;
+  color: #a393b5;
+  margin: 0;
+}

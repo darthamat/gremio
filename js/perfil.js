@@ -18,12 +18,24 @@ let currentUserDocRef = null;
 let misionesLocales = [];
 
 // Auth Listener
-onAuthStateChanged(auth, async (user) => {
+  onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
-    inicializarModalMisionPerfil();
   }
+
+   currentUserId = user.uid;
+  currentUserDocRef = doc(db, "aventureros", user.uid);
+
+
+  await cargarDatosAventurero(currentUserDocRef);
+  inicializarAcordeon();
+  inicializarCerrarSesion();
+  inicializarAvatar();
+  inicializarBotonMisionPersonal();
+
+
+inicializarModalMisionPerfil();
 
   if (currentUserId) {
   inicializarFormularioMisiones(currentUserId, async (nuevaMision) => {
@@ -32,15 +44,6 @@ onAuthStateChanged(auth, async (user) => {
     await cargarDatosAventurero(currentUserDocRef); // Refresca el acordeón y la lista en pantalla
   });
 }
-
-  currentUserId = user.uid;
-  currentUserDocRef = doc(db, "aventureros", user.uid);
-
-  await cargarDatosAventurero(currentUserDocRef);
-  inicializarAcordeon();
-  inicializarCerrarSesion();
-  inicializarAvatar();
-  inicializarBotonMisionPersonal();
 });
 
 // Carga de datos del perfil
@@ -327,7 +330,7 @@ function inicializarBotonMisionPersonal() {
 
 function inicializarModalMisionPerfil() {
   const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
-  const modal = document.getElementById("modal-buscador-mision"); // Tu modal HTML del buscador
+  const modal = document.getElementById("modal-buscador-mision"); 
   const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
 
   const inputBuscar = document.getElementById("input-buscar-libro");
@@ -355,6 +358,11 @@ function inicializarModalMisionPerfil() {
 
   if (btnCerrar) btnCerrar.addEventListener("click", cerrarModalFn);
 
+  // Cerrar haciendo clic fuera de la tarjeta del modal
+  modal.addEventListener("click", (e) => {
+    if (e.target === modal) cerrarModalFn();
+  });
+
   // Ejecutar búsqueda conectada a Google Books
   if (btnBuscar && inputBuscar) {
     const ejecutarBusqueda = (e) => {
@@ -363,7 +371,6 @@ function inicializarModalMisionPerfil() {
       if (!query) return;
       if (contenedorResultados) contenedorResultados.style.display = "block";
       
-      // Llama a tu script externo del buscador pasando el contenedor
       if (typeof buscarEnGoogleBooks === 'function') {
         buscarEnGoogleBooks(query, contenedorResultados);
       } else {
