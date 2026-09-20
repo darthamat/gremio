@@ -7,6 +7,7 @@ import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
+import { buscarEnGoogleBooks, limpiarSeleccionBuscador } from "./buscadorMisiones.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -20,6 +21,7 @@ onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
+    inicializarModalMisionPerfil();
   }
 
   currentUserId = user.uid;
@@ -298,4 +300,52 @@ function inicializarBotonMisionPersonal() {
       if (modal) modal.classList.remove("oculto");
     */
   });
+}
+
+function inicializarModalMisionPerfil() {
+  const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
+  const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
+  const modal = document.getElementById("modal-buscador-mision");
+
+  const inputBuscar = document.getElementById("input-buscar-libro");
+  const btnBuscar = document.getElementById("btn-ejecutar-busqueda");
+  const contenedorResultados = document.getElementById("resultados-busqueda-libros");
+
+  if (!btnAbrir || !modal) return;
+
+  // Abrir modal
+  btnAbrir.addEventListener("click", () => {
+    modal.classList.remove("oculto");
+    modal.style.display = "flex"; // Por si usas display flex para centrar
+  });
+
+  // Cerrar modal
+  const cerrarModalFn = () => {
+    modal.classList.add("oculto");
+    modal.style.display = "none";
+    limpiarSeleccionBuscador();
+    if (contenedorResultados) {
+      contenedorResultados.innerHTML = "";
+      contenedorResultados.style.display = "none";
+    }
+  };
+
+  if (btnCerrar) btnCerrar.addEventListener("click", cerrarModalFn);
+
+  // Ejecutar búsqueda con Google Books
+  if (btnBuscar && inputBuscar) {
+    btnBuscar.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (contenedorResultados) contenedorResultados.style.display = "block";
+      buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
+    });
+
+    inputBuscar.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (contenedorResultados) contenedorResultados.style.display = "block";
+        buscarEnGoogleBooks(inputBuscar.value, contenedorResultados);
+      }
+    });
+  }
 }
