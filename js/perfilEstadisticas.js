@@ -1,173 +1,172 @@
-export function renderizarEstadisticasAcordeon(estadisticas = {}) {
-  const contenedorAcordeon = document.getElementById("acordeon-estadisticas");
-  if (!contenedorAcordeon) return;
+// js/perfilEstadisticas.js
 
-  const { rasgos = {}, cicatrices = {}, atributosBase = {} } = estadisticas;
+// Convierte Objetos o Arrays de Firestore en una lista uniforme
+function normalizarListaEfectos(datos) {
+  if (!datos) return [];
 
-  // 1. Atributos D&D por defecto (Valor Base = 10)
-  const atributos = {
-    fuerza: atributosBase.fuerza || 10,
-    destreza: atributosBase.destreza || 10,
-    constitucion: atributosBase.constitucion || 10,
-    inteligencia: atributosBase.inteligencia || 10,
-    sabiduria: atributosBase.sabiduria || 10,
-    carisma: atributosBase.carisma || 10
-  };
+  if (Array.isArray(datos)) {
+    return datos.map(item => {
+      if (typeof item === 'string') return { nombre: item, acumulaciones: 1, modificadores: {} };
+      const cant = Number(item.contador || item.acumulaciones || item.nivel || item.cantidad) || 1;
+      return {
+        nombre: item.nombre || item.titulo || item.rasgo || item.cicatriz || "Desconocido",
+        acumulaciones: cant,
+        modificadores: item.modificadores || item.stats || item.efectos || {}
+      };
+    });
+  }
 
-  // 2. Acumuladores de modificadores totales por atributo
-  const modificadores = { fuerza: 0, destreza: 0, constitucion: 0, inteligencia: 0, sabiduria: 0, carisma: 0 };
+  if (typeof datos === 'object') {
+    return Object.entries(datos).map(([clave, val]) => {
+      if (typeof val === 'object' && val !== null) {
+        const cant = Number(val.contador || val.acumulaciones || val.nivel || val.cantidad) || 1;
+        return {
+          nombre: val.nombre || val.titulo || clave,
+          acumulaciones: cant,
+          modificadores: val.modificadores || val.stats || val.efectos || {}
+        };
+      }
+      return { 
+        nombre: clave, 
+        acumulaciones: typeof val === 'number' ? val : 1, 
+        modificadores: {} 
+      };
+    });
+  }
 
-  // Normalizar datos a arrays
-  const listaRasgos = Array.isArray(rasgos) ? rasgos : Object.entries(rasgos).map(([key, val]) => {
-    return (typeof val === 'object' && val !== null) ? { ...val, _key: key } : { nombre: key, val };
-  });
+  return [];
+}
 
-  const listaCicatrices = Array.isArray(cicatrices) ? cicatrices : Object.entries(cicatrices).map(([key, val]) => {
-    return (typeof val === 'object' && val !== null) ? { ...val, _key: key } : { nombre: key, val };
-  });
-
-  // Sumar bonos de Rasgos (+X)
-  listaRasgos.forEach(r => {
-    if (typeof r === 'object' && r.modificadores) {
-      const contador = r.contador || 1;
-      Object.entries(r.modificadores).forEach(([attr, mod]) => {
-        if (modificadores[attr] !== undefined) modificadores[attr] += mod * contador;
-      });
+// Busca bonificadores ignorando mayúsculas/minúsculas
+function obtenerPuntosModificador(modificadores, statClave) {
+  if (!modificadores || typeof modificadores !== 'object') return 0;
+  
+  const claveBuscada = statClave.toLowerCase();
+  for (const [key, value] of Object.entries(modificadores)) {
+    if (key.toLowerCase() === claveBuscada) {
+      return Number(value) || 0;
     }
-  });
+  }
+  return 0;
+}
 
-  // Sumar/restar penalizaciones de Cicatrices (-X)
-  listaCicatrices.forEach(c => {
-    if (typeof c === 'object' && c.modificadores) {
-      const contador = c.contador || 1;
-      Object.entries(c.modificadores).forEach(([attr, mod]) => {
-        if (modificadores[attr] !== undefined) modificadores[attr] += mod * contador;
-      });
-    }
-  });
+// Genera la cuadrícula usando el diseño estilo Ficha D&D de tu CSS
+export function renderizarAtributosAcordeon(contenedor, rasgos = {}, cicatrices = {}) {
+  if (!contenedor) return;
 
-  // Configuración visual de atributos
   const listaAtributos = [
-    { id: "fuerza", nombre: "Fuerza", icono: "⚔️" },
-    { id: "destreza", nombre: "Destreza", icono: "🗡️" },
-    { id: "constitucion", nombre: "Constitución", icono: "🛡️" },
-    { id: "inteligencia", nombre: "Inteligencia", icono: "🧠" },
-    { id: "sabiduria", nombre: "Sabiduría", icono: "📜" },
-    { id: "carisma", nombre: "Carisma", icono: "👑" }
+    { clave: "fuerza", nombre: "Fuerza", icono: "⚔️" },
+    { clave: "destreza", nombre: "Destreza", icono: "🗡️" },
+    { clave: "constitucion", nombre: "Constitución", icono: "🛡️" },
+    { clave: "inteligencia", nombre: "Inteligencia", icono: "🧠" },
+    { clave: "sabiduria", nombre: "Sabiduría", icono: "📜" },
+    { clave: "carisma", nombre: "Carisma", icono: "👑" }
   ];
 
-  // Función auxiliar para obtener el texto del rasgo o cicatriz sin importar la propiedad usada
-  const obtenerTextoElemento = (item, defaultTexto) => {
-    if (!item) return defaultTexto;
-    if (typeof item === 'string') return item;
-    return item.nombre || item.titulo || item.rasgo || item.cicatriz || item.texto || item.valor || item._key || defaultTexto;
-  };
+  const listaR = normalizarListaEfectos(rasgos);
+  const listaC = normalizarListaEfectos(cicatrices);
 
-  contenedorAcordeon.innerHTML = `
-    <!-- SECCIÓN 1: HOJA DE ATRIBUTOS ESTILO D&D -->
-    <div class="seccion-acordeon">
-      <button class="header-acordeon activo" type="button">📊 Atributos Principales del Aventurero</button>
-      <div class="contenido-acordeon" style="display: block;">
-        <div class="grid-dnd-atributos">
-          ${listaAtributos.map(attr => {
-            const base = atributos[attr.id];
-            const mod = modificadores[attr.id];
-            const total = base + mod;
-            const esNegativo = total < 0;
-            const esPotenciado = mod > 0;
-
-            let badgeClase = "mod-neutro";
-            let textoMod = "0";
-            if (mod > 0) { badgeClase = "mod-positivo"; textoMod = `+${mod}`; }
-            if (mod < 0) { badgeClase = "mod-negativo"; textoMod = `${mod}`; }
-
-            return `
-              <div class="card-dnd ${esNegativo ? 'atributo-locura' : ''}">
-                <div class="card-header-dnd">
-                  <span class="icono-dnd">${attr.icono}</span>
-                  <span class="nombre-attr">${attr.nombre}</span>
-                </div>
-                <div class="valor-total ${esNegativo ? 'texto-locura' : esPotenciado ? 'texto-epico' : ''}">
-                  ${total}
-                </div>
-                <div class="desglose-attr">
-                  <small>Base: ${base}</small>
-                  <span class="badge-mod ${badgeClase}">${textoMod}</span>
-                </div>
-                ${esNegativo ? `<div class="alerta-estado">⚠️ Mente Fragmentada</div>` : ''}
-              </div>
-            `;
-          }).join('')}
-        </div>
-      </div>
-    </div>
-
-    <!-- SECCIÓN 2: RASGOS ACUMULADOS -->
-    <div class="seccion-acordeon">
-      <button class="header-acordeon" type="button">✨ Rasgos e Inclinaciones (${listaRasgos.length})</button>
-      <div class="contenido-acordeon" style="display: none;">
-        <div id="contenedor-rasgos" class="lista-huellas">
-          ${listaRasgos.length === 0 
-            ? `<p class="vacio">Aún no has forjado rasgos. Completa lecturas para moldear tu espíritu.</p>` 
-            : listaRasgos.map(r => {
-                const nombre = obtenerTextoElemento(r, 'Rasgo Adquirido');
-                const icono = (typeof r === 'object' && r.icono) ? r.icono : '✨';
-                const desc = (typeof r === 'object' && (r.desc || r.descripcion)) ? (r.desc || r.descripcion) : '';
-                const contador = (typeof r === 'object' && r.contador) ? r.contador : 1;
-
-                return `
-                  <div class="item-huella rasgo">
-                    <span class="icono">${icono}</span>
-                    <div class="detalles">
-                      <strong>${nombre} ${contador > 1 ? `<span class="badge-multiplicador">x${contador}</span>` : ''}</strong>
-                      ${desc ? `<p>${desc}</p>` : ''}
-                    </div>
-                  </div>
-                `;
-              }).join('')
-          }
-        </div>
-      </div>
-    </div>
-
-    <!-- SECCIÓN 3: CICATRICES Y MARCAS -->
-    <div class="seccion-acordeon">
-      <button class="header-acordeon" type="button">🩸 Cicatrices de Lectura (${listaCicatrices.length})</button>
-      <div class="contenido-acordeon" style="display: none;">
-        <div id="contenedor-cicatrices" class="lista-huellas">
-          ${listaCicatrices.length === 0 
-            ? `<p class="vacio">Tu mente se mantiene ilesa. No posees traumas ni cicatrices aún.</p>` 
-            : listaCicatrices.map(c => {
-                const nombre = obtenerTextoElemento(c, 'Cicatriz de Lectura');
-                const icono = (typeof c === 'object' && c.icono) ? c.icono : '💥';
-                const desc = (typeof c === 'object' && (c.desc || c.descripcion)) ? (c.desc || c.descripcion) : '';
-                const contador = (typeof c === 'object' && c.contador) ? c.contador : 1;
-
-                return `
-                  <div class="item-huella cicatriz">
-                    <span class="icono">${icono}</span>
-                    <div class="detalles">
-                      <strong>${nombre} ${contador > 1 ? `<span class="badge-multiplicador">x${contador}</span>` : ''}</strong>
-                      ${desc ? `<p>${desc}</p>` : ''}
-                    </div>
-                  </div>
-                `;
-              }).join('')
-          }
-        </div>
-      </div>
-    </div>
+  let htmlAtributos = `
+    <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:1rem; text-align:center;">
+      📊 Atributos Principales del Aventurero
+    </h3>
+    <div class="grid-dnd-atributos">
   `;
 
-  // Listener para colapsar/desplegar los paneles del acordeón
-  const botones = contenedorAcordeon.querySelectorAll(".header-acordeon");
-  botones.forEach(btn => {
-    btn.addEventListener("click", () => {
-      btn.classList.toggle("activo");
-      const contenido = btn.nextElementSibling;
-      if (contenido) {
-        contenido.style.display = (contenido.style.display === "none" || !contenido.style.display) ? "block" : "none";
+  listaAtributos.forEach(attr => {
+    const base = 10;
+    let modTotal = 0;
+    let lineasDesglose = `<div class="tt-linea"><span>Puntuación Base:</span> <span>${base}</span></div>`;
+
+    // Sumar bonificadores de rasgos multiplicados por el número de sumatorios/acumulaciones
+    listaR.forEach(r => {
+      const valBase = obtenerPuntosModificador(r.modificadores, attr.clave);
+      const valTotal = valBase * r.acumulaciones;
+      if (valTotal !== 0) {
+        modTotal += valTotal;
+        const signo = valTotal > 0 ? `+${valTotal}` : `${valTotal}`;
+        const claseColor = valTotal > 0 ? "tt-positivo" : "tt-negativo";
+        lineasDesglose += `<div class="tt-linea"><span>✨ ${r.nombre} (+${r.acumulaciones}):</span> <span class="${claseColor}">${signo}</span></div>`;
       }
     });
+
+    // Sumar bonificadores de cicatrices
+    listaC.forEach(c => {
+      const valBase = obtenerPuntosModificador(c.modificadores, attr.clave);
+      const valTotal = valBase * c.acumulaciones;
+      if (valTotal !== 0) {
+        modTotal += valTotal;
+        const signo = valTotal > 0 ? `+${valTotal}` : `${valTotal}`;
+        const claseColor = valTotal > 0 ? "tt-positivo" : "tt-negativo";
+        lineasDesglose += `<div class="tt-linea"><span>🩸 ${c.nombre} (+${c.acumulaciones}):</span> <span class="${claseColor}">${signo}</span></div>`;
+      }
+    });
+
+    const valorFinal = base + modTotal;
+    const signoModVisual = modTotal >= 0 ? `+${modTotal}` : `${modTotal}`;
+
+    let claseMod = "mod-neutro";
+    if (modTotal > 0) claseMod = "mod-positivo";
+    if (modTotal < 0) claseMod = "mod-negativo";
+
+    let claseCardEspecial = "";
+    if (modTotal < -2) claseCardEspecial = "atributo-locura";
+
+htmlAtributos += `
+      <div class="card-dnd ${claseCardEspecial}">
+        <!-- Tooltip RPG (Se despliega en HOVER) -->
+        <div class="tooltip-atributo">
+          <div class="tt-titulo">${attr.icono} Desglose de ${attr.nombre}</div>
+          ${lineasDesglose}
+          <div class="tt-linea tt-total">
+            <span>Valor Final:</span>
+            <span class="${modTotal >= 0 ? 'tt-positivo' : 'tt-negativo'}">${valorFinal} (${signoModVisual})</span>
+          </div>
+        </div>
+
+        <div class="card-header-dnd">
+          <span>${attr.icono}</span>
+          <span>${attr.nombre}</span>
+        </div>
+        
+        <div class="valor-total ${modTotal > 0 ? 'texto-epico' : (modTotal < 0 ? 'texto-locura' : '')}">
+          ${valorFinal}
+        </div>
+        
+        <div class="desglose-attr">
+          <span>Base: ${base}</span>
+          <span class="badge-mod ${claseMod}">${signoModVisual}</span>
+        </div>
+      </div>
+    `;
   });
+
+  htmlAtributos += `</div>`;
+  contenedor.innerHTML = htmlAtributos;
+}
+
+// Función principal exportada: Construye la estructura interna dentro de #acordeon-estadisticas
+export function renderizarEstadisticasAcordeon(datos) {
+  const contenedor = document.getElementById("acordeon-estadisticas");
+  if (!contenedor) return;
+
+  contenedor.innerHTML = "";
+
+  const divAtributos = document.createElement("div");
+  divAtributos.className = "seccion-atributos-acordeon";
+  contenedor.appendChild(divAtributos);
+
+  renderizarAtributosAcordeon(divAtributos, datos.rasgos, datos.cicatrices);
+
+  const divBadges = document.createElement("div");
+  divBadges.className = "seccion-badges-acordeon";
+  divBadges.style.marginTop = "2rem";
+  divBadges.innerHTML = `
+    <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:0.8rem;">✨ Rasgos Adquiridos</h3>
+    <div id="contenedor-rasgos" class="lista-huellas" style="margin-bottom:1.5rem;"></div>
+    
+    <h3 style="color:#ffd700; font-family:'Cinzel',serif; margin-bottom:0.8rem;">🩸 Cicatrices de Batalla</h3>
+    <div id="contenedor-cicatrices" class="lista-huellas"></div>
+  `;
+  contenedor.appendChild(divBadges);
 }

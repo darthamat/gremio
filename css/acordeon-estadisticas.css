@@ -1,0 +1,247 @@
+/* ==========================================================================
+   🏰 ESTILOS DEL ACORDEÓN Y FICHA DE ESTADÍSTICAS RPG (D&D)
+   ========================================================================== */
+
+/* Garantizar que los tooltips flotantes NO se recorten por bordes ocultos */
+#panel-contenido,
+.panel-desplegable,
+.tab-contenido,
+#tab-estadisticas,
+.seccion-atributos-acordeon,
+#acordeon-estadisticas {
+    overflow: visible !important;
+}
+
+/* ==========================================================================
+   📊 GRILLA DE ATRIBUTOS D&D
+   ========================================================================== */
+
+.grid-dnd-atributos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 16px;
+    padding: 10px 5px;
+    margin-top: 15px;
+}
+
+/* Tarjeta Base del Atributo */
+.card-dnd {
+    background: linear-gradient(145deg, #182232, #0f1724);
+    border: 2px solid #2a3a52;
+    border-radius: 10px;
+    padding: 14px 10px;
+    text-align: center;
+    position: relative !important; /* Requisito clave para anclar el tooltip */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+.card-dnd:hover {
+    transform: translateY(-4px);
+    border-color: #ffd700;
+    box-shadow: 0 6px 16px rgba(255, 215, 0, 0.25);
+}
+
+/* Header del Atributo (Icono + Nombre) */
+.card-header-dnd {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #a0aec0;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+
+/* Valor Numérico Central */
+.valor-total {
+    font-size: 2.1rem;
+    font-weight: 900;
+    color: #ffffff;
+    margin: 6px 0;
+    font-family: 'Cinzel', 'Trajan Pro', serif;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Modificadores Visuales */
+.texto-epico {
+    color: #4ade80 !important;
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.5) !important;
+}
+
+.texto-locura {
+    color: #ef4444 !important;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6) !important;
+}
+
+.card-dnd.atributo-locura {
+    border-color: #ef4444;
+    background: linear-gradient(145deg, #2a1215, #15080a);
+    animation: pulsoLocura 2s infinite alternate;
+}
+
+@keyframes pulsoLocura {
+    0% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.3); }
+    100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.7); }
+}
+
+/* Fila Inferior de Puntuación Base y Badge Modificador */
+.desglose-attr {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.75rem;
+    color: #718096;
+}
+
+.badge-mod {
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.mod-positivo { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+.mod-negativo { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+.mod-neutro { background: rgba(255, 255, 255, 0.1); color: #a0aec0; }
+
+/* ==========================================================================
+   📜 TOOLTIP EMERGENTE ESTILO PERGAMINO RPG
+   ========================================================================== */
+
+.card-dnd .tooltip-atributo {
+    visibility: hidden;
+    opacity: 0;
+    width: 240px;
+    
+    /* Textura y gradiente Pergamino Oscuro */
+    background: #1c1611;
+    background-image: 
+        radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.18) 0%, transparent 75%),
+        linear-gradient(135deg, #231b14 0%, #15100c 100%);
+    color: #e8d9c5;
+    
+    /* Borde Doble Dorado Recortado */
+    border: 2px solid #8f7139;
+    outline: 1px solid #d4af37;
+    outline-offset: -4px;
+    border-radius: 6px;
+    
+    padding: 12px 14px;
+    box-shadow: 
+        0 10px 25px rgba(0, 0, 0, 0.9),
+        0 0 12px rgba(212, 175, 55, 0.25),
+        inset 0 0 15px rgba(0, 0, 0, 0.8);
+    
+    /* Flotación sobre la tarjeta */
+    position: absolute;
+    z-index: 9999;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+    font-family: 'Georgia', serif;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    pointer-events: none;
+    text-align: left;
+}
+
+/* Flecha apuntando hacia abajo */
+.card-dnd .tooltip-atributo::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -7px;
+    border-width: 7px;
+    border-style: solid;
+    border-color: #8f7139 transparent transparent transparent;
+}
+
+/* MOSTRAR TOOLTIP EN HOVER */
+.card-dnd:hover .tooltip-atributo {
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: translateX(-50%) translateY(0) !important;
+}
+
+/* Elementos internos del Tooltip */
+.tooltip-atributo .tt-titulo {
+    font-family: 'Cinzel', 'Georgia', serif;
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #ffd700;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+    border-bottom: 1px solid #8f7139;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+}
+
+.tooltip-atributo .tt-linea {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 3px 0;
+    color: #d8c8b4;
+}
+
+.tooltip-atributo .tt-positivo { 
+    color: #5cdb95; 
+    font-weight: bold;
+}
+
+.tooltip-atributo .tt-negativo { 
+    color: #ff6b6b; 
+    font-weight: bold;
+}
+
+.tooltip-atributo .tt-total {
+    font-weight: bold;
+    border-top: 1px dashed #8f7139;
+    margin-top: 6px;
+    padding-top: 4px;
+    color: #f4e8c1;
+}
+
+/* ==========================================================================
+   🩸✨ RASGOS Y CICATRICES EN LA FICHA
+   ========================================================================== */
+
+.lista-huellas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.item-huella {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.item-huella.rasgo {
+    background: rgba(74, 144, 226, 0.12);
+    border: 1px solid #4a90e2;
+    color: #64b5f6;
+}
+
+.item-huella.cicatriz {
+    background: rgba(226, 74, 74, 0.12);
+    border: 1px solid #e24a4a;
+    color: #ff7979;
+}

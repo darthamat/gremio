@@ -6,7 +6,7 @@
     <title>Ficha de Aventurero - El Gremio</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/perfil.css">
-     <link rel="stylesheet" href="css/cordeon-estadisticas.css">
+    <link rel="stylesheet" href="css/acordeon-estadisticas.css">
 </head>
 <body>
 
@@ -24,22 +24,20 @@
             <h2>Ficha del Aventurero Lector</h2>
         </header>
 
-        <!-- SECCIÓN SUPERIOR -->
+        <!-- SECCIÓN SUPERIOR (SIN ATRIBUTOS ARRIBA) -->
         <section class="profile-top-section">
             
             <!-- Columna Izquierda: Avatar con selector de archivo -->
             <div class="avatar-card" id="avatar-container">
                 <div class="avatar-frame">
-                    <!-- ID CORREGIDO: char-avatar -->
                     <img id="char-avatar" class="avatar-img" src="img/default-avatar.jpg" alt="Avatar del Aventurero">
                 </div>
                 
                 <button id="btn-cambiar-avatar" class="btn-avatar" type="button">✨ Cambiar foto</button>
-                <!-- ID CORREGIDO: input-avatar-file y añadido estilo hidden -->
                 <input type="file" id="input-avatar-file" accept="image/*" class="hidden-input" style="display: none;">
             </div>
 
-            <!-- Columna Derecha: Características e Información -->
+            <!-- Columna Derecha: Características e Información General -->
             <div class="character-info-panel">
                 
                 <div class="header-info">
@@ -68,18 +66,15 @@
                 </div>
 
                 <!-- Barra de Progreso de Experiencia -->
-
-
-<div class="xp-bar-container">
-  <div class="xp-bar-header">
-    <span class="xp-title">Progreso de Nivel</span>
-    <span id="char-xp-next" class="xp-text">14 / 327 XP</span>
-  </div>
-  <div class="xp-bar-track">
-    <!-- Importante: clase xp-bar-fill e ID char-xp-bar -->
-    <div id="char-xp-bar" class="xp-bar-fill" style="width: 4%;"></div>
-  </div>
-</div>
+                <div class="xp-bar-container">
+                    <div class="xp-bar-header">
+                        <span class="xp-title">Progreso de Nivel</span>
+                        <span id="char-xp-next" class="xp-text">14 / 327 XP</span>
+                    </div>
+                    <div class="xp-bar-track">
+                        <div id="char-xp-bar" class="xp-bar-fill" style="width: 4%;"></div>
+                    </div>
+                </div>
 
                 <!-- Métricas de Lectura -->
                 <div class="reading-stats-row">
@@ -92,21 +87,6 @@
                         <strong id="char-books">0</strong>
                     </div>
                 </div>
-
-                <!-- Atributos Principales y Secundarios -->
-                <!-- <div class="attributes-container">
-                    <h3>Atributos del Aventurero</h3>
-                    <div class="attributes-grid">
-                        <div class="attr-box"><span>Fuerza:</span> <strong id="attr-fuerza">10</strong></div>
-                        <div class="attr-box"><span>Agilidad:</span> <strong id="attr-agilidad">10</strong></div>
-                        <div class="attr-box"><span>Inteligencia:</span> <strong id="attr-inteligencia">10</strong></div>
-                        <div class="attr-box"><span>Sabiduría:</span> <strong id="attr-sabiduria">10</strong></div>
-                        <div class="attr-box"><span>Fatiga:</span> <strong id="attr-fatiga">0</strong></div>
-                        <div class="attr-box"><span>Mente:</span> <strong id="attr-mente">0</strong></div>
-                        <div class="attr-box"><span>Corazón:</span> <strong id="attr-corazon">0</strong></div>
-                        <div class="attr-box"><span>Suerte:</span> <strong id="attr-suerte">0</strong></div>
-                    </div>
-                </div> -->
 
             </div>
         </section>
@@ -138,12 +118,10 @@
             <!-- Panel Desplegable -->
             <div id="panel-contenido" class="panel-desplegable oculto">
                 
-                
-<!-- Contenido: Pestaña Estadísticas -->
-<div id="tab-estadisticas" class="tab-contenido oculto">
-    <!-- El script perfilEstadisticas.js generará aquí todo el acordeón con atributos, rasgos y cicatrices -->
-    <div id="acordeon-estadisticas"></div>
-</div
+                <!-- Contenido: Pestaña Estadísticas (AQUÍ SE DIBUJAN LOS ATRIBUTOS CON TOOLTIPS) -->
+                <div id="tab-estadisticas" class="tab-contenido oculto">
+                    <div id="acordeon-estadisticas"></div>
+                </div>
 
                 <!-- Contenido: Mochila -->
                 <div id="tab-mochila" class="tab-contenido oculto">
@@ -258,7 +236,7 @@
 
     </main>
 
-    <!-- Conexión de Scripts modulados al final -->
+    <!-- Conexión de Scripts modulados -->
     <script type="module" src="js/perfil.js"></script>
     <script type="module" src="js/sintetizadorPerfil.js"></script>
     

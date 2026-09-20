@@ -11,9 +11,9 @@ import {
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
-import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js"; // 👈 Lógica centralizada de nivel
+import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 
-// 1. Inicialización de Firebase
+// Inicialización de Firebase
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -21,7 +21,7 @@ let currentUserId = null;
 let currentUserDocRef = null;
 let misionesLocales = [];
 
-// 2. Control de Estado de Autenticación
+// Control de Estado de Autenticación
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -31,7 +31,6 @@ onAuthStateChanged(auth, async (user) => {
   currentUserId = user.uid;
   currentUserDocRef = doc(db, "aventureros", user.uid);
 
-  // Cargar datos y renderizar interfaz
   await cargarDatosAventurero(currentUserDocRef);
   inicializarAcordeon();
   inicializarModalMisiones();
@@ -53,23 +52,23 @@ async function cargarDatosAventurero(docRef) {
     document.getElementById("char-name").textContent = data.nombre || "Aventurero";
   }
 
-  // 📈 ACTUALIZACIÓN CENTRALIZADA DE NIVEL Y BARRA
+  // Actualización de Nivel y Barra
   actualizarBarraNivelUI(xpActual);
 
-  // 🔖 Renderizar Marcapáginas
+  // Marcapáginas
   const elMarcapaginas = document.getElementById("char-marcapaginas") || document.getElementById("contador-marcapaginas");
   if (elMarcapaginas) {
     elMarcapaginas.textContent = data.marcapaginas || 0;
   }
 
-  // Renderizar Avatar
+  // Avatar
   const avatarImg = document.getElementById("char-avatar") || document.querySelector(".avatar-img");
   if (avatarImg) {
     const defaultAvatar = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200";
     avatarImg.src = data.avatarUrl || data.avatar || defaultAvatar;
   }
 
-  // 🔑 RENDERIZADO DEL ACORDEÓN DE ESTADÍSTICAS
+  // Carga de Rasgos y Cicatrices
   const rasgosOrigen = data.estadisticas?.rasgos || data.rasgos || {};
   const cicatricesOrigen = data.estadisticas?.cicatrices || data.cicatrices || {};
 
@@ -79,127 +78,18 @@ async function cargarDatosAventurero(docRef) {
     cicatrices: cicatricesOrigen
   };
 
-  // 1. Inyectar acordeón con la suma correcta de contadores
+  // 1. Inyecta los Atributos, Tooltips, Rasgos y Cicatrices dentro del Acordeón
   renderizarEstadisticasAcordeon(objetoEstadisticasCompleto);
 
-  // 2. Renderizar los badges dentro de la interfaz
+  // 2. Dibuja los Badges dentro de sus contenedores
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
 
-  // 3. 📊 RENDERIZAR ATRIBUTOS PRINCIPALES CON TOOLTIP DESGLOSADO
-  const rasgosLista = Array.isArray(rasgosOrigen) ? rasgosOrigen : Object.values(rasgosOrigen);
-  const cicatricesLista = Array.isArray(cicatricesOrigen) ? cicatricesOrigen : Object.values(cicatricesOrigen);
-  renderizarAtributosConTooltip("contenedor-atributos", rasgosLista, cicatricesLista);
-
-  // Renderizar Lista de Misiones Secundarias
+  // 3. Renderiza las misiones secundarias
   renderizarMisiones(misionesLocales);
 }
 
-// 📊 Lógica de Desglose y Tooltip de Atributos Principales (Base 10 + Modificadores)
-function generarDesgloseAtributo(statClave, rasgosEquipados = [], cicatricesEquipadas = []) {
-  const base = 10;
-  let desglosesHTML = `<div class="tt-linea"><span>Puntuación Base:</span> <span>${base}</span></div>`;
-  let modificadorTotal = 0;
-
-  // Normalizador auxiliar para acceder a modificadores
-  const obtenerModificadores = (item) => {
-    if (!item || typeof item !== 'object') return {};
-    return item.modificadores || item.stats || {};
-  };
-
-  // 1. Revisar Modificadores por Rasgos
-  rasgosEquipados.forEach(rasgo => {
-    const mods = obtenerModificadores(rasgo);
-    if (mods[statClave] !== undefined) {
-      const val = Number(mods[statClave]) || 0;
-      if (val !== 0) {
-        modificadorTotal += val;
-        const signo = val > 0 ? `+${val}` : `${val}`;
-        const claseColor = val > 0 ? "tt-positivo" : "tt-negativo";
-        const nombreItem = rasgo.nombre || rasgo.titulo || "Rasgo";
-        desglosesHTML += `<div class="tt-linea"><span>✨ ${nombreItem}:</span> <span class="${claseColor}">${signo}</span></div>`;
-      }
-    }
-  });
-
-  // 2. Revisar Modificadores por Cicatrices
-  cicatricesEquipadas.forEach(cicatriz => {
-    const mods = obtenerModificadores(cicatriz);
-    if (mods[statClave] !== undefined) {
-      const val = Number(mods[statClave]) || 0;
-      if (val !== 0) {
-        modificadorTotal += val;
-        const signo = val > 0 ? `+${val}` : `${val}`;
-        const claseColor = val > 0 ? "tt-positivo" : "tt-negativo";
-        const nombreItem = cicatriz.nombre || cicatriz.titulo || "Cicatriz";
-        desglosesHTML += `<div class="tt-linea"><span>🩸 ${nombreItem}:</span> <span class="${claseColor}">${signo}</span></div>`;
-      }
-    }
-  });
-
-  const totalFinal = base + modificadorTotal;
-  const signoMod = modificadorTotal >= 0 ? `+${modificadorTotal}` : `${modificadorTotal}`;
-
-  desglosesHTML += `
-    <div class="tt-linea tt-total">
-      <span>Valor Final:</span> 
-      <span class="${modificadorTotal >= 0 ? 'tt-positivo' : 'tt-negativo'}">${totalFinal} (${signoMod})</span>
-    </div>
-  `;
-
-  return { totalFinal, modificadorTotal, desglosesHTML };
-}
-
-// ⚔️ Renderiza visualmente la cuadrícula de los 6 atributos principales
-export function renderizarAtributosConTooltip(contenedorId, rasgosEquipados = [], cicatricesEquipadas = []) {
-  const contenedor = document.getElementById(contenedorId);
-  if (!contenedor) return;
-
-  const listaAtributos = [
-    { clave: "fuerza", nombre: "Fuerza", icono: "⚔️" },
-    { clave: "destreza", nombre: "Destreza", icono: "🗡️" },
-    { clave: "constitucion", nombre: "Constitución", icono: "🛡️" },
-    { clave: "inteligencia", nombre: "Inteligencia", icono: "🧠" },
-    { clave: "sabiduria", nombre: "Sabiduría", icono: "📜" },
-    { clave: "carisma", nombre: "Carisma", icono: "👑" }
-  ];
-
-  contenedor.innerHTML = "";
-
-  listaAtributos.forEach(attr => {
-    const { totalFinal, modificadorTotal, desglosesHTML } = generarDesgloseAtributo(
-      attr.clave, 
-      rasgosEquipados, 
-      cicatricesEquipadas
-    );
-
-    const signoVisual = modificadorTotal > 0 ? `+${modificadorTotal}` : `${modificadorTotal}`;
-    const claseBonus = modificadorTotal > 0 ? "tt-positivo" : (modificadorTotal < 0 ? "tt-negativo" : "");
-
-    const card = document.createElement("div");
-    card.className = "card-atributo";
-    card.innerHTML = `
-      <!-- Tooltip Desglose -->
-      <div class="tooltip-atributo">
-        <div class="tt-titulo">${attr.icono} Desglose de ${attr.nombre}</div>
-        ${desglosesHTML}
-      </div>
-
-      <!-- Contenido de la Tarjeta del Atributo -->
-      <div class="attr-header">
-        <span>${attr.icono} ${attr.nombre}</span>
-      </div>
-      <div class="attr-valor">${totalFinal}</div>
-      <div class="attr-subtext">
-        <small>Base: 10</small>
-        <span class="${claseBonus}" style="font-weight:bold; margin-left: 4px;">${signoVisual}</span>
-      </div>
-    `;
-
-    contenedor.appendChild(card);
-  });
-}
-
-// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices
+// Muestra los Badges de Rasgos y Cicatrices
+// 🩸✨ Función auxiliar para mostrar Rasgos y Cicatrices con formato de Sumatorio (+X)
 function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
   const contenedorRasgos = document.getElementById("contenedor-rasgos");
   const contenedorCicatrices = document.getElementById("contenedor-cicatrices");
@@ -210,67 +100,80 @@ function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
     if (Array.isArray(datos)) {
       return datos.map(item => {
         if (typeof item === 'string') {
-          return { nombre: item, contador: 1, icono: '✨' };
+          return { nombre: item, acumulaciones: 1, icono: '✨' };
         }
+        const cant = Number(item.contador || item.acumulaciones || item.nivel || item.cantidad) || 1;
         return {
-          nombre: item.nombre || item.titulo || item.rasgo || item.cicatriz || item.nombreRasgo || item.id || "Desconocido",
-          contador: item.contador || item.acumulaciones || item.nivel || item.cantidad || 1,
+          nombre: item.nombre || item.titulo || item.rasgo || item.cicatriz || "Desconocido",
+          acumulaciones: cant,
           icono: item.icono,
           desc: item.desc || item.descripcion || ''
         };
       });
     }
 
-    return Object.entries(datos).map(([key, val]) => {
-      if (typeof val === 'object' && val !== null) {
+    if (typeof datos === 'object') {
+      return Object.entries(datos).map(([key, val]) => {
+        if (typeof val === 'object' && val !== null) {
+          const cant = Number(val.contador || val.acumulaciones || val.nivel || val.cantidad) || 1;
+          return {
+            nombre: val.nombre || val.titulo || key,
+            acumulaciones: cant,
+            icono: val.icono,
+            desc: val.desc || val.descripcion || ''
+          };
+        }
         return {
-          nombre: val.nombre || val.titulo || val.rasgo || key,
-          contador: val.contador || val.acumulaciones || val.nivel || val.cantidad || 1,
-          icono: val.icono,
-          desc: val.desc || val.descripcion || ''
+          nombre: key,
+          acumulaciones: typeof val === 'number' ? val : 1,
+          icono: null,
+          desc: ''
         };
-      }
-      return {
-        nombre: key,
-        contador: typeof val === 'number' ? val : 1,
-        icono: null,
-        desc: ''
-      };
-    });
+      });
+    }
+
+    return [];
   };
 
   const listaRasgos = procesarLista(rasgos);
   const listaCicatrices = procesarLista(cicatrices);
 
+  // Renderizado de Rasgos (+X)
   if (contenedorRasgos) {
     if (listaRasgos.length === 0) {
-      contenedorRasgos.innerHTML = `<p class="sin-datos">Ningún rasgo obtenido aún.</p>`;
+      contenedorRasgos.innerHTML = `<p style="color:#718096; font-size:0.9rem;">Ningún rasgo obtenido aún.</p>`;
     } else {
-      contenedorRasgos.innerHTML = listaRasgos.map(r => `
-        <div class="badge-item rasgo-badge" title="${r.desc}">
-          <span class="icono">${r.icono || '✨'}</span>
-          <span class="nombre">${r.nombre}</span>
-          <span class="contador">(+${r.contador})</span>
-        </div>
-      `).join('');
+      contenedorRasgos.innerHTML = listaRasgos.map(r => {
+        const sumatorio = r.acumulaciones >= 0 ? `+${r.acumulaciones}` : `${r.acumulaciones}`;
+        return `
+          <div class="item-huella rasgo" title="${r.desc}">
+            <span>${r.icono || '✨'}</span>
+            <strong>${r.nombre} ${sumatorio}</strong>
+          </div>
+        `;
+      }).join('');
     }
   }
 
+  // Renderizado de Cicatrices (+X)
   if (contenedorCicatrices) {
     if (listaCicatrices.length === 0) {
-      contenedorCicatrices.innerHTML = `<p class="sin-datos">Tu historial está limpio de cicatrices.</p>`;
+      contenedorCicatrices.innerHTML = `<p style="color:#718096; font-size:0.9rem;">Tu historial está limpio de cicatrices.</p>`;
     } else {
-      contenedorCicatrices.innerHTML = listaCicatrices.map(c => `
-        <div class="badge-item cicatriz-badge" title="${c.desc}">
-          <span class="icono">${c.icono || '🩸'}</span>
-          <span class="nombre">${c.nombre}</span>
-          <span class="contador">(+${c.contador})</span>
-        </div>
-      `).join('');
+      contenedorCicatrices.innerHTML = listaCicatrices.map(c => {
+        const sumatorio = c.acumulaciones >= 0 ? `+${c.acumulaciones}` : `${c.acumulaciones}`;
+        return `
+          <div class="item-huella cicatriz" title="${c.desc}">
+            <span>${c.icono || '🩸'}</span>
+            <strong>${c.nombre} ${sumatorio}</strong>
+          </div>
+        `;
+      }).join('');
     }
   }
 }
 
+// Control del Acordeón y Pestañas
 function inicializarAcordeon() {
   const botones = document.querySelectorAll(".acordeon-botones .btn-tab:not(.btn-enlace)");
   const panelContenido = document.getElementById("panel-contenido");
@@ -301,6 +204,7 @@ function inicializarAcordeon() {
   });
 }
 
+// Misiones Secundarias
 function renderizarMisiones(misiones) {
   const contenedor = document.getElementById("contenedor-misiones");
   if (!contenedor) return;
@@ -558,7 +462,7 @@ function inicializarModalMisiones() {
 
           alert(`🎉 ¡Lectura Finalizada y Registrada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeRecompensa}\n\n📖 Se ha añadido el lomo a tu Biblioteca.`);
         } else {
-          alert("⚔️ Misión Secundaria registrada con éxito. ¡Aparecerá en la sección de Retos!");
+          alert("⚔️ Misión Secundaria registrada con éxito.");
         }
 
         if (modal) modal.classList.add("oculto");
@@ -567,7 +471,7 @@ function inicializarModalMisiones() {
 
       } catch (error) {
         console.error("Error al registrar la misión en el perfil:", error);
-        alert("❌ Hubo un fallo al registrar la misión secundaria. Revisa tus reglas de seguridad para 'misionesSecundarias'.");
+        alert("❌ Hubo un fallo al registrar la misión secundaria.");
       } finally {
         if (btnGuardar) {
           btnGuardar.disabled = false;
@@ -607,9 +511,7 @@ function inicializarAvatar() {
 
   if (!btnAvatar || !inputAvatar) return;
 
-  btnAvatar.addEventListener("click", () => {
-    inputAvatar.click();
-  });
+  btnAvatar.addEventListener("click", () => inputAvatar.click());
 
   inputAvatar.addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -639,17 +541,13 @@ function inicializarAvatar() {
       if (!res.ok) throw new Error("Error al subir la imagen a Cloudinary");
 
       const data = await res.json();
-      const nuevaUrlAvatar = data.secure_url;
-
-      await updateDoc(currentUserDocRef, {
-        avatarUrl: nuevaUrlAvatar
-      });
+      await updateDoc(currentUserDocRef, { avatarUrl: data.secure_url });
 
       alert("✨ ¡Avatar actualizado con éxito!");
 
     } catch (error) {
       console.error("Error al actualizar el avatar:", error);
-      alert("❌ No se pudo subir el avatar. Revisa la configuración de Cloudinary.");
+      alert("❌ No se pudo subir el avatar.");
     }
   });
 }
