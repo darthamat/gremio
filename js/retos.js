@@ -15,6 +15,8 @@ import {
 import { app } from "./firebase-config.js";
 import { completarRetoGremio, registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; 
+import { generarEnfrentamientoFinal } from "./maestroCalabozo.js";
+import { mostrarModalEncuentro } from "./modalCombate.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -422,13 +424,14 @@ async function aceptarMisionSecundaria(misionId) {
 }
 
 // Completar Misión Secundaria
+// Completar Misión Secundaria (Con Enfrentamiento Final y Alerta de Botín)
 async function completarMisionSecundaria(misionId, elementoBoton) {
   if (ejecucionEnProceso) return;
   ejecucionEnProceso = true;
 
   if (elementoBoton) {
     elementoBoton.disabled = true;
-    elementoBoton.textContent = "⌛ Registrando en el Atlas...";
+    elementoBoton.textContent = "⌛ Invocando al Maestro del Calabozo...";
   }
 
   try {
@@ -444,30 +447,67 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const esCreador = data.creadorId === usuarioSesionId;
     const paginas = Number(data.paginas) || 0;
     const genero = data.genero || "Fantasía";
+    const tituloLibro = data.titulo || "Misión Secundaria";
+    const autorLibro = data.autor || "Desconocido";
 
-    const gananciaXP = 0;
+    // ⚔️ 1. INVOCAR ENFRENTAMIENTO FINAL (Igual que en los retos del Gremio)
+    // Nota: Asegúrate de importar generarEnfrentamientoFinal y mostrarModalEncuentro en retos.js si no los tienes arriba
+    const encuentro = await generarEnfrentamientoFinal(tituloLibro, autorLibro, genero);
+    await mostrarModalEncuentro(encuentro);
+
+    // 2. Procesar recompensas de mochila y seguidores del enfrentamiento
+    const userRef = doc(db, "aventureros", usuarioSesionId);
+    const userSnap = await getDoc(userRef);
+    let mochilaActual = [];
+    let seguidoresActuales = [];
+
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      mochilaActual = userData.mochila || userData.objetosMagicos || [];
+      seguidoresActuales = userData.seguidores || [];
+    }
+
+    const mochilaActualizada = [...mochilaActual];
+    let nombreObjetoGanado = null;
+    if (encuentro.recompensaObjeto) {
+      mochilaActualizada.push(encuentro.recompensaObjeto);
+      nombreObjetoGanado = encuentro.recompensaObjeto.nombre || "Objeto Mágico";
+    }
+
+    let nuevosSeguidores = [...seguidoresActuales];
+    let nombreSeguidorGanado = null;
+    if (encuentro.seguidorDesbloqueado) {
+      const yaExiste = seguidoresActuales.some(s => s.nombre === encuentro.seguidorDesbloqueado.nombre);
+      if (!yaExiste) {
+        nuevosSeguidores.push(encuentro.seguidorDesbloqueado);
+        nombreSeguidorGanado = encuentro.seguidorDesbloqueado.nombre;
+      }
+    }
+
+    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 1. Guardar experiencia y métricas principales
-    const userRef = doc(db, "aventureros", usuarioSesionId);
+    // 3. Guardar experiencia, métricas principales y botín en Firestore
     await updateDoc(userRef, {
       xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
-      librosCompletados: increment(1)
+      librosCompletados: increment(1),
+      mochila: mochilaActualizada,
+      seguidores: nuevosSeguidores
     });
 
-    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz
+    // 🎲 4. Tirada estocástica de Rasgo / Cicatriz
     const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    // 3. Registrar libro en Atlas y Biblioteca usando ID robusto
+    // 5. Registrar libro en Atlas y Biblioteca usando ID robusto
     const idUnicoLibro = generarIdUnicoLibro(data.titulo, misionId);
     const datosLibro = {
       id: idUnicoLibro,
       titulo: data.titulo,
-      autor: data.autor,
+      autor: autorLibro,
       genero: genero,
       paginas: paginas,
       portadaUrl: data.portadaUrl || "https://via.placeholder.com/150x220?text=Sin+Portada",
@@ -476,7 +516,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
 
     await registrarLibroEnBibliotecaYAtlas(usuarioSesionId, datosLibro);
 
-    // 4. Formatear mensaje de huellas para la alerta
+    // 6. Formatear mensaje visual de recompensas y huellas
     let msgHuellas = "";
     if (resRecompensa && resRecompensa.recompensas) {
       resRecompensa.recompensas.forEach(r => {
@@ -488,18 +528,23 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       });
     }
 
+    let msgBotin = "";
+    if (nombreObjetoGanado) msgBotin += `\n🎁 Objeto en la Mochila: **${nombreObjetoGanado}**`;
+    if (nombreSeguidorGanado) msgBotin += `\n🤝 Nuevo Aliado: **${nombreSeguidorGanado}**`;
+
+    // Marcar misión como completada
     if (esCreador) {
       await updateDoc(misionRef, {
         activa: false,
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Has completado tu Misión Secundaria!\n\nAl ser el creador, la misión ha quedado concluida para el Cónclave y el libro se ha incorporado a tu Biblioteca y Atlas.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
     } else {
       await updateDoc(misionRef, {
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
     }
+
+    alert(`🎉 ¡Misión Secundaria Superada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgBotin}${msgHuellas}`);
 
     await cargarMisionesSecundariasGlobales();
 
