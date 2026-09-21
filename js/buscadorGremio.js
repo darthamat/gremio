@@ -227,7 +227,7 @@ async function guardarLectura() {
   
   try {  
     const libroId = generarLibroId(titulo);  
-    const xpCalculada = paginas + 100;  
+    const xpCalculada = 0;  
   
     const nuevaMision = {  
       id: libroId,  

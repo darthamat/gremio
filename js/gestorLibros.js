@@ -105,7 +105,7 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
     // C. Actualizar estadísticas en la ficha del aventurero
     const userRef = doc(db, "aventureros", usuarioUid);
     await updateDoc(userRef, {
-      xp: increment(paginas),
+      
       prestigio: increment(prestigioGanado),
       marcapaginas: increment(marcapaginasGanados),
       paginasLeidas: increment(paginas),
@@ -128,7 +128,7 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
       libroId, 
       prestigio: prestigioGanado, 
       marcapaginas: marcapaginasGanados, 
-      xp: paginas 
+      xp: 0 
     };
 
   } catch (error) {

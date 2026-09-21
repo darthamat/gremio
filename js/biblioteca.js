@@ -9,11 +9,13 @@ import {
     or,
     doc,
     getDoc,
+    setDoc,
     updateDoc,
     arrayUnion
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { registrarLecturaLibre } from "./gestorLibros.js";
+import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -197,40 +199,44 @@ if (formLibro) {
         const generoInput = document.getElementById("genero") ? document.getElementById("genero").value : "Fantasía";
 
         try {
-            // 1. Registrar libro en Biblioteca y actualizar XP, Prestigio, Marcapáginas
-            const res = await registrarLecturaLibre(currentUser.uid, {
+            const libroId = titulo.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
+
+            // 1. REGISTRAR EN LA COLECCIÓN GLOBAL "BIBLIOTECA" (Para que aparezca el lomo en la estantería)
+            await setDoc(doc(db, "biblioteca", `${currentUser.uid}_${libroId}`), {
                 titulo,
                 autor,
                 paginas,
+                portadaUrl: "https://via.placeholder.com/100x150/1e1e2f/f39c12?text=Sin+Portada",
+                usuarioId: currentUser.uid,
+                lectores: [currentUser.uid],
+                fechaCompletado: new Date(),
                 colorLomo: color,
-                genero: generoInput
+                tipoOrigen: "LECTURA_LIBRE"
+            }, { merge: true });
+
+            // 2. REGISTRAR EN LAS MISIONES SECUNDARIAS DEL PERFIL
+            const aventureroRef = doc(db, "aventureros", currentUser.uid);
+            const nuevaMisionSecundaria = {
+                id: libroId,
+                titulo: titulo,
+                autor: autor,
+                paginas: paginas,
+                estado: "TERMINADA",
+                generos: [generoInput],
+                colorLomo: color,
+                fechaCreacion: new Date().toISOString()
+            };
+
+            await updateDoc(aventureroRef, {
+                misionesSecundarias: arrayUnion(nuevaMisionSecundaria)
             });
 
-            if (res.exito) {
-                // 2. REGISTRAR TAMBIÉN EN LAS MISIONES SECUNDARIAS DEL PERFIL
-                const aventureroRef = doc(db, "aventureros", currentUser.uid);
-                const nuevaMisionSecundaria = {
-                    titulo: titulo,
-                    autor: autor,
-                    paginas: paginas,
-                    estado: "TERMINADA",
-                    generos: [generoInput],
-                    colorLomo: color,
-                    fechaCreacion: new Date().toISOString()
-                };
+            alert(`✨ ¡Lectura libre registrada con éxito!\n\n🏆 Se han sumado Puntos de Prestigio a tu legajo.`);
+            
+            if (modal) modal.classList.add("oculto");
+            formLibro.reset();
+            await cargarBiblioteca(); // Recarga la estantería y contadores
 
-                await updateDoc(aventureroRef, {
-                    misionesSecundarias: arrayUnion(nuevaMisionSecundaria)
-                });
-
-                alert(`✨ ¡Lectura registrada con éxito!\n\n🏆 Prestigio: +${res.prestigio}\n🔖 Marcapáginas: +${res.marcapaginas}\n⭐ XP: +${res.xp}`);
-                
-                if (modal) modal.classList.add("oculto");
-                formLibro.reset();
-                await cargarBiblioteca();
-            } else {
-                alert("Ocurrió un error al registrar el libro.");
-            }
         } catch (error) {
             console.error("Error al guardar la lectura libre:", error);
             alert("Ocurrió un error al registrar el libro.");
@@ -238,7 +244,7 @@ if (formLibro) {
     });
 }
 
-import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
+
 
 document.addEventListener("DOMContentLoaded", () => {
   // Inicializar el buscador de Google Books
