@@ -1,7 +1,7 @@
 // js/buscadorGremio.js  
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";  
 import {   
-  getFirestore, doc, getDoc, setDoc, writeBatch   
+  getFirestore, doc, getDoc, setDoc, writeBatch ,updateDoc 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";  
 import { app } from "./firebase-config.js";  
 import { BANCO_HUELLAS } from "./rasgosData.js";  
@@ -37,6 +37,8 @@ function obtenerIdMesActual() {
 }  
   
 export function inicializarBuscadorGremio() {  
+  // YA NO INYECTAMOS HTML NUEVO. Usamos el que ya está en perfil.html
+    
   onAuthStateChanged(auth, async (user) => {  
     if (!user) return;  
     currentUser = user;  
@@ -83,7 +85,7 @@ function vincularEventosDOM() {
   if (eventosVinculados) return;  
   eventosVinculados = true;  
   
-  // Delegación de eventos global usando los IDs reales de perfil.html
+  // Delegación de eventos usando los IDs exactos de tu HTML de perfil
   document.addEventListener("click", (e) => {  
     if (e.target && e.target.id === "btn-ejecutar-busqueda") {  
       e.preventDefault();  
@@ -101,6 +103,15 @@ function vincularEventosDOM() {
       ejecutarBusquedaGoogleBooks();  
     }  
   });  
+
+  // Vinculamos también el envío del formulario de la misión
+  const formMision = document.getElementById("form-registrar-mision-libre");
+  if (formMision) {
+    formMision.addEventListener("submit", (e) => {
+      e.preventDefault();
+      guardarLectura();
+    });
+  }
 }  
   
 async function inicializarSelectorGeneros() {  
@@ -195,6 +206,102 @@ function actualizarHuellas() {
   }  
 }  
   
+async function guardarLectura() {  
+  if (!currentUser) return;  
+  
+  const btn = document.getElementById("btn-guardar-mision-libre");  
+  
+  const titulo = document.getElementById("titulo-mision").value.trim();  
+  const autor = document.getElementById("autor-mision").value.trim();  
+  const paginas = Number(document.getElementById("paginas-mision").value) || 100;  
+  const descripcion = document.getElementById("proclama-mision").value.trim();  
+  const portadaUrl = document.getElementById("portada-mision-url").value || PORTADA_DEFAULT;  
+  const estado = document.getElementById("estado-mision").value || "en_progreso";
+  
+  const generosFinales = Array.from(generosSeleccionados);
+  if (generosFinales.length === 0) {  
+    generosFinales.push("Fantasía"); // Valor por defecto si olvidó seleccionar género
+  }  
+  
+  if (btn) btn.disabled = true;  
+  
+  try {  
+    const libroId = generarLibroId(titulo);  
+    const xpCalculada = paginas + 100;  
+  
+    const nuevaMision = {  
+      id: libroId,  
+      titulo,   
+      autor,   
+      paginas,   
+      genero: generosFinales[0],   
+      generos: generosFinales,   
+      portadaUrl,   
+      descripcion,   
+      estado: estado,   
+      progresoPaginas: estado === "completada" ? paginas : 0,  
+      xpRecompensa: xpCalculada,  
+      rasgosPrometidos: listaRasgos,  
+      cicatricesPrometidas: listaCicatrices,  
+      fechaInicio: Date.now()  
+    };  
+
+    // Obtenemos el documento actual del aventurero para actualizar su array local
+    const userDocRef = doc(db, "aventureros", currentUser.uid);
+    const userSnap = await getDoc(userDocRef);
+    
+    let misionesActuales = [];
+    if (userSnap.exists()) {
+      misionesActuales = userSnap.data().misionesSecundarias || [];
+    }
+
+    const indexExistente = misionesActuales.findIndex(m => m.id === libroId);
+    if (indexExistente >= 0) {
+      misionesActuales[indexExistente] = nuevaMision;
+    } else {
+      misionesActuales.push(nuevaMision);
+    }
+  
+    // 1. Guardar en la subcolección de misiones secundarias
+    await setDoc(  
+      doc(db, "aventureros", currentUser.uid, "misionesSecundarias", libroId),   
+      nuevaMision,
+      { merge: true }
+    );  
+
+    // 2. Actualizar el array principal en el documento del aventurero
+    await updateDoc(userDocRef, {
+      misionesSecundarias: misionesActuales
+    });
+
+    // 3. ¡CRUCIAL PARA LA ESTANTERÍA! Si el estado es completada, lo volcamos en la colección global "biblioteca"
+    if (estado === "completada" || estado === "TERMINADA") {
+      await setDoc(doc(db, "biblioteca", `${currentUser.uid}_${libroId}`), {
+        titulo,
+        autor,
+        paginas,
+        portadaUrl,
+        usuarioId: currentUser.uid,
+        lectores: [currentUser.uid],
+        fechaCompletado: new Date(),
+        colorLomo: "#8b263e",
+        tipoOrigen: "LECTURA_LIBRE"
+      }, { merge: true });
+    }
+  
+    alert(`⚔️ ¡Misión registrada con éxito en tu Grimorio!`);  
+    cerrarBuscadorGremio();  
+    
+    if (btn) btn.disabled = false;  
+    location.reload(); // Recarga la página para refrescar el perfil y la estantería
+
+  } catch (err) {  
+    console.error("Error al guardar la misión:", err);  
+    alert("❌ Error al guardar la misión en el reino.");  
+    if (btn) btn.disabled = false;  
+  }  
+}
+  
 async function ejecutarBusquedaGoogleBooks() {  
   const input = document.getElementById("input-buscar-libro");  
   const contenedorResultados = document.getElementById("resultados-busqueda-libros");  
@@ -205,7 +312,7 @@ async function ejecutarBusquedaGoogleBooks() {
   if (!query) return;  
   
   contenedorResultados.style.display = "block";  
-  contenedorResultados.innerHTML = "<div style='padding: 8px;'>⏳ Buscando en los archivos del reino...</div>";  
+  contenedorResultados.innerHTML = "<div style='padding: 8px; color: #3b2219;'>⏳ Buscando en los archivos del reino...</div>";  
   
   try {  
     const respuesta = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=4&key=${GOOGLE_BOOKS_API_KEY}`);  
@@ -214,7 +321,7 @@ async function ejecutarBusquedaGoogleBooks() {
     contenedorResultados.innerHTML = "";  
   
     if (!datos.items || datos.items.length === 0) {  
-      contenedorResultados.innerHTML = "<div style='padding: 8px;'>No se han hallado obras con ese título.</div>";  
+      contenedorResultados.innerHTML = "<div style='padding: 8px; color: #3b2219;'>No se han hallado obras con ese título.</div>";  
       return;  
     }  
   
@@ -260,3 +367,4 @@ async function ejecutarBusquedaGoogleBooks() {
     contenedorResultados.innerHTML = "<div style='padding: 8px; color: #ff8080;'>Error al conectar con los tomos mágicos.</div>";  
   }  
 }
+

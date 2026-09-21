@@ -281,3 +281,91 @@ export function calcularEstadoAventurero(stats = {}, rasgosEquipados = [], cicat
     claseCSS: "estado-equilibrado"
   };
 }
+
+/**
+ * Procesa la recompensa de lectura basada en los géneros del libro:
+ * - Por cada género: 50% de probabilidad de obtener un rasgo de ese género.
+ * - Por cada género: 20% de probabilidad de obtener una cicatriz de ese género.
+ */
+export async function procesarRecompensaPorGeneros(userId, generos, paginas = 0) {
+  const listaGeneros = Array.isArray(generos) ? generos : [generos || "fantasia"];
+  const obtenciones = [];
+
+  // Importamos o reutilizamos la obtención de huellas disponibles
+  const poolGeneral = obtenerHuellasDisponibles(listaGeneros);
+
+  // Recorremos cada género del libro de forma independiente
+  listaGeneros.forEach(generoBruto => {
+    const claveNormalizada = normalizarGenero(generoBruto);
+    const poolEspecifico = BANCO_HUELLAS[claveNormalizada] || { rasgos: [], cicatrices: [] };
+
+    // 1. Probabilidad del 50% de obtener un rasgo asociado a este género
+    const dadoRasgo = Math.random();
+    if (dadoRasgo <= 0.50) {
+      const rasgosDisponibles = poolEspecifico.rasgos.length > 0 ? poolEspecifico.rasgos : poolGeneral.rasgos;
+      if (rasgosDisponibles.length > 0) {
+        const itemAleatorio = rasgosDisponibles[Math.floor(Math.random() * rasgosDisponibles.length)];
+        // Evitamos duplicar el mismo rasgo en la misma tirada global
+        if (!obtenciones.some(o => o.item.id === itemAleatorio.id)) {
+          obtenciones.push({ tipo: "rasgos", item: itemAleatorio });
+        }
+      }
+    }
+
+    // 2. Probabilidad del 20% de obtener una cicatriz asociada a este género
+    const dadoCicatriz = Math.random();
+    if (dadoCicatriz <= 0.20) {
+      const cicatricesDisponibles = poolEspecifico.cicatrices.length > 0 ? poolEspecifico.cicatrices : poolGeneral.cicatrices;
+      if (cicatricesDisponibles.length > 0) {
+        const itemAleatorio = cicatricesDisponibles[Math.floor(Math.random() * cicatricesDisponibles.length)];
+        if (!obtenciones.some(o => o.item.id === itemAleatorio.id)) {
+          obtenciones.push({ tipo: "cicatrices", item: itemAleatorio });
+        }
+      }
+    }
+  });
+
+  if (obtenciones.length === 0) return null;
+
+  // Actualizar en Firestore
+  const userRef = doc(db, "aventureros", userId);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) return null;
+
+  const userData = userSnap.data();
+  const estadisticas = userData.estadisticas || { rasgos: {}, cicatrices: {}, atributos: {} };
+
+  if (!estadisticas.rasgos) estadisticas.rasgos = {};
+  if (!estadisticas.cicatrices) estadisticas.cicatrices = {};
+
+  const resumenResultados = [];
+
+  obtenciones.forEach(({ tipo, item }) => {
+    const itemId = item.id || item.nombre;
+    if (estadisticas[tipo][itemId]) {
+      estadisticas[tipo][itemId].contador += 1;
+    } else {
+      estadisticas[tipo][itemId] = {
+        nombre: item.nombre,
+        icono: item.icono || (tipo === "rasgos" ? "✨" : "🩸"),
+        desc: item.desc || "Obtenido en travesía",
+        modificadores: item.modificadores || {},
+        contador: 1
+      };
+    }
+
+    resumenResultados.push({
+      tipo,
+      item,
+      contador: estadisticas[tipo][itemId].contador
+    });
+  });
+
+  await updateDoc(userRef, { estadisticas });
+
+  return {
+    totalObtenciones: obtenciones.length,
+    recompensas: resumenResultados
+  };
+}

@@ -5,12 +5,11 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
-import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
+import { procesarRecompensaPorGeneros } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 
-// Usamos el buscador limpio y aislado para las misiones secundarias
-import { inicializarBotonMisionPersonal } from "./buscadorMisionesPersonal.js";
-
+// Único buscador necesario para el modal del perfil
+import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -33,13 +32,7 @@ onAuthStateChanged(auth, async (user) => {
   inicializarAcordeon();
   inicializarCerrarSesion();
   inicializarAvatar();
-
-  // Inicializamos el buscador de misiones secundarias de forma segura
-  inicializarBotonMisionPersonal(currentUserId, async () => {
-    await cargarDatosAventurero(currentUserDocRef);
-  });
 });
-
 
 // Carga de datos del perfil
 async function cargarDatosAventurero(docRef) {
@@ -89,6 +82,20 @@ async function cargarDatosAventurero(docRef) {
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
   renderizarMisiones(misionesLocales);
 }
+
+// Inicialización del DOM y los modales del Gremio
+document.addEventListener("DOMContentLoaded", () => {
+    // Inicializa los eventos del buscador de Google Books en el perfil
+    inicializarBuscadorGremio();
+
+    // Vincula el botón principal para abrir el modal de registro de lectura
+    const btnAbrirModal = document.getElementById("btn-abrir-buscador-mision");
+    if (btnAbrirModal) {
+        btnAbrirModal.addEventListener("click", () => {
+            abrirBuscadorGremio();
+        });
+    }
+});
 
 // Visualización de Badges
 function renderizarRasgosYCicatrices(rasgos = {}, cicatrices = {}) {
@@ -217,6 +224,8 @@ function renderizarMisiones(misiones) {
 async function completarMisionLocal(index) {
   try {
     const mision = misionesLocales[index];
+    if (!mision) return;
+
     mision.estado = "TERMINADA";
 
     const paginas = mision.paginas || 0;
@@ -236,6 +245,7 @@ async function completarMisionLocal(index) {
       bonusClanText = `\n🛡️ ¡+${puntosExtraClan} Puntos aportados a tu Clan por lectura compartida!`;
     }
 
+    // Actualizamos los contadores principales del aventurero y su lista de misiones
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
       xp: increment(gananciaXP),
@@ -245,18 +255,29 @@ async function completarMisionLocal(index) {
       librosCompletados: increment(1)
     });
 
-    const listaGeneros = mision.generos || [mision.genero || "Fantasía"];
-    await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
+    // --- LLAMADA AL SISTEMA OFICIAL DE GAMIFICACIÓN ---
+    // Esto se encarga de hacer las tiradas automáticas según las páginas,
+    // aplicar los porcentajes oficiales del banco y guardarlo en 'estadisticas.rasgos/cicatrices'
+    const listaGeneros = mision.generos || [mision.genero || "fantasia"];
+    const resultadoRecompensa = await procesarRecompensaPorGeneros(currentUserId, listaGeneros, paginas);
 
-    alert(`🎉 ¡Portal Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${bonusClanText}`);
+    let infoRecompensas = "";
+   if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
+      const nombresObtenidos = resultadoRecompensa.recompensas.map(r => `${r.item.icono || (r.tipo === 'rasgos' ? '✨' : '🩸')} ${r.item.nombre}`).join(", ");
+      infoRecompensas = `\n🎁 Rasgos otorgados: ${nombresObtenidos}`;
+    } else {
+      infoRecompensas = `\n🍃 Esta vez los vientos de la lectura no dejaron nuevos rasgos.`;
+    }
+
+    alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${infoRecompensas}${bonusClanText}`);
+    
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
     console.error("Error al completar la misión:", error);
-    alert("❌ Error al procesar la misión.");
+    alert("❌ Error al procesar la recompensa de la misión.");
   }
 }
-
 async function eliminarMisionLocal(index) {
   if (!confirm("¿Deseas quitar esta misión de tu lista?")) return;
   misionesLocales.splice(index, 1);
