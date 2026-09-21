@@ -6,23 +6,27 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// 🔑 CLAVE DE GOOGLE BOOKS RECUPERADA
 const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 
 export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
   // Aseguramos que el modal exista en el DOM
   asegurarModalEnHTML();
 
-  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || document.getElementById("btn-abrir-buscador-mision");
+  // Buscamos el botón de apertura del perfil (probando los posibles IDs comunes)
+  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || 
+                   document.getElementById("btn-abrir-buscador-mision") ||
+                   document.querySelector("[data-abrir-modal-mision]");
+
   const modal = document.getElementById("modal-mision-personal");
 
   if (!btnAbrir) {
-    console.warn("⚠️ No se encontró el botón de abrir misión en el perfil.");
+    console.warn("⚠️ No se encontró el botón de abrir misión en el perfil. Comprueba el ID en tu HTML.");
     return;
   }
 
-  // Abrir Modal
-  btnAbrir.addEventListener("click", () => {
+  // 1. Abrir Modal y asociar eventos internos directamente a los elementos reales
+  btnAbrir.addEventListener("click", (e) => {
+    e.preventDefault();
     if (modal) {
       modal.style.display = "flex";
       const input = document.getElementById("input-buscar-libro-api");
@@ -30,29 +34,59 @@ export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
     }
   });
 
-  // Delegación de eventos global en el documento
-  document.addEventListener("click", async (e) => {
-    if (e.target && (e.target.id === "cerrar-modal-mision-personal" || e.target === modal)) {
-      if (modal) modal.style.display = "none";
-      return;
-    }
-
-    if (e.target && e.target.id === "btn-buscar-libro-api") {
-      e.preventDefault();
-      await ejecutarBusquedaGoogleBooks(userId);
-    }
-  });
-
-  // Permitir buscar pulsando Enter
-  document.addEventListener("keydown", async (e) => {
-    if (e.key === "Enter" && e.target && e.target.id === "input-buscar-libro-api") {
-      e.preventDefault();
-      await ejecutarBusquedaGoogleBooks(userId);
-    }
-  });
+  // 2. Asociar eventos de cierre y búsqueda directamente (evita fallos de delegación)
+  vincularEventosInternosModal(userId);
 }
 
-// Función encargada de llamar a la API de Google Books incluyendo la API Key
+function vincularEventosInternosModal(userId) {
+  const modal = document.getElementById("modal-mision-personal");
+  const btnCerrar = document.getElementById("cerrar-modal-mision-personal");
+  const btnBuscar = document.getElementById("btn-buscar-libro-api");
+  const inputBusqueda = document.getElementById("input-buscar-libro-api");
+
+  // Botón Cerrar (X)
+  if (btnCerrar) {
+    // Reemplazamos el nodo para limpiar listeners duplicados previos
+    const nuevoBtnCerrar = btnCerrar.cloneNode(true);
+    btnCerrar.parentNode.replaceChild(nuevoBtnCerrar, btnCerrar);
+    nuevoBtnCerrar.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
+    });
+  }
+
+  // Cerrar haciendo clic fuera del modal
+  if (modal) {
+    modal.onclick = (e) => {
+      if (e.target === modal) {
+        modal.style.display = "none";
+      }
+    };
+  }
+
+  // Botón Buscar
+  if (btnBuscar) {
+    const nuevoBtnBuscar = btnBuscar.cloneNode(true);
+    btnBuscar.parentNode.replaceChild(nuevoBtnBuscar, btnBuscar);
+    nuevoBtnBuscar.addEventListener("click", async (e) => {
+      e.preventDefault();
+      await ejecutarBusquedaGoogleBooks(userId);
+    });
+  }
+
+  // Tecla Enter en el Input
+  if (inputBusqueda) {
+    const nuevoInput = inputBusqueda.cloneNode(true);
+    inputBusqueda.parentNode.replaceChild(nuevoInput, inputBusqueda);
+    nuevoInput.addEventListener("keydown", async (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        await ejecutarBusquedaGoogleBooks(userId);
+      }
+    });
+  }
+}
+
+// Función encargada de llamar a la API de Google Books
 async function ejecutarBusquedaGoogleBooks(userIdParam) {
   const inputBusqueda = document.getElementById("input-buscar-libro-api");
   const contenedorResultados = document.getElementById("resultados-busqueda-libros");
@@ -138,7 +172,7 @@ async function ejecutarBusquedaGoogleBooks(userIdParam) {
 
   } catch (err) {
     console.error("Error buscando libros en Google Books:", err);
-    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error de conexión o límite superado en Google Books.</p>`;
+    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error de conexión con Google Books.</p>`;
   }
 }
 
