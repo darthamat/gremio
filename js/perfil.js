@@ -7,10 +7,9 @@ import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
-// import { buscarEnGoogleBooks, limpiarSeleccionBuscador, inicializarFormularioMisiones } from "./buscadorMisiones.js";
 
+// Usamos el gestor unificado para las misiones y buscador de libros
 import { inicializarFormularioLibro } from "./adminGestorLibros.js";
-
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -19,22 +18,15 @@ let currentUserId = null;
 let currentUserDocRef = null;
 let misionesLocales = [];
 
-inicializarFormularioLibro('aventurero', currentUserId, async (nuevaMision) => {
-  await cargarDatosAventurero(currentUserDocRef);
-  if (typeof renderizarEstanteria === 'function') renderizarEstanteria();
-  if (typeof renderizarAtlas === 'function') renderizarAtlas();
-});
-
 // Auth Listener
-  onAuthStateChanged(auth, async (user) => {
+onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
     return;
   }
 
-   currentUserId = user.uid;
+  currentUserId = user.uid;
   currentUserDocRef = doc(db, "aventureros", user.uid);
-
 
   await cargarDatosAventurero(currentUserDocRef);
   inicializarAcordeon();
@@ -42,16 +34,11 @@ inicializarFormularioLibro('aventurero', currentUserId, async (nuevaMision) => {
   inicializarAvatar();
   inicializarBotonMisionPersonal();
 
-
-inicializarModalMisionPerfil();
-
-  if (currentUserId) {
-  inicializarFormularioMisiones(currentUserId, async (nuevaMision) => {
-    // Esto se ejecuta justo después de guardar con éxito la misión
+  // Inicializamos el formulario / modal de libros unificado para este aventurero
+  inicializarFormularioLibro('aventurero', currentUserId, async (nuevaMision) => {
     alert("🎉 ¡Misión secundaria aceptada con éxito!");
-    await cargarDatosAventurero(currentUserDocRef); // Refresca el acordeón y la lista en pantalla
+    await cargarDatosAventurero(currentUserDocRef);
   });
-}
 });
 
 // Carga de datos del perfil
@@ -80,7 +67,6 @@ async function cargarDatosAventurero(docRef) {
 
   const elLibros = document.getElementById("char-libros");
   if (elLibros) {
-    // Si cuentas los libros por misiones terminadas o por un campo directo en la BD:
     const librosTerminados = data.librosCompletados || misionesLocales.filter(m => m.estado === 'TERMINADA').length;
     elLibros.textContent = librosTerminados;
   }
@@ -242,7 +228,6 @@ async function completarMisionLocal(index) {
 
     const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
 
-    // Si es una misión compartida en grupo, otorgar Puntos de Clan adicionales
     let bonusClanText = "";
     if (mision.esGrupal && userData.clanId) {
       const clanRef = doc(db, "clanes", userData.clanId);
@@ -256,12 +241,12 @@ async function completarMisionLocal(index) {
       xp: increment(gananciaXP),
       nivel: nuevoNivel,
       marcapaginas: increment(gananciaMarcapaginas),
-      paginasLeidas: increment(paginas),          // <--- Suma las páginas del libro
-  librosCompletados: increment(1)             // <--- Suma 1 al libro completado
+      paginasLeidas: increment(paginas),
+      librosCompletados: increment(1)
     });
 
     const listaGeneros = mision.generos || [mision.genero || "Fantasía"];
-    const resultado = await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
+    await procesarRecompensaLectura(currentUserId, listaGeneros, paginas);
 
     alert(`🎉 ¡Portal Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${bonusClanText}`);
     await cargarDatosAventurero(currentUserDocRef);
@@ -321,74 +306,11 @@ function inicializarAvatar() {
 }
 
 function inicializarBotonMisionPersonal() {
-  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal");
+  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || document.getElementById("btn-abrir-buscador-mision");
   if (!btnAbrir) return;
 
   btnAbrir.addEventListener("click", () => {
-    // Opción A: Redirigir directamente al tablón comunitario que acabamos de crear
-    window.location.href = "misiones.html";
-    
-    /* 
-      Opción B (Si prefieres mantener un modal propio en el perfil para lecturas 100% personales):
-      const modal = document.getElementById("modal-mision-personal");
-      if (modal) modal.classList.remove("oculto");
-    */
+    // Si prefieres que abra la página comunitaria de misiones o active el modal de adminGestorLibros:
+    // window.location.href = "misiones.html";
   });
-}
-
-function inicializarModalMisionPerfil() {
-  const btnAbrir = document.getElementById("btn-abrir-buscador-mision");
-  const modal = document.getElementById("modal-buscador-mision"); 
-  const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
-
-  const inputBuscar = document.getElementById("input-buscar-libro");
-  const btnBuscar = document.getElementById("btn-ejecutar-busqueda");
-  const contenedorResultados = document.getElementById("resultados-busqueda-libros");
-
-  if (!btnAbrir || !modal) return;
-
-  // Abrir modal de búsqueda
-  btnAbrir.addEventListener("click", () => {
-    modal.classList.remove("oculto");
-    modal.style.display = "flex";
-  });
-
-  // Cerrar modal
-  const cerrarModalFn = () => {
-    modal.classList.add("oculto");
-    modal.style.display = "none";
-    if (typeof limpiarSeleccionBuscador === 'function') limpiarSeleccionBuscador();
-    if (contenedorResultados) {
-      contenedorResultados.innerHTML = "";
-      contenedorResultados.style.display = "none";
-    }
-  };
-
-  if (btnCerrar) btnCerrar.addEventListener("click", cerrarModalFn);
-
-  // Cerrar haciendo clic fuera de la tarjeta del modal
-  modal.addEventListener("click", (e) => {
-    if (e.target === modal) cerrarModalFn();
-  });
-
-  // Ejecutar búsqueda conectada a Google Books
-  if (btnBuscar && inputBuscar) {
-    const ejecutarBusqueda = (e) => {
-      e.preventDefault();
-      const query = inputBuscar.value.trim();
-      if (!query) return;
-      if (contenedorResultados) contenedorResultados.style.display = "block";
-      
-      if (typeof buscarEnGoogleBooks === 'function') {
-        buscarEnGoogleBooks(query, contenedorResultados);
-      } else {
-        console.error("La función buscarEnGoogleBooks no está disponible.");
-      }
-    };
-
-    btnBuscar.addEventListener("click", ejecutarBusqueda);
-    inputBuscar.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") ejecutarBusqueda(e);
-    });
-  }
 }
