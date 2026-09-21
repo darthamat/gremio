@@ -91,6 +91,41 @@ if (!tooltipGlobal) {
     document.body.appendChild(tooltipGlobal);
 }
 
+// 🎨 Función para determinar el color del lomo según la leyenda del Atlas
+function obtenerColorSegunGenero(libro) {
+    // Si ya trae un color personalizado guardado, se respeta
+    if (libro.colorLomo) return libro.colorLomo;
+    if (libro.color) return libro.color;
+
+    // Extraer géneros posibles (puede venir como string, array o dentro de géneros del libro)
+    let generosTexto = "";
+    if (Array.isArray(libro.generos)) {
+        generosTexto = libro.generos.join(" ").toLowerCase();
+    } else if (typeof libro.genero === "string") {
+        generosTexto = libro.genero.toLowerCase();
+    } else if (typeof libro.generos === "string") {
+        generosTexto = libro.generos.toLowerCase();
+    }
+
+    // Comprobaciones según la leyenda del atlas
+    if (generosTexto.includes("fantasia") || generosTexto.includes("fantasía")) {
+        return "#2e7d32"; // Verde para fantasía
+    }
+    if (generosTexto.includes("ficcion") || generosTexto.includes("ficción")) {
+        return "#c62828"; // Rojo para ficción
+    }
+    if (generosTexto.includes("terror") || generosTexto.includes("miedo") || generosTexto.includes("suspense")) {
+        return "#6a1b9a"; // Morado para terror
+    }
+    if (generosTexto.includes("no ficcion") || generosTexto.includes("no-ficción") || generosTexto.includes("historia") || generosTexto.includes("biografia") || generosTexto.includes("ensayo")) {
+        return "#d4af37"; // Dorado para no ficción
+    }
+
+    // Color por defecto si no coincide con ninguno (o si es un reto genérico)
+    const esReto = libro.esReto || libro.tipoOrigen === "RETO_GREMIO" || (libro.retosAsociados && libro.retosAsociados.length > 0);
+    return esReto ? "#8e44ad" : "#8b263e"; 
+}
+
 function renderizarLomoLibro(libro) {
     const estante = document.getElementById("estante-libros");
     if (!estante) return;
@@ -103,7 +138,9 @@ function renderizarLomoLibro(libro) {
     const alto = Math.min(Math.max(180 + (paginasNum / 10), 190), 240);
 
     const esReto = libro.esReto || libro.tipoOrigen === "RETO_GREMIO" || (libro.retosAsociados && libro.retosAsociados.length > 0);
-    const colorFondo = libro.colorLomo || libro.color || (esReto ? "#8e44ad" : "#8b263e");
+    
+    // Aplicamos la función inteligente de colores
+    const colorFondo = obtenerColorSegunGenero(libro);
 
     lomo.style.width = `${ancho}px`;
     lomo.style.height = `${alto}px`;
@@ -195,13 +232,13 @@ if (formLibro) {
         const titulo = document.getElementById("titulo").value.trim();
         const autor = document.getElementById("autor").value.trim();
         const paginas = Number(document.getElementById("paginas").value) || 0;
-        const color = document.getElementById("color") ? document.getElementById("color").value : "#8b263e";
+        const color = document.getElementById("color") ? document.getElementById("color").value : "";
         const generoInput = document.getElementById("genero") ? document.getElementById("genero").value : "Fantasía";
 
         try {
             const libroId = titulo.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
 
-            // 1. REGISTRAR EN LA COLECCIÓN GLOBAL "BIBLIOTECA" (Para que aparezca el lomo en la estantería)
+            // 1. REGISTRAR EN LA COLECCIÓN GLOBAL "BIBLIOTECA"
             await setDoc(doc(db, "biblioteca", `${currentUser.uid}_${libroId}`), {
                 titulo,
                 autor,
@@ -210,7 +247,8 @@ if (formLibro) {
                 usuarioId: currentUser.uid,
                 lectores: [currentUser.uid],
                 fechaCompletado: new Date(),
-                colorLomo: color,
+                colorLomo: color, // Si el usuario eligió uno específico en el form, se respeta
+                generos: [generoInput],
                 tipoOrigen: "LECTURA_LIBRE"
             }, { merge: true });
 
@@ -235,7 +273,7 @@ if (formLibro) {
             
             if (modal) modal.classList.add("oculto");
             formLibro.reset();
-            await cargarBiblioteca(); // Recarga la estantería y contadores
+            await cargarBiblioteca();
 
         } catch (error) {
             console.error("Error al guardar la lectura libre:", error);
@@ -244,15 +282,10 @@ if (formLibro) {
     });
 }
 
-
-
 document.addEventListener("DOMContentLoaded", () => {
-  // Inicializar el buscador de Google Books
   inicializarBuscadorGremio();
 
   document.getElementById("btn-abrir-buscador")?.addEventListener("click", () => {
     abrirBuscadorGremio();
   });
-
-  // Aquí sigue el resto de tu código de biblioteca.js...
 });

@@ -19,6 +19,7 @@ import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlN
 
 // Único buscador necesario para el modal del perfil
 import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
+import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -366,20 +367,25 @@ async function cargarMisionesSecundariasPerfil(userId) {
 }
 
 async function completarMisionDesdePerfil(id, data, userId) {
-  if (!confirm(`¿Deseas dar por terminado el libro "${data.titulo}"? Recibirás tus puntos de prestigio, bono cooperativo y huellas.`)) return;
+  if (!confirm(`¿Deseas dar por terminado el libro "${data.titulo}"? Recibirás tus puntos de prestigio, bono cooperativo, huellas y se registrará en tu estantería y Atlas.`)) return;
+  
   try {
     const misionRef = doc(db, "misionesSecundarias", id);
     const userRef = doc(db, "aventureros", userId);
 
+    // 1. Marcar completado en la misión del tablón
     const updates = { usuariosCompletaron: arrayUnion(userId) };
     if (data.creadorId === userId) {
-      updates.activa = false; 
+      updates.activa = false; // Si el creador la termina, se cierra a nuevas incorporaciones
     }
     await updateDoc(misionRef, updates);
 
-    const prestigioBase = (data.paginas || 100) * 0.5;
-    const prestigioTotal = Math.round(prestigioBase + 100); // 🎁 Bono de +100 cooperativo
+    // 2. Calcular recompensas (Prestigio base de páginas + 100 bono co-op)
+    const paginas = Number(data.paginas) || 100;
+    const prestigioBase = paginas * 0.5;
+    const prestigioTotal = Math.round(prestigioBase + 100);
 
+    // 3. Obtener huellas actuales del aventurero
     const userDocSnap = await getDoc(userRef);
     let rasgActuales = [];
     let cicatActuales = [];
@@ -391,18 +397,36 @@ async function completarMisionDesdePerfil(id, data, userId) {
     const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
     const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
 
+    // 4. Actualizar usuario en Firestore (Prestigio, huellas y contadores)
     await updateDoc(userRef, {
       prestigio: increment(prestigioTotal),
       rasgos: nuevosRasgos,
-      cicatrices: nuevasCicatrices
+      cicatrices: nuevasCicatrices,
+      librosCompletados: increment(1),
+      paginasLeidas: increment(paginas)
     });
 
-    alert(`🎉 ¡Misión completada con éxito!\nHas ganado ${prestigioTotal} Puntos de Prestigio (incluyendo los +100 del bono cooperativo).`);
+    // 5. 🌟 LA PIEZA CLAVE QUE FALTABA: Registrar lomo en la Estantería, Biblioteca Global y Atlas
+    const datosLibroParaAtlas = {
+      id: id,
+      titulo: data.titulo,
+      autor: data.autor || "Desconocido",
+      paginas: paginas,
+      genero: data.genero || (Array.isArray(data.generos) ? data.generos[0] : "Fantasía"),
+      portadaUrl: data.portadaUrl || data.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
+      fechaTerminado: new Date().toISOString()
+    };
+
+    await registrarLibroEnBibliotecaYAtlas(userId, datosLibroParaAtlas);
+
+    alert(`🎉 ¡Misión completada con éxito!\n\n🏆 +${prestigioTotal} Puntos de Prestigio (incluyendo +100 bono co-op)\n📚 El libro ya luce en tu Estantería y se ha iluminado el Atlas.`);
+    
+    // Recargar perfil para refrescar visualmente
     location.reload();
 
   } catch (err) {
     console.error("Error al completar misión desde perfil:", err);
-    alert("Hubo un error al procesar la recompensa.");
+    alert("Hubo un error al procesar la recompensa y registrar la obra en el Atlas.");
   }
 }
 

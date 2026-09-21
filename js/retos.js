@@ -61,6 +61,20 @@ function formatearIdAMesYAno(idDocumento, fechaCreacion) {
   return "Reto del Gremio";
 }
 
+// 🛡️ Función unificada para generar una clave única e incandescente para el libro (evita duplicados)
+function generarIdUnicoLibro(tituloBase, idRetoOriginal) {
+  const textoLimpio = (tituloBase || "reto_gremio")
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_");
+  
+  // Si el ID original es tipo reto26_09, lo usamos como ancla temporal segura
+  const sufijo = (idRetoOriginal && idRetoOriginal !== "actual") ? idRetoOriginal : "mes_actual";
+  return `${textoLimpio}_${sufijo}`;
+}
+
 function obtenerResumenGemini(tituloLibro) {
   if (!tituloLibro) return "Resumen no disponible en los pergaminos de la biblioteca.";
   const tituloNormalizado = tituloLibro.toLowerCase().trim();
@@ -446,12 +460,13 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       librosCompletados: increment(1)
     });
 
-    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz (70% Rasgo, 30% Cicatriz según el género y páginas)
+    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz
     const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    // 3. Registrar libro en Atlas y Biblioteca
+    // 3. Registrar libro en Atlas y Biblioteca usando ID robusto
+    const idUnicoLibro = generarIdUnicoLibro(data.titulo, misionId);
     const datosLibro = {
-      id: misionId,
+      id: idUnicoLibro,
       titulo: data.titulo,
       autor: data.autor,
       genero: genero,
@@ -547,6 +562,9 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       };
     }
 
+    // 🛡️ Forzar un ID único y limpio que evite duplicados entre "actual" y "reto26_09"
+    datosReto.id = generarIdUnicoLibro(datosReto.titulo, retoId);
+
     const paginas = datosReto.paginas;
     const genero = datosReto.genero;
 
@@ -565,10 +583,10 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       librosCompletados: increment(1)
     });
 
-    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz (70% Rasgo, 30% Cicatriz según el género)
+    // 🎲 2. Tirada estocástica de Rasgo / Cicatriz
     const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    // 3. Registrar en Biblioteca y Atlas
+    // 3. Registrar en Biblioteca y Atlas con el ID unificado
     await completarRetoGremio(usuarioSesionId, datosReto);
 
     // 4. Formatear mensaje de huellas para la alerta
