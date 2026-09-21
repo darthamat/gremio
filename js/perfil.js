@@ -7,7 +7,9 @@ import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
-import { buscarEnGoogleBooks, limpiarSeleccionBuscador, inicializarFormularioMisiones } from "./buscadorMisiones.js";
+// import { buscarEnGoogleBooks, limpiarSeleccionBuscador, inicializarFormularioMisiones } from "./buscadorMisiones.js";
+
+import { inicializarFormularioLibro } from "./adminOGestorLibros.js";
 
 
 const auth = getAuth(app);
@@ -16,6 +18,12 @@ const db = getFirestore(app);
 let currentUserId = null;
 let currentUserDocRef = null;
 let misionesLocales = [];
+
+inicializarFormularioLibro('aventurero', currentUserId, async (nuevaMision) => {
+  await cargarDatosAventurero(currentUserDocRef);
+  if (typeof renderizarEstanteria === 'function') renderizarEstanteria();
+  if (typeof renderizarAtlas === 'function') renderizarAtlas();
+});
 
 // Auth Listener
   onAuthStateChanged(auth, async (user) => {
