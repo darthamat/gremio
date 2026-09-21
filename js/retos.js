@@ -432,7 +432,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const paginas = Number(data.paginas) || 0;
     const genero = data.genero || "Fantasía";
 
-    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+    const gananciaXP = 0;
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
@@ -484,7 +484,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       await updateDoc(misionRef, {
         usuariosCompletaron: arrayUnion(usuarioSesionId)
       });
-      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
+      alert(`🎉 ¡Misión Secundaria Completada!\n\nEl libro se ha sumado a tu Biblioteca y Atlas personal.\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
     }
 
     await cargarMisionesSecundariasGlobales();
