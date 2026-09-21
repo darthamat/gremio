@@ -1,8 +1,10 @@
 // js/buscadorMisionesPersonal.js
 import { getFirestore, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { app } from "./firebase-config.js";
 
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
   // Aseguramos que el modal exista en el DOM
@@ -25,32 +27,30 @@ export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
     }
   });
 
-  // Usamos delegación de eventos global en el documento para atrapar los clics del modal de forma infalible
+  // Delegación de eventos global en el documento
   document.addEventListener("click", async (e) => {
-    // 1. Cerrar con la X o haciendo clic fuera
     if (e.target && (e.target.id === "cerrar-modal-mision-personal" || e.target === modal)) {
       if (modal) modal.style.display = "none";
       return;
     }
 
-    // 2. Botón de Buscar
     if (e.target && e.target.id === "btn-buscar-libro-api") {
       e.preventDefault();
-      await ejecutarBusquedaGoogleBooks();
+      await ejecutarBusquedaGoogleBooks(userId);
     }
   });
 
-  // Permitir buscar pulsando la tecla Enter en el input
+  // Permitir buscar pulsando Enter
   document.addEventListener("keydown", async (e) => {
     if (e.key === "Enter" && e.target && e.target.id === "input-buscar-libro-api") {
       e.preventDefault();
-      await ejecutarBusquedaGoogleBooks();
+      await ejecutarBusquedaGoogleBooks(userId);
     }
   });
 }
 
 // Función encargada de llamar a la API de Google Books y pintar los resultados
-async function ejecutarBusquedaGoogleBooks() {
+async function ejecutarBusquedaGoogleBooks(userIdParam) {
   const inputBusqueda = document.getElementById("input-buscar-libro-api");
   const contenedorResultados = document.getElementById("resultados-busqueda-libros");
 
@@ -65,7 +65,7 @@ async function ejecutarBusquedaGoogleBooks() {
   contenedorResultados.innerHTML = `<p style="text-align:center; color: #d4af37; padding: 15px;">⏳ Buscando en los antiguos tomos...</p>`;
 
   try {
-    const response = await fetch(`https://api.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`);
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {
@@ -93,14 +93,19 @@ async function ejecutarBusquedaGoogleBooks() {
           <small style="color: #cbd5e0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${autor}</small>
           <p style="margin: 4px 0 0; font-size: 0.8rem; color: #f6ad55;">📖 ${paginas} páginas</p>
         </div>
-        <button class="btn-seleccionar-libro-item" style="background: #48bb78; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; transition: background 0.2s;">Elegir</button>
+        <button class="btn-seleccionar-libro-item" style="background: #48bb78; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem;">Elegir</button>
       `;
 
-      // Capturar la selección de este libro en concreto
       const btnElegir = tarjetaLibro.querySelector(".btn-seleccionar-libro-item");
       btnElegir.addEventListener("click", async () => {
-        const userId = window.currentUserIdApp || obtenerUserIdActual(); // Respaldo seguro
+        // Obtenemos el ID de usuario de forma síncrona y segura mediante la importación de getAuth
+        const authUid = userIdParam || (auth.currentUser ? auth.currentUser.uid : null);
         
+        if (!authUid) {
+          alert("❌ Error: No se detectó la sesión del aventurero.");
+          return;
+        }
+
         const nuevaMision = {
           id: `mision_${Date.now()}`,
           titulo,
@@ -113,19 +118,11 @@ async function ejecutarBusquedaGoogleBooks() {
           fechaCreacion: new Date().toISOString()
         };
 
-        // Extraemos el ID del usuario desde la URL o Firebase si está disponible globalmente, o pedimos la referencia
-        const authUid = getAuthUsuarioActual();
-        if (!authUid) {
-          alert("❌ Error: No se detectó la sesión del aventurero.");
-          return;
-        }
-
         await guardarMisionPersonal(authUid, nuevaMision);
 
         const modal = document.getElementById("modal-mision-personal");
         if (modal) modal.style.display = "none";
         
-        // Recargar datos de la página
         window.location.reload(); 
       });
 
@@ -151,22 +148,7 @@ async function guardarMisionPersonal(userId, misionData) {
   }
 }
 
-function getAuthUsuarioActual() {
-  // Intenta recuperar el usuario actual desde el auth global de Firebase
-  try {
-    const { getAuth } = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js");
-    return getAuth().currentUser ? getAuth().currentUser.uid : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function obtenerUserIdActual() {
-  const user = JSON.parse(localStorage.getItem("authUser")) || null;
-  return user ? user.uid : null;
-}
-
-// Inyecta el HTML del modal automáticamente si no existe en el DOM de perfil.html
+// Inyecta el HTML del modal automáticamente si no existe en el DOM
 function asegurarModalEnHTML() {
   if (document.getElementById("modal-mision-personal")) return;
 
