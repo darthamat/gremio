@@ -1,22 +1,13 @@
 // js/buscadorMisionesPersonal.js
-import { getFirestore, doc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { app } from "./firebase-config.js";
-
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
+import { inicializarFormularioLibro } from "./adminGestorLibros.js";
 
 export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
-  // Inyectamos nuestro propio modal garantizado
-  asegurarModalPropio();
+  // 1. Inyectar automáticamente el HTML completo del formulario de Admin dentro de un modal flotante en el Perfil
+  asegurarModalAdminEnPerfil();
 
-  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || 
-                   document.getElementById("btn-abrir-buscador-mision") ||
-                   document.querySelector("[data-abrir-modal-mision]");
-
-  const modal = document.getElementById("modal-mision-personal-seguro");
+  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || document.getElementById("btn-abrir-buscador-mision");
+  const modal = document.getElementById("modal-admin-mision-personal");
+  const btnCerrar = document.getElementById("cerrar-modal-admin-mision");
 
   if (!btnAbrir) {
     console.warn("⚠️ No se encontró el botón de abrir misión en el perfil.");
@@ -28,176 +19,138 @@ export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
     e.preventDefault();
     if (modal) {
       modal.style.display = "flex";
-      const input = document.getElementById("input-buscar-libro-seguro");
-      if (input) {
-        input.value = "";
-        input.focus();
-      }
-      const resultados = document.getElementById("resultados-busqueda-seguro");
-      if (resultados) {
-        resultados.innerHTML = `<p style="text-align: center; color: #a0aec0; font-size: 0.9rem; padding: 20px 0;">Escribe un título para comenzar tu búsqueda.</p>`;
-      }
+      const inputBusqueda = document.getElementById("buscarLibro");
+      if (inputBusqueda) inputBusqueda.focus();
     }
   });
 
-  vincularEventosModalSeguro(userId);
-}
-
-function vincularEventosModalSeguro(userId) {
-  const modal = document.getElementById("modal-mision-personal-seguro");
-  const btnCerrar = document.getElementById("cerrar-modal-seguro");
-  const btnBuscar = document.getElementById("btn-buscar-seguro");
-  const inputBusqueda = document.getElementById("input-buscar-libro-seguro");
-
-  if (btnCerrar && modal) {
-    btnCerrar.onclick = () => { modal.style.display = "none"; };
-  }
-
-  if (modal) {
-    modal.onclick = (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    };
-  }
-
-  if (btnBuscar) {
-    const nuevoBtn = btnBuscar.cloneNode(true);
-    btnBuscar.parentNode.replaceChild(nuevoBtn, btnBuscar);
-    nuevoBtn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      await ejecutarBusquedaSegura(userId);
+  // Cerrar Modal con la X
+  if (btnCerrar) {
+    btnCerrar.addEventListener("click", () => {
+      if (modal) modal.style.display = "none";
     });
   }
 
-  if (inputBusqueda) {
-    const nuevoInput = inputBusqueda.cloneNode(true);
-    inputBusqueda.parentNode.replaceChild(nuevoInput, inputBusqueda);
-    nuevoInput.addEventListener("keydown", async (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        await ejecutarBusquedaSegura(userId);
-      }
-    });
-  }
-}
-
-async function ejecutarBusquedaSegura(userIdParam) {
-  const inputBusqueda = document.getElementById("input-buscar-libro-seguro");
-  const contenedorResultados = document.getElementById("resultados-busqueda-seguro");
-
-  if (!inputBusqueda || !contenedorResultados) return;
-
-  const query = inputBusqueda.value.trim();
-  if (!query) {
-    alert("⚠️ Escribe el título de un libro para buscar.");
-    return;
-  }
-
-  contenedorResultados.style.cssText = "display: flex !important; flex-direction: column !important; max-height: 320px !important; overflow-y: auto !important; gap: 8px !important;";
-  contenedorResultados.innerHTML = `<p style="text-align:center; color: #d4af37; padding: 15px;">⏳ Buscando en los antiguos tomos...</p>`;
-
-  try {
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&key=${GOOGLE_BOOKS_API_KEY}`;
-    const response = await fetch(url);
-
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">No se encontraron grimorios con ese título.</p>`;
-      return;
+  // Cerrar al hacer clic fuera del contenido del modal
+  window.addEventListener("click", (e) => {
+    if (modal && e.target === modal) {
+      modal.style.display = "none";
     }
+  });
 
-    contenedorResultados.innerHTML = "";
-    
-    data.items.forEach(item => {
-      const info = item.volumeInfo;
-      const titulo = info.title || "Sin título";
-      const autor = info.authors ? info.authors.join(", ") : "Autor desconocido";
-      const paginas = info.pageCount || 150;
-      const portada = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail || "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200";
-
-      const tarjetaLibro = document.createElement("div");
-      tarjetaLibro.style.cssText = "display: flex !important; align-items: center !important; background: #2d3748 !important; padding: 10px !important; border-radius: 8px !important; margin-bottom: 8px !important; border: 1px solid #4a5568 !important;";
-      
-      tarjetaLibro.innerHTML = `
-        <img src="${portada.replace('http:', 'https:')}" alt="${titulo}" style="width: 45px; height: 65px; object-fit: cover; border-radius: 4px; flex-shrink: 0;">
-        <div style="flex: 1; margin-left: 12px; overflow: hidden;">
-          <h4 style="margin: 0; font-size: 0.95rem; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${titulo}</h4>
-          <small style="color: #cbd5e0; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${autor}</small>
-          <p style="margin: 4px 0 0; font-size: 0.8rem; color: #f6ad55;">📖 ${paginas} páginas</p>
-        </div>
-        <button class="btn-elegir-libro" style="background: #48bb78; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85rem; flex-shrink: 0;">Elegir</button>
-      `;
-
-      const btnElegir = tarjetaLibro.querySelector(".btn-elegir-libro");
-      btnElegir.addEventListener("click", async () => {
-        const authUid = userIdParam || (auth.currentUser ? auth.currentUser.uid : null);
-        
-        if (!authUid) {
-          alert("❌ Error: No se detectó la sesión del aventurero.");
-          return;
-        }
-
-        const nuevaMision = {
-          id: `mision_${Date.now()}`,
-          titulo,
-          autor,
-          paginas,
-          portadaUrl: portada.replace("http:", "https:"),
-          portada: portada.replace("http:", "https:"),
-          estado: "EN_PROGRESO",
-          generos: info.categories ? [info.categories[0]] : ["Fantasía"],
-          fechaCreacion: new Date().toISOString()
-        };
-
-        await guardarMisionPersonal(authUid, nuevaMision);
-
-        const modal = document.getElementById("modal-mision-personal-seguro");
-        if (modal) modal.style.display = "none";
-        
-        window.location.reload(); 
-      });
-
-      contenedorResultados.appendChild(tarjetaLibro);
-    });
-
-  } catch (err) {
-    console.error("❌ Error en la búsqueda de Google Books:", err);
-    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error al conectar con Google Books.</p>`;
-  }
+  // 2. Inicializamos tu gestor unificado en modo 'aventurero'
+  inicializarFormularioLibro('aventurero', userId, (nuevaMision) => {
+    alert("🎉 ¡Misión secundaria aceptada con éxito!");
+    if (modal) modal.style.display = "none";
+    if (typeof onMisionCreada === "function") {
+      onMisionCreada(nuevaMision);
+    }
+  });
 }
 
-async function guardarMisionPersonal(userId, misionData) {
-  try {
-    const userRef = doc(db, "aventureros", userId);
-    await updateDoc(userRef, {
-      misionesSecundarias: arrayUnion(misionData)
-    });
-    alert("⚔️ ¡Nueva misión secundaria aceptada y guardada en el grimorio!");
-  } catch (err) {
-    console.error("Error al guardar misión en Firestore:", err);
-    alert("❌ No se pudo registrar la misión en tu perfil.");
-  }
-}
-
-function asegurarModalPropio() {
-  if (document.getElementById("modal-mision-personal-seguro")) return;
+// Inyecta el HTML exacto de admin.html adaptado como un modal flotante estético
+function asegurarModalAdminEnPerfil() {
+  if (document.getElementById("modal-admin-mision-personal")) return;
 
   const modalHtml = `
-    <div id="modal-mision-personal-seguro" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center;">
-      <div style="background: #1a202c; padding: 25px; border-radius: 12px; width: 90%; max-width: 500px; border: 1px solid #4a5568; box-shadow: 0 10px 25px rgba(0,0,0,0.5); color: #fff; font-family: inherit;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-          <h3 style="margin: 0; color: #f6ad55; font-size: 1.2rem;">📜 Explorar Tomos en Google Books</h3>
-          <button id="cerrar-modal-seguro" style="background: transparent; border: none; color: #a0aec0; font-size: 1.8rem; cursor: pointer; line-height: 1;">&times;</button>
+    <div id="modal-admin-mision-personal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; overflow-y:auto; padding: 20px 0;">
+      <div class="admin-container" style="max-width: 650px; width: 95%; max-height: 90vh; overflow-y: auto; background: #f3e5ab; border: 4px solid #8b5a2b; padding: 25px; border-radius: 6px; color: #3b2219; box-shadow: 0 10px 25px rgba(0,0,0,0.7); position: relative; margin: auto;">
+        
+        <!-- BOTÓN CERRAR -->
+        <button id="cerrar-modal-admin-mision" style="position: absolute; top: 15px; right: 20px; background: transparent; border: none; font-size: 1.8rem; font-weight: bold; cursor: pointer; color: #3b2219;">&times;</button>
+
+        <h2 style="margin-top: 0; text-align: center; color: #8b5a2b; font-family: inherit;">📜 Registrar Misión Secundaria</h2>
+        <hr style="border-color: #8b5a2b; margin: 15px 0;">
+
+        <!-- BUSCADOR GOOGLE BOOKS -->
+        <div class="form-group buscador-container" style="margin-bottom: 15px; position: relative; display: flex; flex-direction: column; text-align: left;">
+          <label for="buscarLibro" style="font-weight: bold; margin-bottom: 5px;">🔍 Buscar Libro en Google Books:</label>
+          <div class="buscador-box" style="display: flex; gap: 10px;">
+            <input type="text" id="buscarLibro" placeholder="Escribe el nombre del libro o autor..." style="flex: 1; padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;">
+            <button type="button" id="btn-buscar-gb" class="btn-secundario" style="padding: 10px 15px; background: #8b5a2b; color: #fff; border: 1px solid #d4af37; border-radius: 4px; cursor: pointer; font-weight: bold;">Buscar</button>
+          </div>
+          <div id="resultados-busqueda" class="resultados-busqueda" style="display: none; position: absolute; top: 100%; left: 0; right: 0; max-height: 220px; overflow-y: auto; background: #2a221b; color: #fff8e7; border: 2px solid #8b5a2b; border-radius: 4px; z-index: 1000; box-shadow: 0 8px 16px rgba(0,0,0,0.5);"></div>
         </div>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
-          <input type="text" id="input-buscar-libro-seguro" placeholder="Escribe el título del libro..." style="flex: 1; padding: 10px; border-radius: 6px; border: 1px solid #4a5568; background: #2d3748; color: #fff; outline: none; font-size: 0.95rem;">
-          <button id="btn-buscar-seguro" style="background: #3182ce; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.95rem;">Buscar</button>
-        </div>
-        <div id="resultados-busqueda-seguro" style="max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
-          <p style="text-align: center; color: #a0aec0; font-size: 0.9rem; padding: 20px 0;">Escribe un título para comenzar tu búsqueda.</p>
-        </div>
+
+        <hr style="border-color: #8b5a2b; margin: 15px 0;">
+
+        <form id="form-crear-reto">
+          <div class="form-group" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left;">
+            <label for="titulo" style="font-weight: bold; margin-bottom: 5px;">Título del Libro:</label>
+            <input type="text" id="titulo" placeholder="Ej: La Sombra del Viento" required style="padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;">
+          </div>
+
+          <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 15px;">
+            <div class="form-group" style="flex: 1; display: flex; flex-direction: column; text-align: left;">
+              <label for="autor" style="font-weight: bold; margin-bottom: 5px;">Autor(es):</label>
+              <input type="text" id="autor" placeholder="Ej: Carlos Ruiz Zafón" required style="padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;">
+            </div>
+            <div class="form-group" style="flex: 1; display: flex; flex-direction: column; text-align: left;">
+              <label for="paginas" style="font-weight: bold; margin-bottom: 5px;">Número de Páginas:</label>
+              <input type="number" id="paginas" min="1" placeholder="Ej: 576" required style="padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;">
+            </div>
+          </div>
+
+          <!-- ESTADO DE LA MISIÓN -->
+          <div class="form-group" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left;">
+            <label for="estado-mision" style="font-weight: bold; margin-bottom: 5px;">Estado Inicial:</label>
+            <select id="estado-mision" style="padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;">
+              <option value="en_progreso">En Progreso (Leyendo)</option>
+              <option value="completada">Completada (Terminada)</option>
+            </select>
+          </div>
+
+          <!-- DESCRIPCIÓN -->
+          <div class="form-group" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left;">
+            <label for="descripcion" style="font-weight: bold; margin-bottom: 5px;">Proclama / Sinopsis:</label>
+            <textarea id="descripcion" rows="3" placeholder="Notas o sinopsis..." required style="padding: 10px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7; color: #3b2219;"></textarea>
+          </div>
+
+          <!-- GÉNEROS -->
+          <div class="form-group" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left;">
+            <label style="font-weight: bold; margin-bottom: 5px;">Géneros del Libro:</label>
+            <div id="generos-tags-contenedor" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7; display: flex; flex-wrap: wrap; gap: 5px;"></div>
+            <select id="select-generos-disponibles" style="width: 100%; padding: 8px; margin-bottom: 8px; border: 2px solid #5a3a1a; border-radius: 4px; background: #fff8e7;">
+              <option value="">Cargando géneros...</option>
+            </select>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; background: rgba(139, 90, 43, 0.1); padding: 8px; border-radius: 4px; border: 1px dashed #8b5a2b;">
+              <input type="text" id="input-nuevo-genero" placeholder="Nuevo género..." style="flex: 2; padding: 6px; border: 1px solid #5a3a1a; border-radius: 4px;">
+              <select id="select-genero-padre" style="flex: 2; padding: 6px; border: 1px solid #5a3a1a; border-radius: 4px;">
+                <option value="">-- Padre --</option>
+                <option value="fantasia">Fantasía</option>
+                <option value="terror">Terror</option>
+                <option value="poesia">Poesía</option>
+                <option value="clasicos">Clásicos</option>
+                <option value="ficcion">Ficción</option>
+                <option value="no_ficcion">No Ficción</option>
+                <option value="filosofia">Filosofía</option>
+                <option value="historica">Histórica</option>
+                <option value="ciencia_ficcion">Ciencia Ficción</option>
+                <option value="romance">Romance</option>
+              </select>
+              <button type="button" id="btn-agregar-genero" class="btn-secundario" style="padding: 6px 12px; background: #8b5a2b; color: white; border: none; border-radius: 4px; cursor: pointer;">+ Añadir</button>
+            </div>
+          </div>
+
+          <!-- PORTADA -->
+          <div class="form-group" style="margin-bottom: 15px; display: flex; flex-direction: column; text-align: left;">
+            <label for="portadaFile" style="font-weight: bold; margin-bottom: 5px;">Portada:</label>
+            <input type="file" id="portadaFile" accept="image/*">
+            <input type="hidden" id="portadaUrlGB">
+            <img id="preview-portada" class="preview-portada" alt="Previsualización" style="max-width: 100px; margin-top: 8px; border: 2px solid #8b5a2b; border-radius: 4px; display: none;">
+          </div>
+
+          <!-- RASGOS Y CICATRICES -->
+          <div class="seccion-huellas" style="border: 2px dashed #8b5a2b; padding: 12px; border-radius: 6px; background: rgba(139, 90, 43, 0.05); margin-bottom: 15px; text-align: left;">
+            <label style="font-weight: bold; display: block; margin-bottom: 8px;">🎭 Huellas Automáticas (Rasgos y Cicatrices):</label>
+            <div style="margin-top: 6px;"><small><strong>Rasgos:</strong></small><div id="container-rasgos" class="tag-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;"></div></div>
+            <div style="margin-top: 10px;"><small><strong>Cicatrices:</strong></small><div id="container-cicatrices" class="tag-container" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px;"></div></div>
+          </div>
+
+          <div id="mensaje-estado" class="mensaje-estado" style="margin-bottom: 15px; text-align: center; font-weight: bold;"></div>
+
+          <button type="submit" id="btn-submit" class="btn-crear" style="width: 100%; padding: 12px; background: #8b5a2b; color: white; border: 1px solid #d4af37; border-radius: 4px; font-weight: bold; font-size: 1.1rem; cursor: pointer;">⚔️ Aceptar Misión</button>
+        </form>
       </div>
     </div>
   `;

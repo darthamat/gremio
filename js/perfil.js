@@ -11,6 +11,7 @@ import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlN
 // Usamos el buscador limpio y aislado para las misiones secundarias
 import { inicializarBotonMisionPersonal } from "./buscadorMisionesPersonal.js";
 
+
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -38,6 +39,7 @@ onAuthStateChanged(auth, async (user) => {
     await cargarDatosAventurero(currentUserDocRef);
   });
 });
+
 
 // Carga de datos del perfil
 async function cargarDatosAventurero(docRef) {
