@@ -6,6 +6,9 @@ import { app } from "./firebase-config.js";
 const db = getFirestore(app);
 const auth = getAuth(app);
 
+// 🔑 CLAVE DE GOOGLE BOOKS RECUPERADA
+const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
+
 export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
   // Aseguramos que el modal exista en el DOM
   asegurarModalEnHTML();
@@ -49,7 +52,7 @@ export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
   });
 }
 
-// Función encargada de llamar a la API de Google Books y pintar los resultados
+// Función encargada de llamar a la API de Google Books incluyendo la API Key
 async function ejecutarBusquedaGoogleBooks(userIdParam) {
   const inputBusqueda = document.getElementById("input-buscar-libro-api");
   const contenedorResultados = document.getElementById("resultados-busqueda-libros");
@@ -65,7 +68,12 @@ async function ejecutarBusquedaGoogleBooks(userIdParam) {
   contenedorResultados.innerHTML = `<p style="text-align:center; color: #d4af37; padding: 15px;">⏳ Buscando en los antiguos tomos...</p>`;
 
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6`);
+    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&key=${GOOGLE_BOOKS_API_KEY}`);
+    
+    if (!response.ok) {
+      throw new Error(`Error en la respuesta de Google Books: ${response.status}`);
+    }
+
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {
@@ -98,7 +106,6 @@ async function ejecutarBusquedaGoogleBooks(userIdParam) {
 
       const btnElegir = tarjetaLibro.querySelector(".btn-seleccionar-libro-item");
       btnElegir.addEventListener("click", async () => {
-        // Obtenemos el ID de usuario de forma síncrona y segura mediante la importación de getAuth
         const authUid = userIdParam || (auth.currentUser ? auth.currentUser.uid : null);
         
         if (!authUid) {
@@ -131,7 +138,7 @@ async function ejecutarBusquedaGoogleBooks(userIdParam) {
 
   } catch (err) {
     console.error("Error buscando libros en Google Books:", err);
-    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error de conexión con Google Books.</p>`;
+    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error de conexión o límite superado en Google Books.</p>`;
   }
 }
 
