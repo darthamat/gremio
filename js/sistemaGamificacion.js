@@ -3,7 +3,7 @@ import { BANCO_HUELLAS } from "./rasgosData.js";
 import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js"
 
-const db = getFirestore();
+const db = getFirestore(app);
 
 /**
  * Normaliza cualquier texto de género a la clave compatible en BANCO_HUELLAS
