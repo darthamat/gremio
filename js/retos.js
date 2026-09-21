@@ -425,6 +425,7 @@ async function aceptarMisionSecundaria(misionId) {
 
 // Completar Misión Secundaria
 // Completar Misión Secundaria (Con Enfrentamiento Final y Alerta de Botín)
+// Completar Misión Secundaria (Sin XP, solo Prestigio, Marcapáginas, Botín y Huellas)
 async function completarMisionSecundaria(misionId, elementoBoton) {
   if (ejecucionEnProceso) return;
   ejecucionEnProceso = true;
@@ -450,8 +451,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
     const tituloLibro = data.titulo || "Misión Secundaria";
     const autorLibro = data.autor || "Desconocido";
 
-    // ⚔️ 1. INVOCAR ENFRENTAMIENTO FINAL (Igual que en los retos del Gremio)
-    // Nota: Asegúrate de importar generarEnfrentamientoFinal y mostrarModalEncuentro en retos.js si no los tienes arriba
+    // ⚔️ 1. INVOCAR ENFRENTAMIENTO FINAL
     const encuentro = await generarEnfrentamientoFinal(tituloLibro, autorLibro, genero);
     await mostrarModalEncuentro(encuentro);
 
@@ -484,13 +484,12 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       }
     }
 
-    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+    // OJO: Sin ganancia de XP (se mantiene en 0), solo Prestigio y Marcapáginas
     const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
-    // 3. Guardar experiencia, métricas principales y botín en Firestore
+    // 3. Guardar métricas principales y botín en Firestore (sin XP)
     await updateDoc(userRef, {
-      xp: increment(gananciaXP),
       prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
@@ -544,7 +543,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
       });
     }
 
-    alert(`🎉 ¡Misión Secundaria Superada!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgBotin}${msgHuellas}`);
+    alert(`🎉 ¡Misión Secundaria Superada!\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgBotin}${msgHuellas}`);
 
     await cargarMisionesSecundariasGlobales();
 
