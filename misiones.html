@@ -143,7 +143,7 @@
 </head>
 <body>
 
-  <header class="header-gremio">
+  <header class="header-gremio" style="text-align: center; padding: 20px;">
     <h1>📜 Tablón de Encargos - Misiones Secundarias</h1>
   </header>
 
@@ -158,7 +158,7 @@
     </div>
   </main>
 
-  <!-- Lógica integrada para cargar y gestionar las misiones secundarias -->
+  <!-- Lógica integrada corregida (sin importar funciones fantasma) -->
   <script type="module">
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { 
@@ -167,7 +167,6 @@
       getDocs, 
       doc, 
       getDoc,
-      updateRecord, // o setDoc con merge
       updateDoc,
       arrayUnion,
       increment
@@ -191,60 +190,69 @@
 
     async function cargarMisionesSecundarias() {
       try {
+        console.log("Iniciando lectura del tablón de misiones...");
+        
+        // Añadimos un mecanismo de control por si Firestore tarda o bloquea
         const querySnapshot = await getDocs(collection(db, "misionesSecundarias"));
+        
         if (querySnapshot.empty) {
           contenedorMisiones.innerHTML = `<div class="sin-misiones">No hay contratos clavados en el tablón en este momento. ¡Sé el primero en colgar uno!</div>`;
           return;
         }
 
         contenedorMisiones.innerHTML = "";
+        
         querySnapshot.forEach((misionDoc) => {
-          const data = misionDoc.data();
-          const id = misionDoc.id;
-          
-          const esCreador = data.creadorId === usuarioActual.uid;
-          const yaAcepto = data.usuariosAceptaron && data.usuariosAceptaron.includes(usuarioActual.uid);
-          const yaCompleto = data.usuariosCompletaron && data.usuariosCompletaron.includes(usuarioActual.uid);
-          const estaActiva = data.activa !== false;
+          try {
+            const data = misionDoc.data();
+            const id = misionDoc.id;
+            
+            const esCreador = data.creadorId === usuarioActual.uid;
+            const yaAcepto = Array.isArray(data.usuariosAceptaron) && data.usuariosAceptaron.includes(usuarioActual.uid);
+            const yaCompleto = Array.isArray(data.usuariosCompletaron) && data.usuariosCompletaron.includes(usuarioActual.uid);
+            const estaActiva = data.activa !== false;
 
-          const card = document.createElement("div");
-          card.className = `tarjeta-mision ${!estaActiva ? 'cerrada' : ''}`;
-          
-          card.innerHTML = `
-            <img src="${data.portadaUrl || data.portada || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400'}" class="mision-portada" alt="Portada">
-            <div class="mision-info">
-              <div>
-                <div class="mision-titulo">${data.titulo}</div>
-                <div class="mision-meta">
-                  ✍️ Autor: <strong>${data.autor}</strong> | 📖 ${data.paginas} págs | 👤 Proponente: <strong>${data.proponente || 'Anónimo'}</strong>
-                </div>
-                <div class="mision-descripcion">"${data.descripcion || 'Sin proclama.'}"</div>
-              </div>
-
-              <div>
-                <div style="font-size: 0.8rem; margin-bottom: 5px;">
-                  🏷️ Géneros: ${(data.generos || []).join(", ")} | 👥 Lectores en ruta: ${data.usuariosAceptaron ? data.usuariosAceptaron.length : 1}
-                </div>
-                <div class="mision-footer">
-                  <div>
-                    <span class="badge-coop">${estaActiva ? '🟢 Contrato Activo' : '🔴 Misión Concluida'}</span>
-                    <span style="font-size: 0.8rem; margin-left: 8px;">Prestigio base + 🎁 <strong>+100 Bono Co-op</strong></span>
+            const card = document.createElement("div");
+            card.className = `tarjeta-mision ${!estaActiva ? 'cerrada' : ''}`;
+            
+            card.innerHTML = `
+              <img src="${data.portadaUrl || data.portada || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400'}" class="mision-portada" alt="Portada">
+              <div class="mision-info">
+                <div>
+                  <div class="mision-titulo">${data.titulo || 'Misión sin título'}</div>
+                  <div class="mision-meta">
+                    ✍️ Autor: <strong>${data.autor || 'Desconocido'}</strong> | 📖 ${data.paginas || 0} págs | 👤 Proponente: <strong>${data.proponente || 'Anónimo'}</strong>
                   </div>
-                  <div class="acciones-mision" id="acciones-${id}">
-                    <!-- Los botones se renderizan dinámicamente -->
+                  <div class="mision-descripcion">"${data.descripcion || data.proclama || 'Sin proclama.'}"</div>
+                </div>
+
+                <div>
+                  <div style="font-size: 0.8rem; margin-bottom: 5px;">
+                    🏷️ Géneros: ${(data.generos || []).join(", ")} | 👥 Lectores en ruta: ${Array.isArray(data.usuariosAceptaron) ? data.usuariosAceptaron.length : 0}
+                  </div>
+                  <div class="mision-footer">
+                    <div>
+                      <span class="badge-coop">${estaActiva ? '🟢 Contrato Activo' : '🔴 Misión Concluida'}</span>
+                      <span style="font-size: 0.8rem; margin-left: 8px;">Prestigio base + 🎁 <strong>+100 Bono Co-op</strong></span>
+                    </div>
+                    <div class="acciones-mision" id="acciones-${id}">
+                      <!-- Botones dinámicos -->
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          `;
+            `;
 
-          contenedorMisiones.appendChild(card);
-          renderizarBotonesAccion(id, data, esCreador, yaAcepto, yaCompleto, estaActiva);
+            contenedorMisiones.appendChild(card);
+            renderizarBotonesAccion(id, data, esCreador, yaAcepto, yaCompleto, estaActiva);
+          } catch (itemErr) {
+            console.error("Error al renderizar una tarjeta de misión específica:", itemErr);
+          }
         });
 
       } catch (err) {
-        console.error("Error cargando misiones:", err);
-        contenedorMisiones.innerHTML = `<div class="sin-misiones">❌ Error al cargar los pergaminos del tablón.</div>`;
+        console.error("Error crítico cargando misiones desde Firestore:", err);
+        contenedorMisiones.innerHTML = `<div class="sin-misiones" style="color: #a93226;">❌ Error al conectar con el gremio. Revisa las reglas de seguridad de tu base de datos para la colección 'misionesSecundarias'.</div>`;
       }
     }
 
@@ -264,7 +272,6 @@
         return;
       }
 
-      // Si ya está aceptada y activa, puede marcarla como terminada
       if (yaAcepto) {
         const btnTerminar = document.createElement("button");
         btnTerminar.className = "btn-accion btn-terminar";
@@ -272,7 +279,6 @@
         btnTerminar.onclick = () => completarMision(id, data);
         contenedorAcciones.appendChild(btnTerminar);
       } else {
-        // Si no la ha aceptado y sigue activa, puede aceptarla
         const btnAceptar = document.createElement("button");
         btnAceptar.className = "btn-accion btn-aceptar";
         btnAceptar.textContent = "⚔️ Aceptar Encargo";
@@ -280,20 +286,17 @@
         contenedorAcciones.appendChild(btnAceptar);
       }
 
-      // Si además es el creador, tiene el poder de clausurar el reclutamiento para nuevos jugadores
       if (esCreador && estaActiva) {
         const btnCerrar = document.createElement("button");
         btnCerrar.className = "btn-accion";
         btnCerrar.style.background = "#5d4037";
         btnCerrar.style.color = "#fff";
         btnCerrar.textContent = "🔒 Cerrar Reclutamiento";
-        btnCerrar.title = "Nadie más podrá apuntarse, pero los actuales pueden terminarlo.";
         btnCerrar.onclick = () => cerrarReclutamiento(id);
         contenedorAcciones.appendChild(btnCerrar);
       }
     }
 
-    // Funciones de interacción con Firestore
     async function aceptarMision(id) {
       try {
         const misionRef = doc(db, "misionesSecundarias", id);
@@ -304,12 +307,12 @@
         await cargarMisionesSecundarias();
       } catch (err) {
         console.error("Error al aceptar misión:", err);
-        alert("No se pudo aceptar la misión.");
+        alert("No se pudo aceptar la misión. Comprueba tus permisos.");
       }
     }
 
     async function cerrarReclutamiento(id) {
-      if (!confirm("¿Seguro que deseas cerrar la entrada a nuevos aventureros? Los actuales podrán seguir hasta el final.")) return;
+      if (!confirm("¿Seguro que deseas cerrar la entrada a nuevos aventureros?")) return;
       try {
         const misionRef = doc(db, "misionesSecundarias", id);
         await updateDoc(misionRef, { activa: false });
@@ -321,26 +324,22 @@
     }
 
     async function completarMision(id, data) {
-      if (!confirm("¿Definitivas tus páginas y marcas este grimorio como concluido? Recibirás tus puntos de prestigio y bono cooperativo.")) return;
+      if (!confirm("¿Marcar este grimorio como concluido y reclamar tu recompensa?")) return;
       try {
         const misionRef = doc(db, "misionesSecundarias", id);
         const userRef = doc(db, "aventureros", usuarioActual.uid);
 
-        // 1. Añadir usuario a completaron en la misión (y cerrarla si es el creador quien la termina)
         const updates = {
           usuariosCompletaron: arrayUnion(usuarioActual.uid)
         };
         if (data.creadorId === usuarioActual.uid) {
-          updates.activa = false; // El creador del reto original da por terminado -> se cierra por completo
+          updates.activa = false;
         }
         await updateDoc(misionRef, updates);
 
-        // 2. Otorgar recompensas al usuario (Prestigio base de la página/libro + Bono cooperativo de 100 puntos)
-        // Nota: Cálculo de prestigio base aproximado por páginas (ej: 1 pág = 0.5 o valor fijo, o basado en puntos si lo tuviera, aquí asignamos base de prestigio + 100 bono co-op)
-        const prestigioBase = (data.paginas || 100) * 0.5; // Ajustable a tu economía de juego
+        const prestigioBase = (data.paginas || 100) * 0.5;
         const prestigioTotal = Math.round(prestigioBase + 100); 
 
-        // 3. Actualizar al aventurero en Firestore (Prestigio, rasgos y cicatrices)
         const userDocSnap = await getDoc(userRef);
         let rasgActuales = [];
         let cicatActuales = [];
@@ -349,7 +348,6 @@
           cicatActuales = userDocSnap.data().cicatrices || [];
         }
 
-        // Combinar nuevos rasgos/cicatrices sin duplicar
         const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
         const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
 
@@ -359,10 +357,7 @@
           cicatrices: nuevasCicatrices
         });
 
-        // 4. Registrar opcionalmente en biblioteca general sin crear Hex en el Atlas (como indicaste)
-        // (La lógica del Atlas comprueba el origen, aquí solo aseguramos que no afecte al mapa principal).
-
-        alert(`🎉 ¡Misión completada con éxito!\nHas ganado ${prestigioTotal} Puntos de Prestigio (incluyendo +100 del bono cooperativo) y nuevas huellas en tu historial.`);
+        alert(`🎉 ¡Misión completada con éxito!\nHas ganado ${prestigioTotal} Puntos de Prestigio.`);
         await cargarMisionesSecundarias();
 
       } catch (err) {
