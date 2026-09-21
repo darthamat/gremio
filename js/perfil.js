@@ -8,8 +8,8 @@ import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 
-// Usamos el gestor unificado para las misiones y buscador de libros
-import { inicializarFormularioLibro } from "./adminGestorLibros.js";
+// Usamos el buscador limpio y aislado para las misiones secundarias
+import { inicializarBotonMisionPersonal } from "./buscadorMisionesPersonal.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -32,11 +32,9 @@ onAuthStateChanged(auth, async (user) => {
   inicializarAcordeon();
   inicializarCerrarSesion();
   inicializarAvatar();
-  inicializarBotonMisionPersonal();
 
-  // Inicializamos el formulario / modal de libros unificado para este aventurero
-  inicializarFormularioLibro('aventurero', currentUserId, async (nuevaMision) => {
-    alert("🎉 ¡Misión secundaria aceptada con éxito!");
+  // Inicializamos el buscador de misiones secundarias de forma segura
+  inicializarBotonMisionPersonal(currentUserId, async () => {
     await cargarDatosAventurero(currentUserDocRef);
   });
 });
@@ -302,15 +300,5 @@ function inicializarAvatar() {
       console.error(err);
       alert("❌ Fallo al cambiar el avatar");
     }
-  });
-}
-
-function inicializarBotonMisionPersonal() {
-  const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || document.getElementById("btn-abrir-buscador-mision");
-  if (!btnAbrir) return;
-
-  btnAbrir.addEventListener("click", () => {
-    // Si prefieres que abra la página comunitaria de misiones o active el modal de adminGestorLibros:
-    // window.location.href = "misiones.html";
   });
 }
