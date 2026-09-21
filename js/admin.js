@@ -8,7 +8,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 
-import { inicializarFormularioLibro } from "./adminOGestorLibros.js";
+import { inicializarFormularioLibro } from "./adminGestorLibros.js";
 inicializarFormularioLibro('admin');
 
 // 🔑 IMPORTACIÓN DEL BANCO DE HUELLAS CENTRALIZADO
