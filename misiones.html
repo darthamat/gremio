@@ -3,247 +3,373 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tablón de Portales y Misiones | Clan de Lectura</title>
-  
-  <!-- Estilos base y de la aplicación -->
-  <link rel="stylesheet" href="css/variables.css">
-  <link rel="stylesheet" href="css/perfil.css">
-  <link rel="stylesheet" href="css/acordeon-estadisticas.css">
-  
-  <!-- Fuentes épicas (Cinzel) -->
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-
+  <title>Gremio - Tablón de Misiones Secundarias</title>
+  <link rel="stylesheet" href="css/retos.css">
   <style>
-    /* Estilos específicos para el tablón de misiones */
     .tablon-container {
       max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
+      margin: 30px auto;
+      background: var(--bg-pergamino, #f3e5ab);
+      border: 4px solid var(--borde-pergamino, #8b5a2b);
+      padding: 25px;
+      border-radius: 6px;
+      color: var(--texto-pergamino, #3b2219);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.6);
     }
-    
-    .tablon-header {
+    .header-tablon {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 25px;
-      border-bottom: 2px solid rgba(255, 215, 0, 0.2);
-      padding-bottom: 15px;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #8b5a2b;
+      padding-bottom: 10px;
     }
-
-    .tablon-header h1 {
-      font-family: 'Cinzel', serif;
-      color: #ffd700;
-      font-size: 1.8rem;
+    .btn-secundario {
+      padding: 8px 12px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      background: #8b5a2b;
+      color: #fff;
+      border: 1px solid #d4af37;
+      border-radius: 4px;
+      text-decoration: none;
+      cursor: pointer;
     }
-
-    /* Tarjetas de Portales Comunitarios */
-    .mision-portal-card {
+    .btn-secundario:hover {
+      background: #a66c35;
+    }
+    .grid-misiones {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .tarjeta-mision {
+      background: rgba(255, 248, 231, 0.9);
+      border: 2px solid #5a3a1a;
+      border-radius: 6px;
+      padding: 15px;
       display: flex;
       gap: 20px;
-      background: #121926;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 15px;
-      align-items: center;
-      transition: border-color 0.2s, transform 0.2s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-
-    .mision-portal-card:hover {
-      border-color: #ffd700;
-      transform: translateY(-2px);
+    .tarjeta-mision.cerrada {
+      opacity: 0.8;
+      border-color: #714b29;
+      background: rgba(220, 205, 175, 0.7);
     }
-
-    .portal-portada {
-      width: 80px;
-      height: 120px;
+    .mision-portada {
+      width: 100px;
+      height: 140px;
       object-fit: cover;
-      border-radius: 6px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-    }
-
-    .portal-detalles {
-      flex-grow: 1;
-    }
-
-    .portal-detalles h3 {
-      font-family: 'Cinzel', serif;
-      color: #ffd700;
-      margin-bottom: 5px;
-      font-size: 1.2rem;
-    }
-
-    .portal-detalles .autor {
-      color: #a0aec0;
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-    }
-
-    .portal-detalles .proclama {
-      font-style: italic;
-      color: #cbd5e0;
-      font-size: 0.85rem;
-      background: rgba(0,0,0,0.2);
-      padding: 6px 10px;
-      border-left: 3px solid #ffd700;
+      border: 2px solid #8b5a2b;
       border-radius: 4px;
-      margin-bottom: 8px;
+      flex-shrink: 0;
     }
-
-    .portal-meta {
-      font-size: 0.8rem;
-      color: #718096;
-    }
-
-    .portal-accion {
+    .mision-info {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      min-width: 160px;
+      justify-content: space-between;
     }
-
-    .btn-unirse {
-      background: linear-gradient(135deg, #ffd700, #cca600);
-      color: #0d131d;
+    .mision-titulo {
+      font-size: 1.2rem;
       font-weight: bold;
-      border: none;
-      padding: 10px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: filter 0.2s;
-      font-family: 'Cinzel', serif;
+      color: #2a150c;
+      margin-bottom: 4px;
+    }
+    .mision-meta {
       font-size: 0.85rem;
-      text-align: center;
+      color: #5c4033;
+      margin-bottom: 8px;
     }
-
-    .btn-unirse:hover {
-      filter: brightness(1.15);
+    .mision-descripcion {
+      font-size: 0.95rem;
+      font-style: italic;
+      margin-bottom: 10px;
+      background: rgba(139, 90, 43, 0.05);
+      padding: 8px;
+      border-radius: 4px;
     }
-
-    .btn-unido {
-      background: rgba(74, 222, 128, 0.15);
-      color: #4ade80;
-      border: 1px solid #4ade80;
-      padding: 10px 14px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: bold;
-      text-align: center;
-    }
-
-    /* Estilos del Modal reutilizados */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
+    .mision-footer {
       display: flex;
-      justify-content: center;
+      justify-content: space-between;
       align-items: center;
-      z-index: 1000;
+      margin-top: 10px;
+      border-top: 1px dashed #8b5a2b;
+      padding-top: 8px;
     }
-    .modal-overlay.oculto { display: none; }
-    .modal-contenido {
-      background: #121926;
-      border: 2px solid #ffd700;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 600px;
-      max-height: 90vh;
-      overflow-y: auto;
+    .badge-coop {
+      background: #3b2219;
+      color: #f3e5ab;
+      padding: 3px 8px;
+      border-radius: 10px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .acciones-mision {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-accion {
+      padding: 6px 12px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      border-radius: 4px;
+      cursor: pointer;
+      border: 1px solid #5a3a1a;
+    }
+    .btn-aceptar {
+      background: #2e7d32;
+      color: white;
+    }
+    .btn-aceptar:hover { background: #388e3c; }
+    .btn-terminar {
+      background: #c62828;
+      color: white;
+    }
+    .btn-terminar:hover { background: #d32f2f; }
+    .btn-completado {
+      background: #455a64;
+      color: #cfd8dc;
+      cursor: not-allowed;
+    }
+    .sin-misiones {
+      text-align: center;
+      font-style: italic;
+      padding: 30px;
+      color: #5c4033;
     }
   </style>
 </head>
-<body class="cuerpo-fantasia">
+<body>
 
-  <div class="tablon-container">
-    
-    <!-- Cabecera del Tablón -->
-    <div class="tablon-header">
-      <div>
-        <h1>📜 Tablón de Portales Comunitarios</h1>
-        <p style="color: #a0aec0; font-size: 0.9rem;">Únete a expediciones grupales o abre un nuevo portal para viajar en compañía y ganar Puntos de Clan.</p>
-      </div>
-      <div style="display: flex; gap: 10px;">
-        <button id="btn-abrir-buscador-mision" class="btn-unirse">✨ Abrir Portal</button>
-        <a href="perfil.html" class="btn-unirse" style="background: #253346; color: #fff; text-decoration: none; display:inline-flex; align-items:center;">🛡️ Mi Perfil</a>
-      </div>
+  <header class="header-gremio">
+    <h1>📜 Tablón de Encargos - Misiones Secundarias</h1>
+  </header>
+
+  <main class="tablon-container">
+    <div class="header-tablon">
+      <a href="perfil.html" class="btn-secundario">⬅️ Volver al Refugio</a>
+      <a href="crearMisionSecundaria.html" class="btn-secundario">➕ Clavar Nuevo Encargo</a>
     </div>
 
-    <!-- Lista de Misiones de la Comunidad -->
-    <div id="tablon-misiones-lista">
-      <!-- Se carga dinámicamente desde js/misiones.js -->
-      <p style="color: #a0aec0; text-align: center;">Invocando portales del multiverso literario...</p>
+    <div id="contenedor-misiones" class="grid-misiones">
+      <div class="sin-misiones">⏳ Leyendo pergaminos del tablón...</div>
     </div>
+  </main>
 
-  </div>
+  <!-- Lógica integrada para cargar y gestionar las misiones secundarias -->
+  <script type="module">
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getFirestore, 
+      collection, 
+      getDocs, 
+      doc, 
+      getDoc,
+      updateRecord, // o setDoc con merge
+      updateDoc,
+      arrayUnion,
+      increment
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { app } from "./firebase-config.js";
 
-  <!-- MODAL: CREAR / BUSCAR PORTAL DE LECTURA -->
-  <div id="modal-buscador-mision" class="modal-overlay oculto">
-    <div class="modal-contenido">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 style="color: #ffd700; font-family: 'Cinzel', serif;">Abrir un Nuevo Portal</h2>
-        <button id="btn-cerrar-modal-mision" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer;">&times;</button>
-      </div>
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const contenedorMisiones = document.getElementById("contenedor-misiones");
 
-      <!-- Buscador Google Books -->
-      <div style="margin-bottom: 15px;">
-        <label style="color: #a0aec0; font-size: 0.85rem; display:block; margin-bottom: 5px;">Buscar libro en Google Books:</label>
-        <div style="display: flex; gap: 8px;">
-          <input type="text" id="input-buscar-libro" placeholder="Título o autor..." style="flex-grow: 1; padding: 10px; background: #0d131d; border: 1px solid #2a3a52; color: #fff; border-radius: 6px;">
-          <button id="btn-ejecutar-busqueda" class="btn-unirse" style="padding: 10px 15px;">🔍 Buscar</button>
-        </div>
-        <div id="resultados-busqueda-libros" style="margin-top: 10px; max-height: 200px; overflow-y: auto;"></div>
-      </div>
+    let usuarioActual = null;
 
-      <!-- Formulario de Confirmación del Portal -->
-      <form id="form-crear-portal">
-        <div style="margin-bottom: 12px;">
-          <label style="color:#a0aec0; font-size:0.85rem;">Título del Libro:</label>
-          <input type="text" id="mision-titulo" required style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
-        </div>
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+      usuarioActual = user;
+      await cargarMisionesSecundarias();
+    });
 
-        <div style="margin-bottom: 12px;">
-          <label style="color:#a0aec0; font-size:0.85rem;">Autor:</label>
-          <input type="text" id="mision-autor" required style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
-        </div>
+    async function cargarMisionesSecundarias() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "misionesSecundarias"));
+        if (querySnapshot.empty) {
+          contenedorMisiones.innerHTML = `<div class="sin-misiones">No hay contratos clavados en el tablón en este momento. ¡Sé el primero en colgar uno!</div>`;
+          return;
+        }
 
-        <div style="display: flex; gap: 10px; margin-bottom: 12px;">
-          <div style="flex: 1;">
-            <label style="color:#a0aec0; font-size:0.85rem;">Páginas:</label>
-            <input type="number" id="mision-paginas" required min="1" style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
-          </div>
-          <div style="flex: 2;">
-            <label style="color:#a0aec0; font-size:0.85rem;">URL de Portada:</label>
-            <input type="url" id="mision-portada-url" placeholder="https://..." style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;">
-          </div>
-        </div>
+        contenedorMisiones.innerHTML = "";
+        querySnapshot.forEach((misionDoc) => {
+          const data = misionDoc.data();
+          const id = misionDoc.id;
+          
+          const esCreador = data.creadorId === usuarioActual.uid;
+          const yaAcepto = data.usuariosAceptaron && data.usuariosAceptaron.includes(usuarioActual.uid);
+          const yaCompleto = data.usuariosCompletaron && data.usuariosCompletaron.includes(usuarioActual.uid);
+          const estaActiva = data.activa !== false;
 
-        <div style="margin-bottom: 15px;">
-          <label style="color:#a0aec0; font-size:0.85rem;">Proclama de Expedición (Motivación o notas):</label>
-          <textarea id="mision-proclama" rows="2" placeholder="Ej: ¡Vamos a conquistar este clásico juntos!" style="width:100%; padding:8px; background:#0d131d; border:1px solid #2a3a52; color:#fff; border-radius:6px;"></textarea>
-        </div>
+          const card = document.createElement("div");
+          card.className = `tarjeta-mision ${!estaActiva ? 'cerrada' : ''}`;
+          
+          card.innerHTML = `
+            <img src="${data.portadaUrl || data.portada || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400'}" class="mision-portada" alt="Portada">
+            <div class="mision-info">
+              <div>
+                <div class="mision-titulo">${data.titulo}</div>
+                <div class="mision-meta">
+                  ✍️ Autor: <strong>${data.autor}</strong> | 📖 ${data.paginas} págs | 👤 Proponente: <strong>${data.proponente || 'Anónimo'}</strong>
+                </div>
+                <div class="mision-descripcion">"${data.descripcion || 'Sin proclama.'}"</div>
+              </div>
 
-        <!-- Géneros literarios -->
-        <div style="margin-bottom: 20px;">
-          <label style="color:#a0aec0; font-size:0.85rem; display:block; margin-bottom:5px;">Géneros:</label>
-          <div style="display: flex; flex-wrap: wrap; gap: 10px; font-size: 0.85rem; color: #fff;">
-            <label><input type="checkbox" name="genero" value="Fantasía" checked> Fantasía</label>
-            <label><input type="checkbox" name="genero" value="Ciencia Ficción"> Ciencia Ficción</label>
-            <label><input type="checkbox" name="genero" value="Misterio"> Misterio</label>
-            <label><input type="checkbox" name="genero" value="Historia"> Historia</label>
-            <label><input type="checkbox" name="genero" value="Romance"> Romance</label>
-          </div>
-        </div>
+              <div>
+                <div style="font-size: 0.8rem; margin-bottom: 5px;">
+                  🏷️ Géneros: ${(data.generos || []).join(", ")} | 👥 Lectores en ruta: ${data.usuariosAceptaron ? data.usuariosAceptaron.length : 1}
+                </div>
+                <div class="mision-footer">
+                  <div>
+                    <span class="badge-coop">${estaActiva ? '🟢 Contrato Activo' : '🔴 Misión Concluida'}</span>
+                    <span style="font-size: 0.8rem; margin-left: 8px;">Prestigio base + 🎁 <strong>+100 Bono Co-op</strong></span>
+                  </div>
+                  <div class="acciones-mision" id="acciones-${id}">
+                    <!-- Los botones se renderizan dinámicamente -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
 
-        <div style="text-align: right;">
-          <button type="submit" id="btn-guardar-mision" class="btn-unirse" style="width: 100%; padding: 12px;">✨ Lanzar Portal al Multiverso</button>
-        </div>
-      </form>
-    </div>
-  </div>
+          contenedorMisiones.appendChild(card);
+          renderizarBotonesAccion(id, data, esCreador, yaAcepto, yaCompleto, estaActiva);
+        });
 
-  <!-- Script principal del Tablón -->
-  <script type="module" src="js/misiones.js"></script>
+      } catch (err) {
+        console.error("Error cargando misiones:", err);
+        contenedorMisiones.innerHTML = `<div class="sin-misiones">❌ Error al cargar los pergaminos del tablón.</div>`;
+      }
+    }
+
+    function renderizarBotonesAccion(id, data, esCreador, yaAcepto, yaCompleto, estaActiva) {
+      const contenedorAcciones = document.getElementById(`acciones-${id}`);
+      if (!contenedorAcciones) return;
+
+      contenedorAcciones.innerHTML = "";
+
+      if (yaCompleto) {
+        contenedorAcciones.innerHTML = `<button class="btn-accion btn-completado" disabled>✔️ Misión Terminada</button>`;
+        return;
+      }
+
+      if (!estaActiva) {
+        contenedorAcciones.innerHTML = `<span style="font-size: 0.85rem; font-style: italic; color: #7f5539;">Cerrado a nuevos ingresos</span>`;
+        return;
+      }
+
+      // Si ya está aceptada y activa, puede marcarla como terminada
+      if (yaAcepto) {
+        const btnTerminar = document.createElement("button");
+        btnTerminar.className = "btn-accion btn-terminar";
+        btnTerminar.textContent = "🏁 Dar por Terminado";
+        btnTerminar.onclick = () => completarMision(id, data);
+        contenedorAcciones.appendChild(btnTerminar);
+      } else {
+        // Si no la ha aceptado y sigue activa, puede aceptarla
+        const btnAceptar = document.createElement("button");
+        btnAceptar.className = "btn-accion btn-aceptar";
+        btnAceptar.textContent = "⚔️ Aceptar Encargo";
+        btnAceptar.onclick = () => aceptarMision(id);
+        contenedorAcciones.appendChild(btnAceptar);
+      }
+
+      // Si además es el creador, tiene el poder de clausurar el reclutamiento para nuevos jugadores
+      if (esCreador && estaActiva) {
+        const btnCerrar = document.createElement("button");
+        btnCerrar.className = "btn-accion";
+        btnCerrar.style.background = "#5d4037";
+        btnCerrar.style.color = "#fff";
+        btnCerrar.textContent = "🔒 Cerrar Reclutamiento";
+        btnCerrar.title = "Nadie más podrá apuntarse, pero los actuales pueden terminarlo.";
+        btnCerrar.onclick = () => cerrarReclutamiento(id);
+        contenedorAcciones.appendChild(btnCerrar);
+      }
+    }
+
+    // Funciones de interacción con Firestore
+    async function aceptarMision(id) {
+      try {
+        const misionRef = doc(db, "misionesSecundarias", id);
+        await updateDoc(misionRef, {
+          usuariosAceptaron: arrayUnion(usuarioActual.uid)
+        });
+        alert("¡Te has unido al encargo cooperativo!");
+        await cargarMisionesSecundarias();
+      } catch (err) {
+        console.error("Error al aceptar misión:", err);
+        alert("No se pudo aceptar la misión.");
+      }
+    }
+
+    async function cerrarReclutamiento(id) {
+      if (!confirm("¿Seguro que deseas cerrar la entrada a nuevos aventureros? Los actuales podrán seguir hasta el final.")) return;
+      try {
+        const misionRef = doc(db, "misionesSecundarias", id);
+        await updateDoc(misionRef, { activa: false });
+        alert("Reclutamiento cerrado.");
+        await cargarMisionesSecundarias();
+      } catch (err) {
+        console.error("Error al cerrar reclutamiento:", err);
+      }
+    }
+
+    async function completarMision(id, data) {
+      if (!confirm("¿Definitivas tus páginas y marcas este grimorio como concluido? Recibirás tus puntos de prestigio y bono cooperativo.")) return;
+      try {
+        const misionRef = doc(db, "misionesSecundarias", id);
+        const userRef = doc(db, "aventureros", usuarioActual.uid);
+
+        // 1. Añadir usuario a completaron en la misión (y cerrarla si es el creador quien la termina)
+        const updates = {
+          usuariosCompletaron: arrayUnion(usuarioActual.uid)
+        };
+        if (data.creadorId === usuarioActual.uid) {
+          updates.activa = false; // El creador del reto original da por terminado -> se cierra por completo
+        }
+        await updateDoc(misionRef, updates);
+
+        // 2. Otorgar recompensas al usuario (Prestigio base de la página/libro + Bono cooperativo de 100 puntos)
+        // Nota: Cálculo de prestigio base aproximado por páginas (ej: 1 pág = 0.5 o valor fijo, o basado en puntos si lo tuviera, aquí asignamos base de prestigio + 100 bono co-op)
+        const prestigioBase = (data.paginas || 100) * 0.5; // Ajustable a tu economía de juego
+        const prestigioTotal = Math.round(prestigioBase + 100); 
+
+        // 3. Actualizar al aventurero en Firestore (Prestigio, rasgos y cicatrices)
+        const userDocSnap = await getDoc(userRef);
+        let rasgActuales = [];
+        let cicatActuales = [];
+        if (userDocSnap.exists()) {
+          rasgActuales = userDocSnap.data().rasgos || [];
+          cicatActuales = userDocSnap.data().cicatrices || [];
+        }
+
+        // Combinar nuevos rasgos/cicatrices sin duplicar
+        const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
+        const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
+
+        await updateDoc(userRef, {
+          prestigio: increment(prestigioTotal),
+          rasgos: nuevosRasgos,
+          cicatrices: nuevasCicatrices
+        });
+
+        // 4. Registrar opcionalmente en biblioteca general sin crear Hex en el Atlas (como indicaste)
+        // (La lógica del Atlas comprueba el origen, aquí solo aseguramos que no afecte al mapa principal).
+
+        alert(`🎉 ¡Misión completada con éxito!\nHas ganado ${prestigioTotal} Puntos de Prestigio (incluyendo +100 del bono cooperativo) y nuevas huellas en tu historial.`);
+        await cargarMisionesSecundarias();
+
+      } catch (err) {
+        console.error("Error al completar misión:", err);
+        alert("Ocurrió un error al registrar la conclusión de la misión.");
+      }
+    }
+  </script>
 </body>
 </html>

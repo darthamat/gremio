@@ -6,7 +6,6 @@
     <title>Ficha de Aventurero - El Gremio</title>
     <link rel="stylesheet" href="css/variables.css">
     <link rel="stylesheet" href="css/perfil.css">
-    
     <link rel="stylesheet" href="css/acordeon-estadisticas.css">
 </head>
 <body>
@@ -105,26 +104,36 @@
             </div>
 
             <div id="panel-contenido" class="panel-desplegable oculto">
+                
+                <!-- TAB ESTADÍSTICAS -->
                 <div id="tab-estadisticas" class="tab-contenido oculto">
                     <div id="acordeon-estadisticas"></div>
                 </div>
 
+                <!-- TAB MOCHILA -->
                 <div id="tab-mochila" class="tab-contenido oculto">
                     <h2>Mochila de Objetos</h2>
                     <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
                 </div>
 
+                <!-- TAB MISIONES (AQUÍ ESTABA EL ERROR DE UBICACIÓN) -->
                 <div id="tab-misiones" class="tab-contenido oculto">
-                    <div class="misiones-header-tab">
-                        <h2>Misiones y Lecturas Libres</h2>
-                        <button id="btn-abrir-buscador-mision" class="btn-accion-principal">
-                            ➕ Registrar Nueva Lectura Libre
-                        </button>
-                    </div>
-                    <div id="contenedor-misiones" class="misiones-grid">
-                        <!-- Se rellenará dinámicamente -->
+                    <div class="seccion-acordeon" id="seccion-misiones-secundarias">
+                        <h3>📜 Misiones Secundarias y Contratos</h3>
+                        <div class="contenido-acordeon">
+                            <!-- El botón redirige al creador de misiones libres -->
+                            <a href="crearMisionSecundaria.html" class="btn-secundario" style="margin-bottom: 15px; display: inline-block;">
+                                ➕ Publicar Nuevo Libro Libre
+                            </a>
+                            
+                            <!-- Contenedor donde se cargarán las misiones del usuario -->
+                            <div id="lista-misiones-usuario">
+                                <span style="font-style: italic;">Cargando tus encargos...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
+
             </div>
         </section>
 

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablón de Encargos - Publicar Misión Secundaria</title>
+  <link rel="stylesheet" href="css/retos.css">
+  <style>
+    .admin-container {
+      max-width: 700px;
+      margin: 30px auto;
+      background: var(--bg-pergamino, #f3e5ab);
+      border: 4px solid var(--borde-pergamino, #8b5a2b);
+      padding: 25px;
+      border-radius: 6px;
+      color: var(--texto-pergamino, #3b2219);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.6);
+    }
+    .form-group {
+      margin-bottom: 15px;
+      display: flex;
+      flex-direction: column;
+      text-align: left;
+    }
+    .buscador-container {
+      position: relative;
+    }
+    .form-row {
+      display: flex;
+      gap: 15px;
+    }
+    .form-row .form-group {
+      flex: 1;
+    }
+    .form-group label {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      padding: 10px;
+      border: 2px solid #5a3a1a;
+      border-radius: 4px;
+      font-size: 1rem;
+      background: #fff8e7;
+      color: #3b2219;
+    }
+    .btn-crear, .btn-secundario {
+      padding: 10px 15px;
+      font-size: 1rem;
+      font-weight: bold;
+      background: #8b5a2b;
+      color: #fff;
+      border: 1px solid #d4af37;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-crear:hover, .btn-secundario:hover {
+      background: #a66c35;
+    }
+    .buscador-box {
+      display: flex;
+      gap: 10px;
+    }
+    .buscador-box input {
+      flex: 1;
+    }
+    .resultados-busqueda {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #2a221b;
+      color: #fff8e7;
+      border: 2px solid #8b5a2b;
+      border-radius: 4px;
+      z-index: 1000;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+    }
+    .item-resultado {
+      padding: 8px 12px;
+      border-bottom: 1px solid #443224;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .item-resultado:hover {
+      background: #4a3627;
+    }
+    .preview-portada {
+      max-width: 120px;
+      margin-top: 10px;
+      border: 2px solid #8b5a2b;
+      border-radius: 4px;
+      display: none;
+    }
+    .seccion-huellas {
+      border: 2px dashed #8b5a2b;
+      padding: 15px;
+      border-radius: 6px;
+      background: rgba(139, 90, 43, 0.05);
+      margin-bottom: 15px;
+    }
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .tag {
+      background: #3b2219;
+      color: #f3e5ab;
+      padding: 4px 10px;
+      border-radius: 15px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag span {
+      cursor: pointer;
+      color: #ff6b6b;
+      font-weight: bold;
+    }
+    .mensaje-estado {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header-gremio">
+    <h1>📜 Tablón de Encargos - Publicar Misión Secundaria</h1>
+  </header>
+
+  <main class="admin-container">
+
+    <!-- BOTÓN VOLVER -->
+    <div class="header-acciones" style="margin-bottom: 15px;">
+      <a href="perfil.html" class="btn-secundario">⬅️ Volver al Refugio</a>
+    </div>
+    
+    <!-- BUSCADOR GOOGLE BOOKS -->
+    <div class="form-group buscador-container">
+      <label for="buscarLibro">🔍 Buscar Libro en Google Books:</label>
+      <div class="buscador-box">
+        <input type="text" id="buscarLibro" placeholder="Escribe el nombre del libro o autor...">
+        <button type="button" id="btn-buscar-gb" class="btn-secundario">Buscar</button>
+      </div>
+      <div id="resultados-busqueda" class="resultados-busqueda"></div>
+    </div>
+
+    <hr style="border-color: #8b5a2b; margin: 20px 0;">
+
+    <form id="form-crear-mision-secundaria">
+      <div class="form-group">
+        <label for="titulo">Título del Libro:</label>
+        <input type="text" id="titulo" placeholder="Ej: El Nombre del Viento" required>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="autor">Autor(es):</label>
+          <input type="text" id="autor" placeholder="Ej: Patrick Rothfuss" required>
+        </div>
+        <div class="form-group">
+          <label for="paginas">Número de Páginas:</label>
+          <input type="number" id="paginas" min="1" placeholder="Ej: 870" required>
+        </div>
+        <div class="form-group">
+          <label for="proponente">👤 Proponente *</label>
+          <input type="text" id="proponente" placeholder="Tu nombre de aventurero" required />
+        </div>
+      </div>
+
+      <!-- SINOPSIS / DESCRIPCIÓN -->
+      <div class="form-group">
+        <label for="descripcion">Proclama / Notas del Contrato:</label>
+        <textarea id="descripcion" rows="4" placeholder="Busco valientes para leer este grimorio en compañía..." required></textarea>
+      </div>
+
+      <!-- SECCIÓN MULTIGÉNERO CON HERENCIA -->
+      <div class="form-group">
+        <label>Géneros del Libro (Múltiples):</label>
+        <div id="generos-tags-contenedor" style="min-height: 38px; border: 2px solid #5a3a1a; border-radius: 4px; padding: 5px; margin-bottom: 8px; background: #fff8e7;"></div>
+
+        <select id="select-generos-disponibles" style="width: 100%; margin-bottom: 8px;">
+          <option value="">Cargando géneros...</option>
+        </select>
+
+        <div style="display: flex; flex-wrap: wrap; gap: 8px; background: rgba(139, 90, 43, 0.1); padding: 8px; border-radius: 4px; border: 1px dashed #8b5a2b;">
+          <input type="text" id="input-nuevo-genero" placeholder="Nuevo género..." style="flex: 2; min-width: 150px;">
+          
+          <select id="select-genero-padre" style="flex: 2; min-width: 150px;">
+            <option value="">-- Asignar Categoría Padre --</option>
+            <option value="fantasia">Fantasía</option>
+            <option value="terror">Terror / Horror</option>
+            <option value="poesia">Poesía</option>
+            <option value="clasicos">Clásicos</option>
+            <option value="ficcion">Ficción</option>
+            <option value="no_ficcion">No Ficción</option>
+            <option value="filosofia">Filosofía</option>
+            <option value="historica">Novela Histórica</option>
+            <option value="ciencia_ficcion">Ciencia Ficción</option>
+            <option value="romance">Romance</option>
+          </select>
+
+          <button type="button" id="btn-agregar-genero" class="btn-secundario" style="flex: 1;">+ Añadir</button>
+        </div>
+      </div>
+
+      <!-- PORTADA Y SUBIDA -->
+      <div class="form-group">
+        <label for="portadaFile">Portada (Archivo o Google Books):</label>
+        <input type="file" id="portadaFile" accept="image/*">
+        <input type="hidden" id="portadaUrlGB">
+        <img id="preview-portada" class="preview-portada" alt="Previsualización de Portada">
+      </div>
+
+      <!-- RASGOS Y CICATRICES (Heredados del sistema) -->
+      <div class="seccion-huellas">
+        <label>🎭 Rasgos y Cicatrices que otorga este viaje:</label>
+        <div style="margin-top: 10px;">
+          <small><strong>Rasgos:</strong></small>
+          <div id="container-rasgos" class="tag-container"></div>
+        </div>
+        <div style="margin-top: 10px;">
+          <small><strong>Cicatrices:</strong></small>
+          <div id="container-cicatrices" class="tag-container"></div>
+        </div>
+        <div style="margin-top: 12px; display: flex; gap: 8px;">
+          <input type="text" id="nuevo-rasgo-input" placeholder="Añadir personalizado..." style="flex:1;">
+          <select id="tipo-huella-select">
+            <option value="rasgo">Rasgo</option>
+            <option value="cicatriz">Cicatriz</option>
+          </select>
+          <button type="button" id="btn-add-huella" class="btn-secundario">+ Añadir</button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-reto btn-crear" id="btn-submit" style="width: 100%;">📌 Clavar Pergamino en el Tablón</button>
+    </form>
+
+    <div id="mensaje-estado" class="mensaje-estado"></div>
+  </main>
+
+  <!-- Script específico adaptado para misiones secundarias cooperativas -->
+  <script type="module" src="js/crearMisionSecundaria.js"></script>
+</body>
+</html>

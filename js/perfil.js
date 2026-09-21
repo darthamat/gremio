@@ -1,7 +1,16 @@
-// js/perfil.js
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { 
-  getFirestore, doc, getDoc, updateDoc, increment 
+  getFirestore, 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc,
+  collection,
+  query,
+  where,
+  getDocs,
+  arrayUnion,
+  increment 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
@@ -18,7 +27,7 @@ let currentUserId = null;
 let currentUserDocRef = null;
 let misionesLocales = [];
 
-// Auth Listener
+// Auth Listener principal
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     window.location.href = "index.html";
@@ -29,12 +38,13 @@ onAuthStateChanged(auth, async (user) => {
   currentUserDocRef = doc(db, "aventureros", user.uid);
 
   await cargarDatosAventurero(currentUserDocRef);
+  await cargarMisionesSecundariasPerfil(user.uid); // 👈 ¡Carga las misiones secundarias del tablón!
   inicializarAcordeon();
   inicializarCerrarSesion();
   inicializarAvatar();
 });
 
-// Carga de datos del perfil
+// Carga de datos del perfil general del aventurero
 async function cargarDatosAventurero(docRef) {
   const snap = await getDoc(docRef);
   if (!snap.exists()) return;
@@ -85,10 +95,8 @@ async function cargarDatosAventurero(docRef) {
 
 // Inicialización del DOM y los modales del Gremio
 document.addEventListener("DOMContentLoaded", () => {
-    // Inicializa los eventos del buscador de Google Books en el perfil
     inicializarBuscadorGremio();
 
-    // Vincula el botón principal para abrir el modal de registro de lectura
     const btnAbrirModal = document.getElementById("btn-abrir-buscador-mision");
     if (btnAbrirModal) {
         btnAbrirModal.addEventListener("click", () => {
@@ -172,7 +180,7 @@ function inicializarAcordeon() {
   });
 }
 
-// Renderizado de Misiones en Perfil
+// Renderizado de Misiones Locales en Perfil
 function renderizarMisiones(misiones) {
   const contenedor = document.getElementById("contenedor-misiones");
   if (!contenedor) return;
@@ -245,7 +253,6 @@ async function completarMisionLocal(index) {
       bonusClanText = `\n🛡️ ¡+${puntosExtraClan} Puntos aportados a tu Clan por lectura compartida!`;
     }
 
-    // Actualizamos los contadores principales del aventurero y su lista de misiones
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
       xp: increment(gananciaXP),
@@ -255,14 +262,11 @@ async function completarMisionLocal(index) {
       librosCompletados: increment(1)
     });
 
-    // --- LLAMADA AL SISTEMA OFICIAL DE GAMIFICACIÓN ---
-    // Esto se encarga de hacer las tiradas automáticas según las páginas,
-    // aplicar los porcentajes oficiales del banco y guardarlo en 'estadisticas.rasgos/cicatrices'
     const listaGeneros = mision.generos || [mision.genero || "fantasia"];
     const resultadoRecompensa = await procesarRecompensaPorGeneros(currentUserId, listaGeneros, paginas);
 
     let infoRecompensas = "";
-   if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
+    if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
       const nombresObtenidos = resultadoRecompensa.recompensas.map(r => `${r.item.icono || (r.tipo === 'rasgos' ? '✨' : '🩸')} ${r.item.nombre}`).join(", ");
       infoRecompensas = `\n🎁 Rasgos otorgados: ${nombresObtenidos}`;
     } else {
@@ -278,6 +282,7 @@ async function completarMisionLocal(index) {
     alert("❌ Error al procesar la recompensa de la misión.");
   }
 }
+
 async function eliminarMisionLocal(index) {
   if (!confirm("¿Deseas quitar esta misión de tu lista?")) return;
   misionesLocales.splice(index, 1);
@@ -285,6 +290,135 @@ async function eliminarMisionLocal(index) {
   renderizarMisiones(misionesLocales);
 }
 
+// ==========================================
+// SECCIÓN: MISIONES SECUNDARIAS / TABLÓN COOPERATIVO
+// ==========================================
+
+async function cargarMisionesSecundariasPerfil(userId) {
+  const contenedor = document.getElementById("lista-misiones-usuario");
+  if (!contenedor) return;
+
+  try {
+    contenedor.innerHTML = "<small>Buscando tus contratos activos...</small>";
+    
+    const q = query(collection(db, "misionesSecundarias"), where("usuariosAceptaron", "array-contains", userId));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      contenedor.innerHTML = `<p style="font-size: 0.85rem; font-style: italic;">No estás participando en ninguna misión secundaria actualmente. ¡Visita el tablón o crea una nueva!</p>`;
+      return;
+    }
+
+    contenedor.innerHTML = "";
+    querySnapshot.forEach((misionDoc) => {
+      const data = misionDoc.data();
+      const id = misionDoc.id;
+      const esCreador = data.creadorId === userId;
+      const yaCompleto = data.usuariosCompletaron && data.usuariosCompletaron.includes(userId);
+
+      const divItem = document.createElement("div");
+      divItem.style.cssText = "background: rgba(255,248,231,0.6); border: 1px solid #8b5a2b; padding: 10px; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px;";
+
+      divItem.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="${data.portadaUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400'}" style="width: 40px; height: 55px; object-fit: cover; border-radius: 3px;">
+          <div>
+            <strong style="font-size: 0.95rem; color: #2a150c;">${data.titulo}</strong><br>
+            <small style="color: #5c4033;">Autor: ${data.autor} | ${yaCompleto ? '✅ <span style="color:green;">Completado</span>' : '⏳ <span style="color:#b26a00;">En curso</span>'}</small>
+          </div>
+        </div>
+        <div style="display: flex; gap: 5px; align-items: center;" id="acciones-perfil-${id}">
+          <!-- Botones dinámicos -->
+        </div>
+      `;
+
+      contenedor.appendChild(divItem);
+
+      const divAcciones = document.getElementById(`acciones-perfil-${id}`);
+      
+      if (!yaCompleto) {
+        const btnTerminar = document.createElement("button");
+        btnTerminar.className = "btn-secundario";
+        btnTerminar.style.background = "#2e7d32";
+        btnTerminar.style.fontSize = "0.75rem";
+        btnTerminar.style.padding = "5px 8px";
+        btnTerminar.textContent = "🏁 Terminar";
+        btnTerminar.onclick = () => completarMisionDesdePerfil(id, data, userId);
+        divAcciones.appendChild(btnTerminar);
+      }
+
+      if (esCreador) {
+        const btnEliminar = document.createElement("button");
+        btnEliminar.className = "btn-secundario";
+        btnEliminar.style.background = "#c62828";
+        btnEliminar.style.fontSize = "0.75rem";
+        btnEliminar.style.padding = "5px 8px";
+        btnEliminar.textContent = "🗑️ Borrar";
+        btnEliminar.onclick = () => eliminarMisionSecundariaPerfil(id);
+        divAcciones.appendChild(btnEliminar);
+      }
+    });
+
+  } catch (err) {
+    console.error("Error al cargar misiones secundarias del perfil:", err);
+    contenedor.innerHTML = "<small style='color:red;'>Error al cargar tus misiones secundarias.</small>";
+  }
+}
+
+async function completarMisionDesdePerfil(id, data, userId) {
+  if (!confirm(`¿Deseas dar por terminado el libro "${data.titulo}"? Recibirás tus puntos de prestigio, bono cooperativo y huellas.`)) return;
+  try {
+    const misionRef = doc(db, "misionesSecundarias", id);
+    const userRef = doc(db, "aventureros", userId);
+
+    const updates = { usuariosCompletaron: arrayUnion(userId) };
+    if (data.creadorId === userId) {
+      updates.activa = false; 
+    }
+    await updateDoc(misionRef, updates);
+
+    const prestigioBase = (data.paginas || 100) * 0.5;
+    const prestigioTotal = Math.round(prestigioBase + 100); // 🎁 Bono de +100 cooperativo
+
+    const userDocSnap = await getDoc(userRef);
+    let rasgActuales = [];
+    let cicatActuales = [];
+    if (userDocSnap.exists()) {
+      rasgActuales = userDocSnap.data().rasgos || [];
+      cicatActuales = userDocSnap.data().cicatrices || [];
+    }
+
+    const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
+    const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
+
+    await updateDoc(userRef, {
+      prestigio: increment(prestigioTotal),
+      rasgos: nuevosRasgos,
+      cicatrices: nuevasCicatrices
+    });
+
+    alert(`🎉 ¡Misión completada con éxito!\nHas ganado ${prestigioTotal} Puntos de Prestigio (incluyendo los +100 del bono cooperativo).`);
+    location.reload();
+
+  } catch (err) {
+    console.error("Error al completar misión desde perfil:", err);
+    alert("Hubo un error al procesar la recompensa.");
+  }
+}
+
+async function eliminarMisionSecundariaPerfil(id) {
+  if (!confirm("¿Estás seguro de querer eliminar este contrato del tablón gremial? Esta acción no se puede deshacer.")) return;
+  try {
+    await deleteDoc(doc(db, "misionesSecundarias", id));
+    alert("Encargo eliminado del tablón.");
+    location.reload();
+  } catch (err) {
+    console.error("Error al eliminar misión:", err);
+    alert("No se pudo eliminar el encargo.");
+  }
+}
+
+// Inicializadores Generales
 function inicializarCerrarSesion() {
   const btnLogout = document.getElementById("btn-logout");
   if (btnLogout) {
