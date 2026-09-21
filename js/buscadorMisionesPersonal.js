@@ -9,10 +9,8 @@ const auth = getAuth(app);
 const GOOGLE_BOOKS_API_KEY = "AIzaSyDcEUoGcKs6vwoNUF0ok1W-d8F2vVjCqP0";
 
 export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
-  // Aseguramos que el modal exista en el DOM
   asegurarModalEnHTML();
 
-  // Buscamos el botón de apertura del perfil (probando los posibles IDs comunes)
   const btnAbrir = document.getElementById("btn-abrir-modal-mision-personal") || 
                    document.getElementById("btn-abrir-buscador-mision") ||
                    document.querySelector("[data-abrir-modal-mision]");
@@ -20,95 +18,98 @@ export function inicializarBotonMisionPersonal(userId, onMisionCreada) {
   const modal = document.getElementById("modal-mision-personal");
 
   if (!btnAbrir) {
-    console.warn("⚠️ No se encontró el botón de abrir misión en el perfil. Comprueba el ID en tu HTML.");
+    console.warn("⚠️ No se encontró el botón de abrir misión en el perfil.");
     return;
   }
 
-  // 1. Abrir Modal y asociar eventos internos directamente a los elementos reales
   btnAbrir.addEventListener("click", (e) => {
     e.preventDefault();
     if (modal) {
       modal.style.display = "flex";
-      const input = document.getElementById("input-buscar-libro-api");
+      const input = document.getElementById("input-buscar-libro-api") || document.getElementById("input-buscar-libro");
       if (input) input.focus();
     }
   });
 
-  // 2. Asociar eventos de cierre y búsqueda directamente (evita fallos de delegación)
   vincularEventosInternosModal(userId);
 }
 
 function vincularEventosInternosModal(userId) {
   const modal = document.getElementById("modal-mision-personal");
-  const btnCerrar = document.getElementById("cerrar-modal-mision-personal");
-  const btnBuscar = document.getElementById("btn-buscar-libro-api");
-  const inputBusqueda = document.getElementById("input-buscar-libro-api");
+  const btnCerrar = document.getElementById("cerrar-modal-mision-personal") || document.getElementById("btn-cerrar-modal-mision");
+  
+  // Buscamos el botón de buscar de forma amplia (admite varios IDs posibles)
+  const btnBuscar = document.getElementById("btn-buscar-libro-api") || document.getElementById("btn-ejecutar-busqueda");
+  const inputBusqueda = document.getElementById("input-buscar-libro-api") || document.getElementById("input-buscar-libro");
 
-  // Botón Cerrar (X)
-  if (btnCerrar) {
-    // Reemplazamos el nodo para limpiar listeners duplicados previos
-    const nuevoBtnCerrar = btnCerrar.cloneNode(true);
-    btnCerrar.parentNode.replaceChild(nuevoBtnCerrar, btnCerrar);
-    nuevoBtnCerrar.addEventListener("click", () => {
-      if (modal) modal.style.display = "none";
-    });
+  if (btnCerrar && modal) {
+    btnCerrar.onclick = () => { modal.style.display = "none"; };
   }
 
-  // Cerrar haciendo clic fuera del modal
   if (modal) {
     modal.onclick = (e) => {
-      if (e.target === modal) {
-        modal.style.display = "none";
-      }
+      if (e.target === modal) modal.style.display = "none";
     };
   }
 
-  // Botón Buscar
   if (btnBuscar) {
-    const nuevoBtnBuscar = btnBuscar.cloneNode(true);
-    btnBuscar.parentNode.replaceChild(nuevoBtnBuscar, btnBuscar);
-    nuevoBtnBuscar.addEventListener("click", async (e) => {
+    const nuevoBtn = btnBuscar.cloneNode(true);
+    btnBuscar.parentNode.replaceChild(nuevoBtn, btnBuscar);
+    nuevoBtn.addEventListener("click", async (e) => {
       e.preventDefault();
+      console.log("🖱️ Clic en Buscar detectado.");
       await ejecutarBusquedaGoogleBooks(userId);
     });
   }
 
-  // Tecla Enter en el Input
   if (inputBusqueda) {
     const nuevoInput = inputBusqueda.cloneNode(true);
     inputBusqueda.parentNode.replaceChild(nuevoInput, inputBusqueda);
     nuevoInput.addEventListener("keydown", async (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
+        console.log("⌨️ Tecla Enter detectada en el input.");
         await ejecutarBusquedaGoogleBooks(userId);
       }
     });
   }
 }
 
-// Función encargada de llamar a la API de Google Books
 async function ejecutarBusquedaGoogleBooks(userIdParam) {
-  const inputBusqueda = document.getElementById("input-buscar-libro-api");
-  const contenedorResultados = document.getElementById("resultados-busqueda-libros");
+  // Selectores flexibles que se adaptan tanto al HTML inyectado como al que ya tuvieras creado
+  const inputBusqueda = document.getElementById("input-buscar-libro-api") || document.getElementById("input-buscar-libro");
+  const contenedorResultados = document.getElementById("resultados-busqueda-libros") || document.getElementById("resultados-busqueda");
 
-  if (!inputBusqueda || !contenedorResultados) return;
+  if (!inputBusqueda || !contenedorResultados) {
+    console.error("❌ Error crítico: No se encuentra el input de búsqueda o el contenedor de resultados en el DOM.", { inputBusqueda, contenedorResultados });
+    alert("❌ Error interno: Elementos de búsqueda no encontrados en el HTML.");
+    return;
+  }
 
   const query = inputBusqueda.value.trim();
+  console.log("🔍 Texto a buscar:", query);
+
   if (!query) {
     alert("⚠️ Escribe el título de un libro para buscar.");
     return;
   }
 
+  contenedorResultados.style.display = "block";
   contenedorResultados.innerHTML = `<p style="text-align:center; color: #d4af37; padding: 15px;">⏳ Buscando en los antiguos tomos...</p>`;
 
   try {
-    const response = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&key=${GOOGLE_BOOKS_API_KEY}`);
-    
+    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=6&key=${GOOGLE_BOOKS_API_KEY}`;
+    console.log("🌐 URL de petición:", url);
+
+    const response = await fetch(url);
+    console.log("📡 Estado de respuesta HTTP:", response.status);
+
     if (!response.ok) {
-      throw new Error(`Error en la respuesta de Google Books: ${response.status}`);
+      throw new Error(`Error HTTP: ${response.status}`);
     }
 
     const data = await response.json();
+    console.log("📦 Datos recibidos de Google Books:", data);
 
     if (!data.items || data.items.length === 0) {
       contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">No se encontraron grimorios con ese título.</p>`;
@@ -171,8 +172,8 @@ async function ejecutarBusquedaGoogleBooks(userIdParam) {
     });
 
   } catch (err) {
-    console.error("Error buscando libros en Google Books:", err);
-    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error de conexión con Google Books.</p>`;
+    console.error("❌ Error en la búsqueda de Google Books:", err);
+    contenedorResultados.innerHTML = `<p style="text-align:center; color: #ff6b6b; padding: 15px;">❌ Error al conectar con Google Books. Revisa la consola (F12).</p>`;
   }
 }
 
@@ -189,7 +190,6 @@ async function guardarMisionPersonal(userId, misionData) {
   }
 }
 
-// Inyecta el HTML del modal automáticamente si no existe en el DOM
 function asegurarModalEnHTML() {
   if (document.getElementById("modal-mision-personal")) return;
 
