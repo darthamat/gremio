@@ -9,7 +9,7 @@ import { procesarRecompensaLectura } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 // import { buscarEnGoogleBooks, limpiarSeleccionBuscador, inicializarFormularioMisiones } from "./buscadorMisiones.js";
 
-import { inicializarFormularioLibro } from "./adminOGestorLibros.js";
+import { inicializarFormularioLibro } from "./adminGestorLibros.js";
 
 
 const auth = getAuth(app);
