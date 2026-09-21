@@ -12,6 +12,8 @@ import {
   serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
+import { generarEnfrentamientoFinal } from "./maestroCalabozo.js";
+import { mostrarModalEncuentro } from "./modalCombate.js";
 
 const db = getFirestore(app);
 
@@ -105,7 +107,6 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
     // C. Actualizar estadísticas en la ficha del aventurero
     const userRef = doc(db, "aventureros", usuarioUid);
     await updateDoc(userRef, {
-      
       prestigio: increment(prestigioGanado),
       marcapaginas: increment(marcapaginasGanados),
       paginasLeidas: increment(paginas),
@@ -139,8 +140,7 @@ export async function registrarLecturaLibre(usuarioUid, datosLibro) {
 
 /**
  * 🏆 2. COMPLETAR RETO DEL GREMIO (Desde retos.js)
- * NOTA DE ARQUITECTURA: retos.js ya incrementa XP/Páginas/Prestigio del aventurero.
- * Esta función solo registra la obra en las colecciones de Biblioteca, Estantería y Atlas.
+ * Incluye la invocación del Maestro del Calabozo, enfrentamiento final y botín estocástico.
  */
 export async function completarRetoGremio(usuarioUid, datosReto) {
   try {
@@ -152,6 +152,38 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
     
     const retoId = datosReto.id; 
     const libroId = generarIdLibro(datosReto);
+
+    // ⚔️ INVOCAR ENFRENTAMIENTO FINAL (Combate contra Final Boss o Acertijo)
+    const encuentro = await generarEnfrentamientoFinal(datosReto.titulo || datosReto.libro, datosReto.autor || "Desconocido", genero);
+    await mostrarModalEncuentro(encuentro);
+
+    // Procesar recompensas de mochila y seguidores según las probabilidades de la tirada
+    const userRef = doc(db, "aventureros", usuarioUid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists()) {
+      const userData = userSnap.data();
+      let mochilaActual = userData.mochila || userData.objetosMagicos || [];
+      let seguidoresActuales = userData.seguidores || [];
+
+      let actualizacionesExtras = {};
+
+      if (encuentro.recompensaObjeto) {
+        mochilaActual.push(encuentro.recompensaObjeto);
+        actualizacionesExtras.mochila = mochilaActual;
+      }
+
+      if (encuentro.seguidorDesbloqueado) {
+        const yaExiste = seguidoresActuales.some(s => s.nombre === encuentro.seguidorDesbloqueado.nombre);
+        if (!yaExiste) {
+          seguidoresActuales.push(encuentro.seguidorDesbloqueado);
+          actualizacionesExtras.seguidores = seguidoresActuales;
+        }
+      }
+
+      if (Object.keys(actualizacionesExtras).length > 0) {
+        await updateDoc(userRef, actualizacionesExtras);
+      }
+    }
 
     // A. Colección global 'biblioteca'
     const libroRef = doc(db, "biblioteca", libroId);
@@ -183,8 +215,7 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
       retoId: retoId || null
     }, { merge: true });
 
-    // C. Añadir libro a la estantería del aventurero (sin duplicar contadores de XP/Páginas)
-    const userRef = doc(db, "aventureros", usuarioUid);
+    // C. Añadir libro a la estantería del aventurero
     await updateDoc(userRef, {
       estanteria: arrayUnion({
         id: libroId,
@@ -198,11 +229,11 @@ export async function completarRetoGremio(usuarioUid, datosReto) {
     // D. Iluminar Hexágono en el Atlas
     await actualizarAtlasGenero(usuarioUid, genero, datosReto.titulo || datosReto.libro);
 
-    console.log(`✅ Reto '${retoId}' registrado en Biblioteca, Estantería y Atlas para el aventurero ${usuarioUid}`);
-    return { exito: true, libroId };
+    console.log(`✅ Reto '${retoId}' registrado con enfrentamiento final en Biblioteca, Estantería y Atlas para ${usuarioUid}`);
+    return { exito: true, libroId, encuentro };
 
   } catch (error) {
-    console.error("❌ Error al registrar reto en gestorLibros:", error);
+    console.error("❌ Error al registrar reto con enfrentamiento en gestorLibros:", error);
     return { exito: false, error };
   }
 }
@@ -221,7 +252,7 @@ export async function crearMisionSecundaria(userId, datosMision) {
     const nuevaMisionRef = await addDoc(collection(db, "misionesSecundarias"), {
       titulo: datosMision.titulo,
       libro: datosMision.titulo,
-      autor: datosMision.autor || "Desconocido",
+      autor: datosLibro.autor || "Desconocido",
       paginas: paginas,
       genero: datosMision.genero || "Fantasía",
       portadaUrl: datosMision.portadaUrl || datosMision.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
@@ -288,7 +319,6 @@ export async function unirseAMisionSecundaria(userId, misionId) {
 
 /**
  * 🗺️ 5. MISIONES SECUNDARIAS -> BIBLIOTECA Y ATLAS
- * Guarda en aventureros/{userId}/misLibros, en la colección global 'biblioteca', añade a la estantería y actualiza el Atlas.
  */
 export async function registrarLibroEnBibliotecaYAtlas(userId, datosLibro) {
   try {

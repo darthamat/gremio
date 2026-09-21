@@ -1,50 +1,38 @@
 // js/maestroCalabozo.js
-
-// js/maestroCalabozo.js
 import { BANCO_OBJETOS_MAGICOS, BANCO_SEGUIDORES } from "./objetosData.js";
 
-// ⚠️ Cambia esto por tu clave real obtenida en Google AI Studio (o déjala vacía si prefieres tirar del banco local manual)
-const GEMINI_API_KEY = "Ab8RN6LU5rD24sBnTEOg6kRlElaKq0mp3j"; 
+const GEMINI_API_KEY = ""; // Tu clave de Google AI Studio (o déjala vacía para usar el sistema local)
 
 export async function generarEnfrentamientoFinal(tituloLibro, autorLibro, generoLibro) {
-  // 1. Generar el enfrentamiento (por IA si hay clave, o local por defecto)
-  let encuentro = await obtenerEstructuraEncuentro(tituloLibro, autorLibro, generoLibro);
+  // 1. Decidir aleatoriamente si el encuentro es un "combate" contra un Final Boss o un "acertijo"
+  const tipoEncuentroAleatorio = Math.random() < 0.5 ? "combate" : "acertijo";
 
-  // 2. 🎲 TRAMO DE PROBABILIDADES DE BOTÍN (LOOT TABLE)
-  const tiradaBotin = Math.random() * 100; // Número entre 0 y 100
+  // 2. Generar la estructura del encuentro (por IA si hay clave, o local por defecto)
+  let encuentro = await obtenerEstructuraEncuentro(tituloLibro, autorLibro, generoLibro, tipoEncuentroAleatorio);
+
+  // 3. 🎲 TRAMO DE PROBABILIDADES DE BOTÍN (LOOT TABLE)
+  const tiradaBotin = Math.random() * 100;
   let objetoRecompensa = null;
 
   if (tiradaBotin < 5) {
-    // 🌟 5% Probabilidad: Objeto Único / Legendario (Generado por IA o exclusivo)
-    objetoRecompensa = {
-      id: Date.now(),
-      nombre: `Reliquia Legendaria de ${tituloLibro}`,
-      efecto: "Otorga una sabiduría arcana inigualable en el Cónclave.",
-      icono: "👑",
-      rareza: "Legendaria",
-      origenLibro: tituloLibro
-    };
+    // 🌟 5% Probabilidad: Objeto Legendario
+    const legendarios = BANCO_OBJETOS_MAGICOS.filter(o => o.rareza === "Legendaria");
+    objetoRecompensa = legendarios[Math.floor(Math.random() * legendarios.length)] || null;
   } else if (tiradaBotin < 20) {
-    // ✨ 15% Probabilidad: Objeto Raro / Épico del banco local o IA
-    const raros = BANCO_OBJETOS_MAGICOS.filter(o => o.rareza === "Rara" || o.rareza === "Épica");
-    const seleccionado = raros.length > 0 ? raros[Math.floor(Math.random() * raros.length)] : BANCO_OBJETOS_MAGICOS[0];
-    objetoRecompensa = { ...seleccionado, id: Date.now(), origenLibro: tituloLibro };
+    // ✨ 15% Probabilidad: Objeto Raro
+    const raros = BANCO_OBJETOS_MAGICOS.filter(o => o.rareza === "Rara");
+    objetoRecompensa = raros[Math.floor(Math.random() * raros.length)] || null;
   } else if (tiradaBotin < 50) {
-    // 📦 30% Probabilidad: Objeto Común (Sorteado del archivo objetosData.js para que se repita entre usuarios)
+    // 📦 30% Probabilidad: Objeto Común
     const comunes = BANCO_OBJETOS_MAGICOS.filter(o => o.rareza === "Común");
-    const seleccionado = comunes.length > 0 ? comunes[Math.floor(Math.random() * comunes.length)] : BANCO_OBJETOS_MAGICOS[0];
-    objetoRecompensa = { ...seleccionado, id: Date.now(), origenLibro: tituloLibro };
-  } else {
-    // 🍃 50% de las veces: Sin objeto físico, solo la gloria de la lectura.
-    objetoRecompensa = null;
+    objetoRecompensa = comunes[Math.floor(Math.random() * comunes.length)] || null;
   }
 
-  // 3. 👥 TRAMO DE PROBABILIDAD DE SEGUIDORES (20% Independiente)
+  // 4. 👥 TRAMO DE PROBABILIDAD DE SEGUIDORES (20% Independiente)
   const tiradaSeguidor = Math.random() * 100;
   let seguidorRecompensa = null;
 
   if (tiradaSeguidor < 20) {
-    // 20% de probabilidad de que un seguidor o mascota se una
     const seguidorAleatorio = BANCO_SEGUIDORES[Math.floor(Math.random() * BANCO_SEGUIDORES.length)];
     seguidorRecompensa = {
       ...seguidorAleatorio,
@@ -59,60 +47,74 @@ export async function generarEnfrentamientoFinal(tituloLibro, autorLibro, genero
   };
 }
 
-async function obtenerEstructuraEncuentro(tituloLibro, autorLibro, generoLibro) {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY === "GEMINI_API_KEY") {
-    return {
-      tipo: "acertijo",
-      tituloEncuentro: `El Guardián del Tomo: "${tituloLibro}"`,
-      narracion: `Las páginas finales del tomo de ${autorLibro} se cierran. Una proyección espectral bloquea el camino exigiendo una prueba antes de permitirte guardar la obra.`,
-      opciones: [
-        { texto: "Intentar doblegar al espectro por la fuerza.", esCorrecta: false, "resultado": "El espectro blande su escudo y te rechaza. ¡La fuerza bruta no basta!" },
-        { texto: "Demostrar tu sabiduría recitando la esencia de la obra.", esCorrecta: true, "resultado": "El espectro asiente con respeto profundo y se desvanece en volutas doradas." },
-        { texto: "Distraerlo arrojando un marcapáginas viejo.", esCorrecta: false, "resultado": "El fantasma devora el papel con desdén. La prueba continúa." }
-      ]
-    };
+async function obtenerEstructuraEncuentro(tituloLibro, autorLibro, generoLibro, tipoDeseado) {
+  // Si no hay API key configurada, tiramos del generador local inteligente y variado
+  if (!GEMINI_API_KEY || GEMINI_API_KEY === "TU_API_KEY_DE_GEMINI") {
+    return generarEncuentroLocalVariado(tituloLibro, autorLibro, tipoDeseado);
   }
 
-  // Llamada estándar a Gemini si se dispone de clave...
+  // Prompt avanzado para forzar a la IA a crear un Final Boss o un Acertijo temático
+  const prompt = `
+    Actúa como un maestro del calabozo oscuro de rol medieval. 
+    El aventurero acaba de terminar de leer el libro "${tituloLibro}" de "${autorLibro}" (género: ${generoLibro}).
+    El tipo de desafío que debes generar es de tipo: "${tipoDeseado}" (si es "combate", debe ser un enfrentamiento directo a espada/magia contra el villano principal o amenaza de este libro exacto; si es "acertijo", una prueba mental contra su esencia).
+    
+    Devuelve ÚNICAMENTE un objeto JSON válido (sin formato markdown) con esta estructura exacta:
+    {
+      "tipo": "${tipoDeseado}",
+      "tituloEncuentro": "Título épico (ej: Duelo final contra el Señor Oscuro o El Acertijo de la Esfinge)",
+      "narracion": "Descripción de 2 o 3 frases muy atmosféricas donde el enemigo o la prueba se manifiesta ante el lector.",
+      "opciones": [
+        {"texto": "Acción táctica o respuesta 1", "esCorrecta": false, "resultado": "Consecuencia de fallar."},
+        {"texto": "Acción táctica o respuesta 2", "esCorrecta": true, "resultado": "Victoria magistral."},
+        {"texto": "Acción táctica o respuesta 3", "esCorrecta": false, "resultado": "Consecuencia de fallar."}
+      ]
+    }
+  `;
+
   try {
-    const prompt = `Actúa como narrador de rol. El aventurero terminó "${tituloLibro}" de "${autorLibro}". Genera un JSON con: tipo ("acertijo"), tituloEncuentro, narracion (2 frases), opciones (array de 3 con texto, esCorrecta boolean, resultado).`;
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     });
-    if (!response.ok) throw new Error();
+
+    if (!response.ok) throw new Error("Error en API de Gemini");
+
     const data = await response.json();
-    return JSON.parse(data.candidates[0].content.parts[0].text.replace(/```json/g, "").replace(/```/g, "").trim());
-  } catch (e) {
-    return {
-      tipo: "acertijo",
-      tituloEncuentro: `El Desafío de ${tituloLibro}`,
-      narracion: `Un eco místico de la obra de ${autorLibro} evalúa tu intelecto antes de sellar el lomo en la estantería.`,
-      opciones: [
-        { texto: "Ignorar la prueba", esCorrecta: false, "resultado": "El eco persiste." },
-        { texto: "Comprender la enseñanza del libro", esCorrecta: true, "resultado": "Prueba superada con éxito." },
-        { texto: "Dudar del proceso", esCorrecta: false, "resultado": "Fracasas en el intento." }
-      ]
-    };
+    const textoRespuesta = data.candidates[0].content.parts[0].text;
+    const jsonLimpiado = textoRespuesta.replace(/```json/g, "").replace(/```/g, "").trim();
+    return JSON.parse(jsonLimpiado);
+
+  } catch (error) {
+    console.warn("Aviso: No se pudo conectar con la IA. Usando generador local dinámico:", error);
+    return generarEncuentroLocalVariado(tituloLibro, autorLibro, tipoDeseado);
   }
 }
 
-// 🛡️ Generador local basado en tus bancos de datos (para cuando no hay API Key)
-function generarEncuentroLocal(tituloLibro, autorLibro) {
-  const objetoAleatorio = BANCO_OBJETOS_MAGICOS[Math.floor(Math.random() * BANCO_OBJETOS_MAGICOS.length)];
-  const seguidorAleatorio = BANCO_SEGUIDORES[Math.floor(Math.random() * BANCO_SEGUIDORES.length)];
-
-  return {
-    tipo: "acertijo",
-    tituloEncuentro: `El Guardián del Tomo: "${tituloLibro}"`,
-    narracion: `Las páginas finales de la obra escrita por ${autorLibro} se cierran con un destello místico. Una proyección espectral custodiada por los ecos de la historia se interpone en tu camino exigiendo demostrar tu comprensión.`,
-    opciones: [
-      { texto: "Cerrar los ojos e invocar la fuerza bruta de la lectura.", esCorrecta: false, "resultado": "El espectro blande su escudo y te rechaza. ¡Debes apelar al intelecto!" },
-      { texto: "Recitar el propósito y moraleja principal extraída de la travesía.", esCorrecta: true, "resultado": "El espectro asiente con respeto profundo y se desvanece en volutas doradas." },
-      { texto: "Arrojarle un marcapáginas viejo como distracción.", esCorrecta: false, "resultado": "El fantasma devora el papel con desdén. La prueba continúa." }
-    ],
-    recompensaObjeto: objetoAleatorio,
-    seguidorDesbloqueado: seguidorAleatorio
-  };
+// 🛡️ Generador local dinámico que distingue entre Combate con Final Boss y Acertijo
+function generarEncuentroLocalVariado(tituloLibro, autorLibro, tipo) {
+  if (tipo === "combate") {
+    return {
+      tipo: "combate",
+      tituloEncuentro: `⚔️ Duelo contra la Amenaza de "${tituloLibro}"`,
+      narracion: `Las últimas páginas se desvanecen y la atmósfera se gela. El antagonista principal y fuerza oscura inspirada en la obra de ${autorLibro} materializa su forma ante ti bloqueando tu salida. ¡Debes luchar!`,
+      opciones: [
+        { texto: "Atacar frontalmente con furia ciega sin mirar sus puntos débiles.", esCorrecta: false, "resultado": "El villano esquiva tu embestida y te contraataca con dureza. ¡Has fracasado en el asalto!" },
+        { texto: "Exponer su debilidad argumental y contraatacar con precisión táctica.", esCorrecta: true, "resultado": "Tu golpe acierta en su punto crítico; el villano se desmorona en cenizas reconociendo tu valía." },
+        { texto: "Intentar huir despavorido por el pasillo lateral.", esCorrecta: false, "resultado": "Las sombras te cortan la retirada. El combate se vuelve inevitable y sucumbes." }
+      ]
+    };
+  } else {
+    return {
+      tipo: "acertijo",
+      tituloEncuentro: `🔮 El Enigma de los Ecos de "${tituloLibro}"`,
+      narracion: `Un guardián espectral invocado por el espíritu de ${autorLibro} surge de las páginas cerradas, exigiendo resolver su acertijo antes de registrar el tomo en la estantería.`,
+      opciones: [
+        { texto: "Forzar el paso ignorando las advertencias del espectro.", esCorrecta: false, "resultado": "Una barrera mística te rechaza con fuerza. La mente debe prevalecer sobre la fuerza." },
+        { texto: "Recitar el verdadero significado y moraleja oculta de la obra.", esCorrecta: true, "resultado": "El espectro asiente solemnemente, disolviéndose en una lluvia de polvos de oro." },
+        { texto: "Ofrecerle un objeto al azar para sobornarlo.", esCorrecta: false, "resultado": "El guardian rechaza tu ofrenda con desprecio absoluto." }
+      ]
+    };
+  }
 }

@@ -14,7 +14,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { completarRetoGremio, registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
-import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; // 🎲 Importamos el motor estocástico
+import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; 
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -61,7 +61,7 @@ function formatearIdAMesYAno(idDocumento, fechaCreacion) {
   return "Reto del Gremio";
 }
 
-// 🛡️ Función unificada para generar una clave única e incandescente para el libro (evita duplicados)
+// 🛡️ Función unificada para generar una clave única para el libro (evita duplicados)
 function generarIdUnicoLibro(tituloBase, idRetoOriginal) {
   const textoLimpio = (tituloBase || "reto_gremio")
     .toLowerCase()
@@ -70,7 +70,6 @@ function generarIdUnicoLibro(tituloBase, idRetoOriginal) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "_");
   
-  // Si el ID original es tipo reto26_09, lo usamos como ancla temporal segura
   const sufijo = (idRetoOriginal && idRetoOriginal !== "actual") ? idRetoOriginal : "mes_actual";
   return `${textoLimpio}_${sufijo}`;
 }
@@ -526,7 +525,7 @@ async function aceptarReto(retoId) {
   }
 }
 
-// Completar Reto Principal
+// Completar Reto Principal (Invocando el motor del Maestro del Calabozo a través de completarRetoGremio)
 async function terminarReto(retoId, puntos, elementoBoton = null) {
   if (ejecucionEnProceso) return;
   ejecucionEnProceso = true;
@@ -562,7 +561,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       };
     }
 
-    // 🛡️ Forzar un ID único y limpio que evite duplicados entre "actual" y "reto26_09"
+    // 🛡️ Forzar un ID único y limpio que evite duplicados
     datosReto.id = generarIdUnicoLibro(datosReto.titulo, retoId);
 
     const paginas = datosReto.paginas;
@@ -586,7 +585,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     // 🎲 2. Tirada estocástica de Rasgo / Cicatriz
     const resRecompensa = await procesarRecompensaLectura(usuarioSesionId, genero, paginas);
 
-    // 3. Registrar en Biblioteca y Atlas con el ID unificado
+    // 3. Registrar en Biblioteca, Estantería, Atlas y DISPARAR EL ENFRENTAMIENTO FINAL
     await completarRetoGremio(usuarioSesionId, datosReto);
 
     // 4. Formatear mensaje de huellas para la alerta
@@ -601,19 +600,18 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       });
     }
 
-    alert(`🎉 ¡Misión Cumplida! Recompensas obtenidas:\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
+    alert(`🎉 ¡Misión Cumplida y Desafío Superado!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
 
     await cargarYRenderizarRetos();
 
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
     alert("Ocurrió un error al completar la misión. Inténtalo de nuevo.");
-    
+  } finally {
+    ejecucionEnProceso = false;
     if (elementoBoton) {
       elementoBoton.disabled = false;
       elementoBoton.textContent = elementoBoton.dataset.textoOriginal || "✨ Marcar Misión Completada";
     }
-  } finally {
-    ejecucionEnProceso = false;
   }
 }
