@@ -111,10 +111,21 @@
                 </div>
 
                 <!-- TAB MOCHILA -->
+               
+
                 <div id="tab-mochila" class="tab-contenido oculto">
-                    <h2>Mochila de Objetos</h2>
-                    <p>Aquí irán los marcapáginas, pociones, equipamiento e ítems del aventurero.</p>
-                </div>
+    <h2>🎒 Mochila de Objetos y Tesoros</h2>
+    <div id="contenedor-objetos-mochila" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin-bottom: 20px;">
+        <!-- Se pintarán los objetos aquí mediante JS -->
+        <p style="font-style: italic; color: #718096;">Tu mochila está vacía de reliquias por ahora.</p>
+    </div>
+
+    <h2>👥 Compañeros y Seguidores en Ruta</h2>
+    <div id="contenedor-seguidores-perfil" style="display: flex; flex-direction: column; gap: 8px;">
+        <!-- Se pintarán los seguidores aquí mediante JS -->
+        <p style="font-style: italic; color: #718096;">Ningún seguidor ha jurado lealtad todavía.</p>
+    </div>
+</div>
 
                 <!-- TAB MISIONES (AQUÍ ESTABA EL ERROR DE UBICACIÓN) -->
                 <div id="tab-misiones" class="tab-contenido oculto">

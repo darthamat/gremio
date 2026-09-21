@@ -17,9 +17,11 @@ import { renderizarEstadisticasAcordeon } from "./perfilEstadisticas.js";
 import { procesarRecompensaPorGeneros } from "./sistemaGamificacion.js";
 import { actualizarBarraNivelUI, comprobarYMostrarSubidaNivel } from "./controlNivel.js";
 
-// Único buscador necesario para el modal del perfil
+// Módulos del Gremio
 import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
+import { generarEnfrentamientoFinal } from "./maestroCalabozo.js";
+import { mostrarModalEncuentro } from "./modalCombate.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -39,7 +41,7 @@ onAuthStateChanged(auth, async (user) => {
   currentUserDocRef = doc(db, "aventureros", user.uid);
 
   await cargarDatosAventurero(currentUserDocRef);
-  await cargarMisionesSecundariasPerfil(user.uid); // 👈 ¡Carga las misiones secundarias del tablón!
+  await cargarMisionesSecundariasPerfil(user.uid); 
   inicializarAcordeon();
   inicializarCerrarSesion();
   inicializarAvatar();
@@ -92,6 +94,9 @@ async function cargarDatosAventurero(docRef) {
 
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
   renderizarMisiones(misionesLocales);
+  
+  // 🎒 Renderizamos la mochila y los seguidores con los datos reales del aventurero
+  renderizarMochilaYSeguidores(data);
 }
 
 // Inicialización del DOM y los modales del Gremio
@@ -271,7 +276,7 @@ async function completarMisionLocal(index) {
       const nombresObtenidos = resultadoRecompensa.recompensas.map(r => `${r.item.icono || (r.tipo === 'rasgos' ? '✨' : '🩸')} ${r.item.nombre}`).join(", ");
       infoRecompensas = `\n🎁 Rasgos otorgados: ${nombresObtenidos}`;
     } else {
-      infoRecompensas = `\n🍃 Esta vez los vientos de la lectura no dejaron nuevos rasgos.`;
+      infoRecompensas = `\n🍃 Эта vez los vientos de la lectura no dejaron nuevos rasgos.`;
     }
 
     alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${infoRecompensas}${bonusClanText}`);
@@ -367,66 +372,106 @@ async function cargarMisionesSecundariasPerfil(userId) {
 }
 
 async function completarMisionDesdePerfil(id, data, userId) {
-  if (!confirm(`¿Deseas dar por terminado el libro "${data.titulo}"? Recibirás tus puntos de prestigio, bono cooperativo, huellas y se registrará en tu estantería y Atlas.`)) return;
+  if (!confirm(`¿Deseas dar por terminado el libro "${data.titulo}"? ¡Te enfrentarás a su prueba final antes de reclamar tu gloria!`)) return;
   
   try {
+    const generoLibro = data.genero || (Array.isArray(data.generos) ? data.generos[0] : "Fantasía");
+    
+    const avisoCarga = document.createElement("div");
+    avisoCarga.style.cssText = "position:fixed; top:20px; right:20px; background:#2a221b; color:#ffd700; border:2px solid #8b5a2b; padding:12px 20px; border-radius:6px; z-index:10000; font-family:'Cinzel',serif;";
+    avisoCarga.textContent = "🔮 Invocando el desafío final de la obra...";
+    document.body.appendChild(avisoCarga);
+
+    const encuentro = await generarEnfrentamientoFinal(data.titulo, data.autor || "Desconocido", generoLibro);
+    avisoCarga.remove();
+
+    await mostrarModalEncuentro(encuentro);
+
     const misionRef = doc(db, "misionesSecundarias", id);
     const userRef = doc(db, "aventureros", userId);
 
-    // 1. Marcar completado en la misión del tablón
     const updates = { usuariosCompletaron: arrayUnion(userId) };
     if (data.creadorId === userId) {
-      updates.activa = false; // Si el creador la termina, se cierra a nuevas incorporaciones
+      updates.activa = false; 
     }
     await updateDoc(misionRef, updates);
 
-    // 2. Calcular recompensas (Prestigio base de páginas + 100 bono co-op)
     const paginas = Number(data.paginas) || 100;
     const prestigioBase = paginas * 0.5;
     const prestigioTotal = Math.round(prestigioBase + 100);
 
-    // 3. Obtener huellas actuales del aventurero
     const userDocSnap = await getDoc(userRef);
     let rasgActuales = [];
     let cicatActuales = [];
+    let mochilaActual = [];
+    let seguidoresActuales = [];
+
     if (userDocSnap.exists()) {
-      rasgActuales = userDocSnap.data().rasgos || [];
-      cicatActuales = userDocSnap.data().cicatrices || [];
+      const userData = userDocSnap.data();
+      rasgActuales = userData.rasgos || [];
+      cicatActuales = userData.cicatrices || [];
+      mochilaActual = userData.mochila || userData.objetosMagicos || [];
+      seguidoresActuales = userData.seguidores || [];
     }
 
     const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
     const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
 
-    // 4. Actualizar usuario en Firestore (Prestigio, huellas y contadores)
+    // Preparar mochila con el sistema de probabilidades de botín
+    const mochilaActualizada = [...mochilaActual];
+    let mensajeObjeto = "";
+    if (encuentro.recompensaObjeto) {
+      mochilaActualizada.push(encuentro.recompensaObjeto);
+      mensajeObjeto = `\n🎁 ¡Objeto obtenido! "${encuentro.recompensaObjeto.nombre}" (${encuentro.recompensaObjeto.rareza}: ${encuentro.recompensaObjeto.efecto})`;
+    } else {
+      mensajeObjeto = `\n🍃 Esta vez el calabozo no reveló ningún objeto material.`;
+    }
+
+    // Preparar seguidores con la tirada secundaria independiente (20%)
+    let nuevosSeguidores = [...seguidoresActuales];
+    let mensajeSeguidor = "";
+    if (encuentro.seguidorDesbloqueado) {
+      const yaExiste = seguidoresActuales.some(s => s.nombre === encuentro.seguidorDesbloqueado.nombre);
+      if (!yaExiste) {
+        nuevosSeguidores.push({
+          nombre: encuentro.seguidorDesbloqueado.nombre,
+          frase: encuentro.seguidorDesbloqueado.frase,
+          origen: data.titulo
+        });
+        mensajeSeguidor = `\n👥 ¡Nuevo compañero! "${encuentro.seguidorDesbloqueado.nombre}" se ha unido a tus viajes.`;
+      }
+    }
+
+    // Actualizar Firestore con todas las recompensas unificadas
     await updateDoc(userRef, {
       prestigio: increment(prestigioTotal),
       rasgos: nuevosRasgos,
       cicatrices: nuevasCicatrices,
+      mochila: mochilaActualizada,
+      seguidores: nuevosSeguidores,
       librosCompletados: increment(1),
       paginasLeidas: increment(paginas)
     });
 
-    // 5. 🌟 LA PIEZA CLAVE QUE FALTABA: Registrar lomo en la Estantería, Biblioteca Global y Atlas
     const datosLibroParaAtlas = {
       id: id,
       titulo: data.titulo,
       autor: data.autor || "Desconocido",
       paginas: paginas,
-      genero: data.genero || (Array.isArray(data.generos) ? data.generos[0] : "Fantasía"),
+      genero: generoLibro,
       portadaUrl: data.portadaUrl || data.portada || "https://via.placeholder.com/150x220?text=Sin+Portada",
       fechaTerminado: new Date().toISOString()
     };
 
     await registrarLibroEnBibliotecaYAtlas(userId, datosLibroParaAtlas);
 
-    alert(`🎉 ¡Misión completada con éxito!\n\n🏆 +${prestigioTotal} Puntos de Prestigio (incluyendo +100 bono co-op)\n📚 El libro ya luce en tu Estantería y se ha iluminado el Atlas.`);
+    alert(`🎉 ¡Desafío superado y misión completada!\n\n🏆 +${prestigioTotal} Puntos de Prestigio${mensajeObjeto}${mensajeSeguidor}\n📚 El lomo ya luce en tu Estantería y el Atlas ha sido iluminado.`);
     
-    // Recargar perfil para refrescar visualmente
     location.reload();
 
   } catch (err) {
-    console.error("Error al completar misión desde perfil:", err);
-    alert("Hubo un error al procesar la recompensa y registrar la obra en el Atlas.");
+    console.error("Error al completar misión desde perfil con enfrentamiento:", err);
+    alert("Hubo un error al procesar el combate final o registrar la obra.");
   }
 }
 
@@ -482,4 +527,42 @@ function inicializarAvatar() {
       alert("❌ Fallo al cambiar el avatar");
     }
   });
+}
+
+function renderizarMochilaYSeguidores(dataAventurero) {
+  const contenedorObjetos = document.getElementById("contenedor-objetos-mochila");
+  const contenedorSeguidores = document.getElementById("contenedor-seguidores-perfil");
+
+  // 1. Renderizar Objetos Mágicos
+  const objetos = dataAventurero.mochila || dataAventurero.objetosMagicos || [];
+  if (contenedorObjetos) {
+    if (objetos.length === 0) {
+      contenedorObjetos.innerHTML = `<p style="font-style: italic; color: #718096; font-size: 0.9rem;">Ningún artefacto mágico guardado.</p>`;
+    } else {
+      contenedorObjetos.innerHTML = objetos.map(obj => `
+        <div style="background: rgba(255,248,231,0.7); border: 1px solid #8b5a2b; border-radius: 4px; padding: 10px; display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.8rem;">${obj.icono || '🎁'}</span>
+          <div>
+            <strong style="font-size: 0.9rem; color: #2a150c; display: block;">${obj.nombre}</strong>
+            <small style="color: #5c4033; font-size: 0.75rem;">${obj.efecto}</small>
+          </div>
+        </div>
+      `).join("");
+    }
+  }
+
+  // 2. Renderizar Seguidores
+  const seguidores = dataAventurero.seguidores || [];
+  if (contenedorSeguidores) {
+    if (seguidores.length === 0) {
+      contenedorSeguidores.innerHTML = `<p style="font-style: italic; color: #718096; font-size: 0.9rem;">Aún viajas en solitario por las tierras del Gremio.</p>`;
+    } else {
+      contenedorSeguidores.innerHTML = seguidores.map(seg => `
+        <div style="background: rgba(139, 90, 43, 0.1); border-left: 4px solid #8b5a2b; padding: 8px 12px; border-radius: 0 4px 4px 0;">
+          <strong style="color: #3b2219; font-size: 0.9rem;">${seg.nombre}</strong>
+          <p style="margin: 4px 0 0 0; font-size: 0.85rem; font-style: italic; color: #5c4033;">«${seg.frase}»</p>
+        </div>
+      `).join("");
+    }
+  }
 }
