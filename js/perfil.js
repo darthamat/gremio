@@ -240,16 +240,58 @@ async function completarMisionLocal(index) {
     const mision = misionesLocales[index];
     if (!mision) return;
 
+    const paginas = mision.paginas || 0;
+    const generoLibro = mision.genero || (Array.isArray(mision.generos) ? mision.generos[0] : "Fantasía");
+    const tituloLibro = mision.titulo || "Exploración Personal";
+    const autorLibro = mision.autor || "Desconocido";
+
+    // ⚔️ 1. INVOCAR ENFRENTAMIENTO FINAL DEL MAESTRO DEL CALABOZO
+    const avisoCarga = document.createElement("div");
+    avisoCarga.style.cssText = "position:fixed; top:20px; right:20px; background:#2a221b; color:#ffd700; border:2px solid #8b5a2b; padding:12px 20px; border-radius:6px; z-index:10000; font-family:'Cinzel',serif;";
+    avisoCarga.textContent = "🔮 Invocando el desafío final de la obra...";
+    document.body.appendChild(avisoCarga);
+
+    const encuentro = await generarEnfrentamientoFinal(tituloLibro, autorLibro, generoLibro);
+    avisoCarga.remove();
+
+    await mostrarModalEncuentro(encuentro);
+
     mision.estado = "TERMINADA";
 
-    const paginas = mision.paginas || 0;
-    const gananciaXP = paginas + Math.floor(Math.random() * (paginas + 1));
+    // Recompensas (SIN XP, solo Prestigio, Marcapáginas y Botín)
+    const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
     const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
 
     const userSnap = await getDoc(currentUserDocRef);
     const userData = userSnap.exists() ? userSnap.data() : {};
 
-    const nuevoNivel = comprobarYMostrarSubidaNivel(userData, gananciaXP);
+    let mochilaActual = userData.mochila || userData.objetosMagicos || [];
+    let seguidoresActuales = userData.seguidores || [];
+
+    // Procesar tirada estocástica de objeto mágico
+    const mochilaActualizada = [...mochilaActual];
+    let mensajeObjeto = "";
+    if (encuentro.recompensaObjeto) {
+      mochilaActualizada.push(encuentro.recompensaObjeto);
+      mensajeObjeto = `\n🎁 ¡Objeto obtenido! "${encuentro.recompensaObjeto.nombre}"`;
+    } else {
+      mensajeObjeto = `\n🍃 Esta vez el calabozo no reveló ningún objeto material.`;
+    }
+
+    // Procesar seguidores independientes (20%)
+    let nuevosSeguidores = [...seguidoresActuales];
+    let mensajeSeguidor = "";
+    if (encuentro.seguidorDesbloqueado) {
+      const yaExiste = seguidoresActuales.some(s => s.nombre === encuentro.seguidorDesbloqueado.nombre);
+      if (!yaExiste) {
+        nuevosSeguidores.push({
+          nombre: encuentro.seguidorDesbloqueado.nombre,
+          frase: encuentro.seguidorDesbloqueado.frase,
+          origen: tituloLibro
+        });
+        mensajeSeguidor = `\n👥 ¡Nuevo compañero! "${encuentro.seguidorDesbloqueado.nombre}" se ha unido a tus viajes.`;
+      }
+    }
 
     let bonusClanText = "";
     if (mision.esGrupal && userData.clanId) {
@@ -259,32 +301,47 @@ async function completarMisionLocal(index) {
       bonusClanText = `\n🛡️ ¡+${puntosExtraClan} Puntos aportados a tu Clan por lectura compartida!`;
     }
 
+    // Actualizar Firestore con Prestigio, Marcapáginas y Mochila (sin tocar XP)
     await updateDoc(currentUserDocRef, {
       misionesSecundarias: misionesLocales,
-      xp: increment(gananciaXP),
-      nivel: nuevoNivel,
+      prestigio: increment(gananciaPrestigio),
       marcapaginas: increment(gananciaMarcapaginas),
       paginasLeidas: increment(paginas),
-      librosCompletados: increment(1)
+      librosCompletados: increment(1),
+      mochila: mochilaActualizada,
+      seguidores: nuevosSeguidores
     });
 
-    const listaGeneros = mision.generos || [mision.genero || "fantasia"];
+    // 🎲 Tirada estocástica de Rasgos / Cicatrices por género
+    const listaGeneros = mision.generos || [generoLibro];
     const resultadoRecompensa = await procesarRecompensaPorGeneros(currentUserId, listaGeneros, paginas);
 
     let infoRecompensas = "";
     if (resultadoRecompensa && resultadoRecompensa.recompensas.length > 0) {
       const nombresObtenidos = resultadoRecompensa.recompensas.map(r => `${r.item.icono || (r.tipo === 'rasgos' ? '✨' : '🩸')} ${r.item.nombre}`).join(", ");
-      infoRecompensas = `\n🎁 Rasgos otorgados: ${nombresObtenidos}`;
-    } else {
-      infoRecompensas = `\n🍃 Эта vez los vientos de la lectura no dejaron nuevos rasgos.`;
+      infoRecompensas = `\n✨ Rasgos/Cicatrices: ${nombresObtenidos}`;
     }
 
-    alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n✨ +${gananciaXP} XP\n🔖 +${gananciaMarcapaginas} Marcapáginas${infoRecompensas}${bonusClanText}`);
+    // 📚 GUARDAR EN BIBLIOTECA GLOBAL, ESTANTERÍA Y ATLAS
+    const idUnicoLibro = tituloLibro.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-') + "_" + index;
+    const datosLibroParaAtlas = {
+      id: idUnicoLibro,
+      titulo: tituloLibro,
+      autor: autorLibro,
+      paginas: paginas,
+      genero: generoLibro,
+      portadaUrl: mision.portadaUrl || "https://via.placeholder.com/150x220?text=Sin+Portada",
+      fechaTerminado: new Date().toISOString()
+    };
+
+    await registrarLibroEnBibliotecaYAtlas(currentUserId, datosLibroParaAtlas);
+
+    alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeObjeto}${mensajeSeguidor}${infoRecompensas}${bonusClanText}\n📚 El lomo ya luce en tu Estantería y el Atlas ha sido iluminado.`);
     
     await cargarDatosAventurero(currentUserDocRef);
 
   } catch (error) {
-    console.error("Error al completar la misión:", error);
+    console.error("Error al completar la misión local:", error);
     alert("❌ Error al procesar la recompensa de la misión.");
   }
 }
