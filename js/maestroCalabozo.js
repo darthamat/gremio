@@ -1,8 +1,7 @@
 // js/maestroCalabozo.js
 import { BANCO_OBJETOS_MAGICOS, BANCO_SEGUIDORES } from "./objetosData.js";
-import { CONFIG } from "./config.js";
 
-const GEMINI_API_KEY = window.CONFIG_GEMINI_KEY || "";
+const GEMINI_API_KEY = "";
 
 export async function generarEnfrentamientoFinal(tituloLibro, autorLibro, generoLibro) {
   // 1. Decidir aleatoriamente si el encuentro es un "combate" contra un Final Boss o un "acertijo"
