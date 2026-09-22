@@ -1,6 +1,6 @@
 // js/maestroCalabozo.js
 import { BANCO_OBJETOS_MAGICOS, BANCO_SEGUIDORES } from "./objetosData.js";
-import { CONFIG } from "../.gitignore/js/config.js";
+import { CONFIG } from "./config.js";
 
 const GEMINI_API_KEY = window.CONFIG_GEMINI_KEY || "";
 
