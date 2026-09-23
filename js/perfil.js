@@ -350,10 +350,71 @@ async function completarMisionLocal(index) {
 }
 
 async function eliminarMisionLocal(index) {
-  if (!confirm("¿Deseas quitar esta misión de tu lista?")) return;
-  misionesLocales.splice(index, 1);
-  await updateDoc(currentUserDocRef, { misionesSecundarias: misionesLocales });
-  renderizarMisiones(misionesLocales);
+  const mision = misionesLocales[index];
+  if (!mision) return;
+
+  const esTerminada = mision.estado === 'TERMINADA';
+  const mensajeConfirmacion = esTerminada 
+    ? `⚠️ ¿Estás seguro de eliminar el libro "${mision.titulo}" ya completado?\n\nEsto restará sus páginas leídas, descontará 1 libro finalizado, eliminará sus rasgos/prestigio y borrará su registro del Atlas y la Estantería.`
+    : `¿Deseas abandonar o quitar esta misión de tu lista?`;
+
+  if (!confirm(mensajeConfirmacion)) return;
+
+  try {
+    const userSnap = await getDoc(currentUserDocRef);
+    if (!userSnap.exists()) return;
+    const userData = userSnap.data();
+
+    let actualizacionesFirestore = {};
+
+    if (esTerminada) {
+      const paginas = mision.paginas || 0;
+      const prestigioPerdido = paginas + Math.floor(paginas / 2); // O el cálculo base que se le dio
+
+      // 1. Revertir contadores numéricos básicos
+      actualizacionesFirestore.paginasLeidas = increment(-paginas);
+      actualizacionesFirestore.librosCompletados = increment(-1);
+      actualizacionesFirestore.prestigio = increment(-prestigioPerdido);
+
+      // 2. Limpiar rasgos o cicatrices otorgados por esta misión (si los hubiera)
+      if (mision.rasgosOtorga && Array.isArray(mision.rasgosOtorga)) {
+        const rasgosActuales = userData.rasgos || [];
+        const nuevosRasgos = rasgosActuales.filter(r => !mision.rasgosOtorga.includes(r));
+        actualizacionesFirestore.rasgos = nuevosRasgos;
+      }
+
+      if (mision.cicatricesOtorga && Array.isArray(mision.cicatricesOtorga)) {
+        const cicatricesActuales = userData.cicatrices || [];
+        const nuevasCicatrices = cicatricesActuales.filter(c => !mision.cicatricesOtorga.includes(c));
+        actualizacionesFirestore.cicatrices = nuevasCicatrices;
+      }
+
+      // 3. Borrar de la colección global de Biblioteca / Atlas del usuario
+      // El ID único que usamos al registrarlo era: titulo.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-') + "_" + index;
+      const idUnicoLibro = (mision.titulo || "exploracion").toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-') + "_" + index;
+      
+      try {
+        await deleteDoc(doc(db, `aventureros/${currentUserId}/biblioteca`, idUnicoLibro));
+        await deleteDoc(doc(db, `aventureros/${currentUserId}/atlas`, idUnicoLibro));
+      } catch (errClean) {
+        console.warn("Aviso al limpiar estantería/atlas secundario:", errClean);
+      }
+    }
+
+    // 4. Quitar la misión del array local del usuario
+    misionesLocales.splice(index, 1);
+    actualizacionesFirestore.misionesSecundarias = misionesLocales;
+
+    // Aplicar cambios en Firestore
+    await updateDoc(currentUserDocRef, actualizacionesFirestore);
+
+    alert("🗑️ Misión y todos sus registros asociados han sido eliminados correctamente.");
+    await cargarDatosAventurero(currentUserDocRef);
+
+  } catch (err) {
+    console.error("Error al eliminar misión local con reversión:", err);
+    alert("❌ Hubo un error al purgar los registros de la misión.");
+  }
 }
 
 // ==========================================

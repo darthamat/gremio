@@ -11,10 +11,12 @@ import {
     getDoc,
     setDoc,
     updateDoc,
-    arrayUnion
+    arrayUnion,
+    increment
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { app } from "./firebase-config.js";
 import { registrarLecturaLibre } from "./gestorLibros.js";
+import { asegurarHiloTaberna } from "./taberna.js";
 import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio.js";
 
 const auth = getAuth(app);
@@ -212,6 +214,7 @@ function posicionarTooltip(e) {
 }
 
 // Control del Modal Rápido en la Biblioteca
+// Control del Modal Rápido en la Biblioteca
 const modal = document.getElementById("modal-libro");
 const btnAbrirModal = document.getElementById("btn-abrir-modal");
 const btnCerrarModal = document.getElementById("btn-cerrar-modal");
@@ -232,13 +235,17 @@ if (formLibro) {
         const titulo = document.getElementById("titulo").value.trim();
         const autor = document.getElementById("autor").value.trim();
         const paginas = Number(document.getElementById("paginas").value) || 0;
-        const color = document.getElementById("color") ? document.getElementById("color").value : "";
+        const color = document.getElementById("color") ? document.getElementById("color").value : "#8b263e";
         const generoInput = document.getElementById("genero") ? document.getElementById("genero").value : "Fantasía";
 
         try {
             const libroId = titulo.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "_");
 
-            // 1. REGISTRAR EN LA COLECCIÓN GLOBAL "BIBLIOTECA"
+            // 1. RECOMPENSAS (Prestigio y Marcapáginas, sin XP)
+            const gananciaPrestigio = paginas + Math.floor(Math.random() * (paginas + 1));
+            const gananciaMarcapaginas = Math.floor(Math.random() * (paginas || 1)) + 1;
+
+            // 2. REGISTRAR EN LA COLECCIÓN GLOBAL "BIBLIOTECA"
             await setDoc(doc(db, "biblioteca", `${currentUser.uid}_${libroId}`), {
                 titulo,
                 autor,
@@ -247,12 +254,12 @@ if (formLibro) {
                 usuarioId: currentUser.uid,
                 lectores: [currentUser.uid],
                 fechaCompletado: new Date(),
-                colorLomo: color, // Si el usuario eligió uno específico en el form, se respeta
+                colorLomo: color,
                 generos: [generoInput],
                 tipoOrigen: "LECTURA_LIBRE"
             }, { merge: true });
 
-            // 2. REGISTRAR EN LAS MISIONES SECUNDARIAS DEL PERFIL
+            // 3. REGISTRAR EN LAS MISIONES SECUNDARIAS / PERFIL Y ACTUALIZAR CONTADORES GLOBALES
             const aventureroRef = doc(db, "aventureros", currentUser.uid);
             const nuevaMisionSecundaria = {
                 id: libroId,
@@ -266,10 +273,30 @@ if (formLibro) {
             };
 
             await updateDoc(aventureroRef, {
-                misionesSecundarias: arrayUnion(nuevaMisionSecundaria)
+                misionesSecundarias: arrayUnion(nuevaMisionSecundaria),
+                prestigio: increment(gananciaPrestigio),
+                marcapaginas: increment(gananciaMarcapaginas),
+                paginasLeidas: increment(paginas),
+                librosCompletados: increment(1)
             });
 
-            alert(`✨ ¡Lectura libre registrada con éxito!\n\n🏆 Se han sumado Puntos de Prestigio a tu legajo.`);
+            // 4. REGISTRAR EN EL ATLAS / ESTANTERÍA GLOBAL (Usando la función oficial del Gremio)
+            const datosLibroParaAtlas = {
+                id: libroId,
+                titulo: titulo,
+                autor: autor,
+                paginas: paginas,
+                genero: generoInput,
+                portadaUrl: "https://via.placeholder.com/100x150/1e1e2f/f39c12?text=Sin+Portada",
+                fechaTerminado: new Date().toISOString(),
+                colorLomo: color
+            };
+            await registrarLecturaLibre(currentUser.uid, datosLibroParaAtlas);
+
+            // 5. ASEGURAR HILO EN LA TABERNA PARA DEBATIR
+            await asegurarHiloTaberna(currentUser.uid, datosLibroParaAtlas, 'misiones');
+
+            alert(`🎉 ¡Lectura libre registrada con éxito!\n\n🏆 +${gananciaPrestigio} Puntos de Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas\n📚 El lomo luce en tu Estantería, el Atlas ha sido iluminado y ¡se ha abierto su debate en la Taberna!`);
             
             if (modal) modal.classList.add("oculto");
             formLibro.reset();
@@ -277,7 +304,7 @@ if (formLibro) {
 
         } catch (error) {
             console.error("Error al guardar la lectura libre:", error);
-            alert("Ocurrió un error al registrar el libro.");
+            alert("❌ Ocurrió un error al registrar el libro y sus recompensas.");
         }
     });
 }
