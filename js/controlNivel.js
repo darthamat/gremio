@@ -4,11 +4,11 @@ import { calcularEstadoAventurero, calcularStatsTotales } from "./sistemaGamific
 
 /**
  * Calcula la XP acumulada requerida para alcanzar un nivel dado.
- * Fórmula cuadrática suavizada: 200 * (N - 1)^1.4
+ * Fórmula cuadrática suavizada: 200 * (N - 1)^1.4 -- actualizada a 300 * (N - 1)^1.5 para un crecimiento más gradual.
  */
 export function calcularXPNecesaria(nivel) {
   if (nivel <= 1) return 0;
-  return Math.floor(200 * Math.pow(nivel - 1, 1.4));
+  return Math.floor(300 * Math.pow(nivel - 1, 1.5));
 }
 
 /**

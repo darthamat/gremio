@@ -174,24 +174,29 @@ window.enviarOpinionHilo = async function(hiloId) {
 };
 
 // Añade esto en js/taberna.js
-export async function asegurarHiloTaberna(userId, datosLibro, tipoSeccion) {
-  try {
-    // Generamos un ID único para el hilo basado en el título limpio
-    const hiloId = datosLibro.titulo.toLowerCase().trim().replace(/[^\w\s-]/g, '').replace(/[\s_-]+/g, '-');
-    const hiloRef = doc(db, "taberna_hilos", hiloId);
-    
-    const snap = await getDoc(hiloRef);
-    if (!snap.exists()) {
-      // Si el hilo no existe, este aventurero se convierte en el fundador del debate
-      await setDoc(hiloRef, {
-        tipo: tipoSeccion, // 'retos' o 'misiones'
-        tituloLibro: datosLibro.titulo,
-        autor: datosLibro.autor || "Desconocido",
-        creadorHiloId: userId,
-        comentarios: []
-      });
+export async function asegurarHiloTaberna(userId, datosLibro, seccion = 'retos') {
+    try {
+        // Creamos un ID único para el hilo basado en el ID del libro
+        const hiloId = `hilo_${datosLibro.id || datosLibro.titulo.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
+        const hiloRef = doc(db, "taberna_hilos", hiloId);
+        const hiloSnap = await getDoc(hiloRef);
+
+        // Si el hilo ya existe, no duplicamos
+        if (hiloSnap.exists()) return;
+
+        // Si no existe, lo creamos automáticamente
+        await setDoc(hiloRef, {
+            tituloHilo: `Debate: ${datosLibro.titulo}`,
+            autorLibro: datosLibro.autor || "Desconocido",
+            portadaUrl: datosLibro.portadaUrl || datosLibro.imagenUrl || "",
+            seccion: seccion, // 'retos' o 'misiones'
+            creadorId: userId,
+            fechaCreacion: new Date().toISOString(),
+            comentariosCount: 0
+        });
+
+        console.log(`🍺 Hilo de taberna asegurado para: ${datosLibro.titulo} (${seccion})`);
+    } catch (error) {
+        console.error("Error al asegurar el hilo en la taberna:", error);
     }
-  } catch (err) {
-    console.error("Error al asegurar el hilo en la taberna:", err);
-  }
 }

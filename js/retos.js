@@ -17,6 +17,7 @@ import { completarRetoGremio, registrarLibroEnBibliotecaYAtlas } from "./gestorL
 import { procesarRecompensaLectura } from "./sistemaGamificacion.js"; 
 import { generarEnfrentamientoFinal } from "./maestroCalabozo.js";
 import { mostrarModalEncuentro } from "./modalCombate.js";
+import { asegurarHiloTaberna } from "./taberna.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -605,6 +606,8 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
       };
     }
 
+
+
     // 🛡️ Forzar un ID único y limpio que evite duplicados
     datosReto.id = generarIdUnicoLibro(datosReto.titulo, retoId);
 
@@ -646,7 +649,16 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
 
     alert(`🎉 ¡Misión Cumplida y Desafío Superado!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
 
+    const datosLibroParaAtlas = {
+    id: retoId,
+    titulo: retoData.tituloLibro || retoData.titulo,
+    autor: retoData.autor || "Desconocido",
+    portadaUrl: retoData.portadaUrl || "",
+    genero: retoData.genero || "Fantasía"
+};
+
     await cargarYRenderizarRetos();
+    await asegurarHiloTaberna(currentUserId, datosLibroParaAtlas, 'retos');
 
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
