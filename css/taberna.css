@@ -1,0 +1,187 @@
+/* ==========================================
+   🍺 ESTILOS DE LA TABERN DEL GREMIO
+   ========================================== */
+
+body {
+  background-color: #1a120b;
+  color: #f3e5ab;
+  font-family: 'Cinzel', serif, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
+/* Barra de navegación superior */
+.top-nav-bar {
+  padding: 15px 20px;
+  background: rgba(26, 18, 11, 0.95);
+  border-bottom: 2px solid #8b5a2b;
+}
+
+.nav-btn {
+  display: inline-block;
+  background: #3b2219;
+  color: #f3e5ab;
+  padding: 8px 15px;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+  border: 1px solid #8b5a2b;
+  transition: background 0.2s;
+}
+
+.nav-btn:hover {
+  background: #8b5a2b;
+  color: #ffffff;
+}
+
+/* Contenedor principal de la taberna */
+.taberna-container {
+  max-width: 900px;
+  margin: 30px auto;
+  padding: 20px;
+}
+
+.taberna-header {
+  text-align: center;
+  border-bottom: 3px solid #8b5a2b;
+  padding-bottom: 15px;
+  margin-bottom: 25px;
+}
+
+.taberna-header h1 {
+  color: #f3e5ab;
+  margin-bottom: 5px;
+}
+
+.taberna-header p {
+  color: #d4af37;
+  font-style: italic;
+}
+
+/* Pestañas del Foro */
+.tabs-foro {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+  justify-content: center;
+}
+
+.btn-tab-foro {
+  background: #3b2219;
+  color: #f3e5ab;
+  border: 2px solid #8b5a2b;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-family: 'Cinzel', serif;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-tab-foro:hover {
+  background: #5a3a1a;
+}
+
+.btn-tab-foro.activo {
+  background: #8b5a2b;
+  color: #fff;
+  border-color: #d4af37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.4);
+}
+
+/* Tarjetas de Hilos (Efecto Pergamino) */
+.hilo-card {
+  background: rgba(243, 229, 171, 0.95);
+  border: 2px solid #8b5a2b;
+  border-radius: 6px;
+  padding: 20px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  color: #3b2219; /* Texto oscuro legible sobre el pergamino */
+}
+
+.hilo-titulo {
+  color: #3b2219;
+  border-bottom: 2px dashed #8b5a2b;
+  padding-bottom: 8px;
+  margin-top: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 1.2rem;
+}
+
+.hilo-card p {
+  color: #2c1810;
+}
+
+/* Elementos internos de los hilos y comentarios */
+.comentario-item {
+  background: rgba(255, 255, 255, 0.7);
+  border-left: 4px solid #8b5a2b;
+  padding: 10px 15px;
+  margin-top: 12px;
+  border-radius: 0 4px 4px 0;
+  color: #2c1810;
+}
+
+.estrellas-badge {
+  background: #3b2219;
+  color: #ffd700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  border: 1px solid #d4af37;
+}
+
+.form-comentario {
+  margin-top: 15px;
+  background: rgba(139, 90, 43, 0.15);
+  padding: 15px;
+  border-radius: 4px;
+  border: 1px solid rgba(139, 90, 43, 0.3);
+}
+
+.form-comentario label {
+  font-weight: bold;
+  color: #3b2219;
+}
+
+.form-comentario textarea {
+  width: 100%;
+  padding: 10px;
+  border: 2px solid #5a3a1a;
+  background: #fff8e7;
+  color: #2c1810;
+  border-radius: 4px;
+  margin-top: 5px;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.form-comentario select {
+  padding: 8px;
+  border: 2px solid #5a3a1a;
+  background: #fff8e7;
+  color: #2c1810;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.btn-enviar-opinion {
+  background: #2e7d32;
+  color: white;
+  border: 1px solid #d4af37;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
+  margin-top: 10px;
+  border-radius: 4px;
+  font-family: 'Cinzel', serif;
+  transition: background 0.2s;
+}
+
+.btn-enviar-opinion:hover {
+  background: #1b5e20;
+}
