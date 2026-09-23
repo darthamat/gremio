@@ -546,6 +546,8 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
 
     alert(`🎉 ¡Misión Secundaria Superada!\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgBotin}${msgHuellas}`);
 
+   await asegurarHiloTaberna(usuarioSesionId, datosLibro, 'misiones');
+   
     await cargarMisionesSecundariasGlobales();
 
   } catch (error) {
@@ -555,6 +557,7 @@ async function completarMisionSecundaria(misionId, elementoBoton) {
   } finally {
     ejecucionEnProceso = false;
   }
+  
 }
 
 // ------------------------------------------------------------------
@@ -635,7 +638,7 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
     // 3. Registrar en Biblioteca, Estantería, Atlas y DISPARAR EL ENFRENTAMIENTO FINAL
     await completarRetoGremio(usuarioSesionId, datosReto);
 
-    // 4. Formatear mensaje de huellas para la alerta
+  // 4. Formatear mensaje de huellas para la alerta
     let msgHuellas = "";
     if (resRecompensa && resRecompensa.recompensas) {
       resRecompensa.recompensas.forEach(r => {
@@ -649,16 +652,10 @@ async function terminarReto(retoId, puntos, elementoBoton = null) {
 
     alert(`🎉 ¡Misión Cumplida y Desafío Superado!\n\n✨ +${gananciaXP} XP\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${msgHuellas}`);
 
-    const datosLibroParaAtlas = {
-    id: retoId,
-    titulo: retoData.tituloLibro || retoData.titulo,
-    autor: retoData.autor || "Desconocido",
-    portadaUrl: retoData.portadaUrl || "",
-    genero: retoData.genero || "Fantasía"
-};
+   // 🍺 5. ASEGURAR HILO EN LA TABERNA (Usando 'datosReto' y 'usuarioSesionId' correctamente)
+    await asegurarHiloTaberna(usuarioSesionId, datosReto, 'retos');
 
     await cargarYRenderizarRetos();
-    await asegurarHiloTaberna(currentUserId, datosLibroParaAtlas, 'retos');
 
   } catch (error) {
     console.error("Error al marcar la misión como completada:", error);
