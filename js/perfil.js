@@ -22,6 +22,7 @@ import { inicializarBuscadorGremio, abrirBuscadorGremio } from "./buscadorGremio
 import { registrarLibroEnBibliotecaYAtlas } from "./gestorLibros.js";
 import { generarEnfrentamientoFinal } from "./maestroCalabozo.js";
 import { mostrarModalEncuentro } from "./modalCombate.js";
+import { asegurarHiloTaberna } from "./taberna.js";
 
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -95,7 +96,6 @@ async function cargarDatosAventurero(docRef) {
   renderizarRasgosYCicatrices(rasgosOrigen, cicatricesOrigen);
   renderizarMisiones(misionesLocales);
   
-  // 🎒 Renderizamos la mochila y los seguidores con los datos reales del aventurero
   renderizarMochilaYSeguidores(data);
 }
 
@@ -336,7 +336,10 @@ async function completarMisionLocal(index) {
 
     await registrarLibroEnBibliotecaYAtlas(currentUserId, datosLibroParaAtlas);
 
-    alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeObjeto}${mensajeSeguidor}${infoRecompensas}${bonusClanText}\n📚 El lomo ya luce en tu Estantería y el Atlas ha sido iluminado.`);
+    // 🍺 ASEGURAR HILO EN LA TABERNA
+    await asegurarHiloTaberna(currentUserId, datosLibroParaAtlas, 'misiones');
+
+    alert(`🎉 ¡Portal del libro Explorado con Éxito!\n\n🏆 +${gananciaPrestigio} Prestigio\n🔖 +${gananciaMarcapaginas} Marcapáginas${mensajeObjeto}${mensajeSeguidor}${infoRecompensas}${bonusClanText}\n📚 El lomo luce en tu Estantería, el Atlas ha sido iluminado y ¡se ha abierto su debate en la Taberna!`);
     
     await cargarDatosAventurero(currentUserDocRef);
 
@@ -474,7 +477,6 @@ async function completarMisionDesdePerfil(id, data, userId) {
     const nuevosRasgos = [...new Set([...rasgActuales, ...(data.rasgosOtorga || [])])];
     const nuevasCicatrices = [...new Set([...cicatActuales, ...(data.cicatricesOtorga || [])])];
 
-    // Preparar mochila con el sistema de probabilidades de botín
     const mochilaActualizada = [...mochilaActual];
     let mensajeObjeto = "";
     if (encuentro.recompensaObjeto) {
@@ -484,7 +486,6 @@ async function completarMisionDesdePerfil(id, data, userId) {
       mensajeObjeto = `\n🍃 Esta vez el calabozo no reveló ningún objeto material.`;
     }
 
-    // Preparar seguidores con la tirada secundaria independiente (20%)
     let nuevosSeguidores = [...seguidoresActuales];
     let mensajeSeguidor = "";
     if (encuentro.seguidorDesbloqueado) {
@@ -499,7 +500,6 @@ async function completarMisionDesdePerfil(id, data, userId) {
       }
     }
 
-    // Actualizar Firestore con todas las recompensas unificadas
     await updateDoc(userRef, {
       prestigio: increment(prestigioTotal),
       rasgos: nuevosRasgos,
@@ -522,7 +522,10 @@ async function completarMisionDesdePerfil(id, data, userId) {
 
     await registrarLibroEnBibliotecaYAtlas(userId, datosLibroParaAtlas);
 
-    alert(`🎉 ¡Desafío superado y misión completada!\n\n🏆 +${prestigioTotal} Puntos de Prestigio${mensajeObjeto}${mensajeSeguidor}\n📚 El lomo ya luce en tu Estantería y el Atlas ha sido iluminado.`);
+    // 🍺 ASEGURAR HILO EN LA TABERNA
+    await asegurarHiloTaberna(userId, datosLibroParaAtlas, 'misiones');
+
+    alert(`🎉 ¡Desafío superado y misión completada!\n\n🏆 +${prestigioTotal} Puntos de Prestigio${mensajeObjeto}${mensajeSeguidor}\n📚 El lomo ya luce en tu Estantería, el Atlas ha sido iluminado y ¡se ha abierto su debate en la Taberna!`);
     
     location.reload();
 
@@ -590,7 +593,6 @@ function renderizarMochilaYSeguidores(dataAventurero) {
   const contenedorObjetos = document.getElementById("contenedor-objetos-mochila");
   const contenedorSeguidores = document.getElementById("contenedor-seguidores-perfil");
 
-  // 1. Renderizar Objetos Mágicos
   const objetos = dataAventurero.mochila || dataAventurero.objetosMagicos || [];
   if (contenedorObjetos) {
     if (objetos.length === 0) {
@@ -608,7 +610,6 @@ function renderizarMochilaYSeguidores(dataAventurero) {
     }
   }
 
-  // 2. Renderizar Seguidores
   const seguidores = dataAventurero.seguidores || [];
   if (contenedorSeguidores) {
     if (seguidores.length === 0) {

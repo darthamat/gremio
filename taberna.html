@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>La Taberna del Gremio - Foro y Debates</title>
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/perfil.css">
+    <style>
+        .taberna-container { max-width: 900px; margin: 30px auto; padding: 20px; font-family: 'Cinzel', serif; color: #3b2219; }
+        .taberna-header { text-align: center; border-bottom: 3px solid #8b5a2b; padding-bottom: 15px; margin-bottom: 25px; }
+        .tabs-foro { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .btn-tab-foro { background: #3b2219; color: #f3e5ab; border: 2px solid #8b5a2b; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .btn-tab-foro.activo { background: #8b5a2b; color: #fff; border-color: #d4af37; }
+        .hilo-card { background: rgba(243, 229, 171, 0.9); border: 2px solid #8b5a2b; border-radius: 6px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .hilo-titulo { color: #8b5a2b; border-bottom: 1px dashed #8b5a2b; padding-bottom: 8px; margin-top: 0; display: flex; justify-content: space-between; align-items: center; }
+        .comentario-item { background: rgba(255, 255, 255, 0.6); border-left: 4px solid #8b5a2b; padding: 10px 15px; margin-top: 10px; border-radius: 0 4px 4px 0; }
+        .estrellas-badge { background: #8b5a2b; color: #ffd700; padding: 2px 8px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; }
+        .form-comentario { margin-top: 15px; background: rgba(139, 90, 43, 0.1); padding: 15px; border-radius: 4px; }
+        .form-comentario textarea { width: 100%; padding: 10px; border: 2px solid #5a3a1a; background: #fff8e7; border-radius: 4px; margin-top: 5px; resize: vertical; }
+        .form-comentario select { padding: 8px; border: 2px solid #5a3a1a; background: #fff8e7; border-radius: 4px; font-weight: bold; }
+        .btn-enviar-opinion { background: #2e7d32; color: white; border: 1px solid #d4af37; padding: 8px 15px; cursor: pointer; font-weight: bold; margin-top: 10px; border-radius: 4px; }
+    </style>
+</head>
+<body style="background: #1a120b; color: #f3e5ab;">
+
+    <header class="top-nav-bar">
+        <a href="gremio.html" class="nav-btn btn-gremio">
+            <span>🏰 Volver al Gremio</span>
+        </a>
+    </header>
+
+    <main class="taberna-container">
+        <div class="taberna-header">
+            <h1>🍺 La Taberna del Gremio</h1>
+            <p>El calor del hogar y el debate eterno sobre los mundos explorados.</p>
+        </div>
+
+        <div class="tabs-foro">
+            <button class="btn-tab-foro activo" data-seccion="retos">⚔️ Retos Mensuales</button>
+            <button class="btn-tab-foro" data-seccion="misiones">📜 Misiones Secundarias</button>
+        </div>
+
+        <div id="contenedor-hilos">
+            <!-- Se cargará dinámicamente desde js/taberna.js -->
+            <p style="text-align: center; font-style: italic;">Cargando los murmullos de la taberna...</p>
+        </div>
+    </main>
+
+    <script type="module" src="js/taberna.js"></script>
+</body>
+</html>
