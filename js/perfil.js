@@ -659,15 +659,23 @@ function renderizarMochilaYSeguidores(dataAventurero) {
     if (objetos.length === 0) {
       contenedorObjetos.innerHTML = `<p style="font-style: italic; color: #718096; font-size: 0.9rem;">Ningún artefacto mágico guardado.</p>`;
     } else {
-      contenedorObjetos.innerHTML = objetos.map(obj => `
-        <div style="background: rgba(255,248,231,0.7); border: 1px solid #8b5a2b; border-radius: 4px; padding: 10px; display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.8rem;">${obj.icono || '🎁'}</span>
-          <div>
-            <strong style="font-size: 0.9rem; color: #2a150c; display: block;">${obj.nombre}</strong>
-            <small style="color: #5c4033; font-size: 0.75rem;">${obj.efecto}</small>
+      contenedorObjetos.innerHTML = objetos.map(obj => {
+        // 🛡️ Filtros de seguridad para evitar 'undefined'
+        const icono = obj.icono || '🎁';
+        const nombre = obj.nombre || 'Artefacto Desconocido';
+        const efecto = obj.efecto || obj.descripcion || 'Sin efecto descrito en los tomos.';
+        const rareza = obj.rareza ? `<span style="font-size: 0.7rem; color: #b26a00; font-weight: bold;">[${obj.rareza}]</span>` : '';
+
+        return `
+          <div style="background: rgba(255,248,231,0.7); border: 1px solid #8b5a2b; border-radius: 4px; padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+            <span style="font-size: 1.8rem;">${icono}</span>
+            <div>
+              <strong style="font-size: 0.9rem; color: #2a150c; display: block;">${nombre} ${rareza}</strong>
+              <small style="color: #5c4033; font-size: 0.75rem;">${efecto}</small>
+            </div>
           </div>
-        </div>
-      `).join("");
+        `;
+      }).join("");
     }
   }
 
@@ -677,9 +685,9 @@ function renderizarMochilaYSeguidores(dataAventurero) {
       contenedorSeguidores.innerHTML = `<p style="font-style: italic; color: #718096; font-size: 0.9rem;">Aún viajas en solitario por las tierras del Gremio.</p>`;
     } else {
       contenedorSeguidores.innerHTML = seguidores.map(seg => `
-        <div style="background: rgba(139, 90, 43, 0.1); border-left: 4px solid #8b5a2b; padding: 8px 12px; border-radius: 0 4px 4px 0;">
-          <strong style="color: #3b2219; font-size: 0.9rem;">${seg.nombre}</strong>
-          <p style="margin: 4px 0 0 0; font-size: 0.85rem; font-style: italic; color: #5c4033;">«${seg.frase}»</p>
+        <div style="background: rgba(139, 90, 43, 0.1); border-left: 4px solid #8b5a2b; padding: 8px 12px; border-radius: 0 4px 4px 0; margin-bottom: 8px;">
+          <strong style="color: #3b2219; font-size: 0.9rem;">${seg.nombre || 'Compañero'}</strong>
+          <p style="margin: 4px 0 0 0; font-size: 0.85rem; font-style: italic; color: #5c4033;">«${seg.frase || 'Un aliado silencioso en el camino.'}»</p>
         </div>
       `).join("");
     }
