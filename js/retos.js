@@ -138,16 +138,17 @@ async function cargarYRenderizarRetos() {
       return;
     }
 
-    let retoActual = todosLosRetos.find(r => r.id === "actual" || r.esActual === true) || todosLosRetos[0];
+   // Busca primero el que tenga la propiedad esActual: true, o bien ordénalos por ID descendente para coger el más reciente (ej. reto26_09)
+let retoActual = todosLosRetos.find(r => r.esActual === true) || 
+                 todosLosRetos.sort((a, b) => b.id.localeCompare(a.id))[0];
 
-    let retosHistoricos = todosLosRetos.filter(r => {
-      if (r.id === retoActual.id) return false;
-      if (r.id === "actual") return false;
-      if (retoActual.titulo && r.titulo && retoActual.titulo.toLowerCase() === r.titulo.toLowerCase() && r.id.startsWith("reto")) {
-        return false;
-      }
-      return true;
-    });
+ let retosHistoricos = todosLosRetos.filter(r => {
+  if (r.id === retoActual.id) return false;
+  if (retoActual.titulo && r.titulo && retoActual.titulo.toLowerCase() === r.titulo.toLowerCase() && r.id.startsWith("reto")) {
+    return false;
+  }
+  return true;
+});
 
     retosHistoricos.sort((a, b) => b.id.localeCompare(a.id));
 
@@ -158,8 +159,8 @@ async function cargarYRenderizarRetos() {
       elProponente.textContent = proponenteNombre;
     }
 
-    const esAceptadoActual = retosAceptados.includes(retoActual.id) || retosAceptados.includes("actual");
-    const esCompletadoActual = retosCompletados.includes(retoActual.id) || retosCompletados.includes("actual");
+    const esAceptadoActual = retosAceptados.includes(retoActual.id);
+    const esCompletadoActual = retosCompletados.includes(retoActual.id);
 
     const resumenFinal = retoActual.resumenObra || obtenerResumenGemini(retoActual.libro || retoActual.titulo);
     const autor = retoActual.autor || "Desconocido";
