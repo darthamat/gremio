@@ -660,17 +660,18 @@ function renderizarMochilaYSeguidores(dataAventurero) {
       contenedorObjetos.innerHTML = `<p style="font-style: italic; color: #718096; font-size: 0.9rem;">Ningún artefacto mágico guardado.</p>`;
     } else {
       contenedorObjetos.innerHTML = objetos.map(obj => {
-        // 🛡️ Filtros de seguridad para evitar 'undefined'
+        // 🛡️ Comprobación robusta de propiedades (admite nombre, name, titulo o title)
         const icono = obj.icono || '🎁';
-        const nombre = obj.nombre || 'Artefacto Desconocido';
-        const efecto = obj.efecto || obj.descripcion || 'Sin efecto descrito en los tomos.';
-        const rareza = obj.rareza ? `<span style="font-size: 0.7rem; color: #b26a00; font-weight: bold;">[${obj.rareza}]</span>` : '';
+        const nombre = obj.nombre || obj.name || obj.titulo || obj.title || 'Artefacto Mágico';
+        const efecto = obj.efecto || obj.descripcion || obj.desc || 'Sin efecto descrito en los tomos.';
+        const rareza = obj.rareza || obj.rarity || '';
+        const rarezaHtml = rareza ? `<span style="font-size: 0.7rem; color: #b26a00; font-weight: bold;">[${rareza}]</span>` : '';
 
         return `
           <div style="background: rgba(255,248,231,0.7); border: 1px solid #8b5a2b; border-radius: 4px; padding: 10px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
             <span style="font-size: 1.8rem;">${icono}</span>
             <div>
-              <strong style="font-size: 0.9rem; color: #2a150c; display: block;">${nombre} ${rareza}</strong>
+              <strong style="font-size: 0.9rem; color: #2a150c; display: block;">${nombre} ${rarezaHtml}</strong>
               <small style="color: #5c4033; font-size: 0.75rem;">${efecto}</small>
             </div>
           </div>
