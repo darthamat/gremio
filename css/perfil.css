@@ -677,3 +677,118 @@
   color: #a393b5;
   margin: 0;
 }
+
+/* ==========================================================================
+   📜 SECCIÓN DE MISIONES EN EL PERFIL (RPG LIMPIO)
+   ========================================================================== */
+
+.seccion-misiones-perfil {
+    margin-top: 15px;
+}
+
+.grupo-misiones-titulo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.05rem;
+    color: #ffd700;
+    border-bottom: 1px dashed #c5a059;
+    padding-bottom: 5px;
+    margin: 20px 0 12px 0;
+}
+
+/* Tarjeta individual de misión en perfil */
+.mision-card-rpg {
+    background: linear-gradient(135deg, #181322 0%, #110d18 100%);
+    border: 1px solid #4a385c;
+    border-radius: 8px;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    transition: border-color 0.2s ease;
+}
+
+.mision-card-rpg:hover {
+    border-color: #c5a059;
+}
+
+.mision-card-rpg.terminada {
+    background: linear-gradient(135deg, #101c14 0%, #0a120d 100%);
+    border-color: #2e7d32;
+}
+
+/* Contenido interno de la tarjeta */
+.mision-info-inner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-grow: 1;
+}
+
+.mision-info-inner img {
+    width: 45px;
+    height: 65px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #4a385c;
+    flex-shrink: 0;
+}
+
+.mision-textos strong {
+    font-size: 0.95rem;
+    color: #ffd700;
+    display: block;
+    margin-bottom: 2px;
+    font-family: 'Cinzel', serif;
+}
+
+.mision-textos small {
+    color: #a393b5;
+    font-size: 0.8rem;
+}
+
+/* Botones de acción modernos y temáticos */
+.mision-acciones-rpg {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-rpg-accion {
+    font-family: 'Cinzel', serif;
+    font-weight: bold;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+}
+
+.btn-rpg-terminar {
+    background: #2e7d32;
+    color: #fff;
+    border-color: #4caf50;
+}
+
+.btn-rpg-terminar:hover {
+    background: #1b5e20;
+    transform: translateY(-1px);
+}
+
+.btn-rpg-eliminar {
+    background: #4a2020;
+    color: #ff9999;
+    border-color: #e74c3c;
+}
+
+.btn-rpg-eliminar:hover {
+    background: #c62828;
+    color: #fff;
+    transform: translateY(-1px);
+}

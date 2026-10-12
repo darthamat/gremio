@@ -426,70 +426,127 @@ async function cargarMisionesSecundariasPerfil(userId) {
   if (!contenedor) return;
 
   try {
-    contenedor.innerHTML = "<small>Buscando tus contratos activos...</small>";
+    contenedor.innerHTML = "<small style='color: #a393b5; font-style: italic;'>Examinando tus contratos activos en el gremio...</small>";
     
     const q = query(collection(db, "misionesSecundarias"), where("usuariosAceptaron", "array-contains", userId));
     const querySnapshot = await getDocs(q);
 
     if (querySnapshot.empty) {
-      contenedor.innerHTML = `<p style="font-size: 0.85rem; font-style: italic;">No estás participando en ninguna misión secundaria actualmente. ¡Visita el tablón o crea una nueva!</p>`;
+      contenedor.innerHTML = `<p style="font-size: 0.85rem; font-style: italic; color: #a393b5;">No estás participando en ninguna misión secundaria actualmente. ¡Visita el tablón para unirte a expediciones!</p>`;
       return;
     }
 
-    contenedor.innerHTML = "";
+    let misionesEnCurso = [];
+    let misionesTerminadas = [];
+
     querySnapshot.forEach((misionDoc) => {
       const data = misionDoc.data();
       const id = misionDoc.id;
-      const esCreador = data.creadorId === userId;
       const yaCompleto = data.usuariosCompletaron && data.usuariosCompletaron.includes(userId);
 
-      const divItem = document.createElement("div");
-      divItem.style.cssText = "background: rgba(255,248,231,0.6); border: 1px solid #8b5a2b; padding: 10px; border-radius: 4px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px;";
+      const objetoMision = { id, data, esCreador: data.creadorId === userId };
 
-      divItem.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 10px;">
-          <img src="${data.portadaUrl || 'https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=400'}" style="width: 40px; height: 55px; object-fit: cover; border-radius: 3px;">
-          <div>
-            <strong style="font-size: 0.95rem; color: #2a150c;">${data.titulo}</strong><br>
-            <small style="color: #5c4033;">Autor: ${data.autor} | ${yaCompleto ? '✅ <span style="color:green;">Completado</span>' : '⏳ <span style="color:#b26a00;">En curso</span>'}</small>
-          </div>
-        </div>
-        <div style="display: flex; gap: 5px; align-items: center;" id="acciones-perfil-${id}">
-          <!-- Botones dinámicos -->
-        </div>
-      `;
-
-      contenedor.appendChild(divItem);
-
-      const divAcciones = document.getElementById(`acciones-perfil-${id}`);
-      
-      if (!yaCompleto) {
-        const btnTerminar = document.createElement("button");
-        btnTerminar.className = "btn-secundario";
-        btnTerminar.style.background = "#2e7d32";
-        btnTerminar.style.fontSize = "0.75rem";
-        btnTerminar.style.padding = "5px 8px";
-        btnTerminar.textContent = "🏁 Terminar";
-        btnTerminar.onclick = () => completarMisionDesdePerfil(id, data, userId);
-        divAcciones.appendChild(btnTerminar);
-      }
-
-      if (esCreador) {
-        const btnEliminar = document.createElement("button");
-        btnEliminar.className = "btn-secundario";
-        btnEliminar.style.background = "#c62828";
-        btnEliminar.style.fontSize = "0.75rem";
-        btnEliminar.style.padding = "5px 8px";
-        btnEliminar.textContent = "🗑️ Borrar";
-        btnEliminar.onclick = () => eliminarMisionSecundariaPerfil(id);
-        divAcciones.appendChild(btnEliminar);
+      if (yaCompleto) {
+        misionesTerminadas.push(objetoMision);
+      } else {
+        misionesEnCurso.push(objetoMision);
       }
     });
 
+    contenedor.innerHTML = "";
+
+    // 1. SECCIÓN DE MISIONES EN CURSO
+    const divEnCurso = document.createElement("div");
+    divEnCurso.className = "seccion-misiones-perfil";
+    divEnCurso.innerHTML = `<h3 class="grupo-misiones-titulo">⏳ Expediciones en Curso (${misionesEnCurso.length})</h3>`;
+    
+    if (misionesEnCurso.length === 0) {
+      divEnCurso.innerHTML += `<p style="font-size: 0.8rem; color: #a393b5; font-style: italic; margin-bottom: 15px;">No tienes ningún contrato activo pendiente de entrega.</p>`;
+    } else {
+      misionesEnCurso.forEach(m => {
+        divEnCurso.appendChild(crearTarjetaMisionRPG(m.id, m.data, userId, m.esCreador, false));
+      });
+    }
+    contenedor.appendChild(divEnCurso);
+
+ // 2. SECCIÓN DE HISTÓRICO DE OBRAS CONQUISTADAS (OCULTO EN DESPLEGABLE)
+    const divTerminadas = document.createElement("div");
+    divTerminadas.className = "seccion-misiones-perfil";
+
+    if (misionesTerminadas.length === 0) {
+      divTerminadas.innerHTML = `
+        <h3 class="grupo-misiones-titulo">📜 Histórico de Obras Conquistadas (0)</h3>
+        <p style="font-size: 0.8rem; color: #a393b5; font-style: italic;">Aún no has completado ningún contrato de este tablón.</p>
+      `;
+    } else {
+      // Usamos <details> y <summary> para que aparezca oculto y se pueda desplegar
+      const detalleHistorico = document.createElement("details");
+      detalleHistorico.style.cssText = "background: rgba(16, 28, 20, 0.4); border: 1px solid #2e7d32; border-radius: 8px; padding: 12px 15px; margin-top: 15px;";
+
+      detalleHistorico.innerHTML = `
+        <summary style="cursor: pointer; font-family: 'Cinzel', serif; font-weight: bold; font-size: 1.05rem; color: #5cdb95; user-select: none;">
+          📜 Ver Histórico de Obras Conquistadas (${misionesTerminadas.length})
+        </summary>
+        <div style="margin-top: 15px;" id="contenedor-lista-terminadas"></div>
+      `;
+
+      const contenedorTerminadas = detalleHistorico.querySelector("#contenedor-lista-terminadas");
+      misionesTerminadas.forEach(m => {
+        contenedorTerminadas.appendChild(crearTarjetaMisionRPG(m.id, m.data, userId, m.esCreador, true));
+      });
+
+      divTerminadas.appendChild(detalleHistorico);
+    }
+    
+    contenedor.appendChild(divTerminadas);
+
   } catch (err) {
     console.error("Error al cargar misiones secundarias del perfil:", err);
-    contenedor.innerHTML = "<small style='color:red;'>Error al cargar tus misiones secundarias.</small>";
+    contenedor.innerHTML = "<small style='color:#ff6b6b;'>Error al cargar tus misiones secundarias.</small>";
   }
+}
+
+// Función auxiliar para construir tarjetas de misión limpias y ordenadas
+function crearTarjetaMisionRPG(id, data, userId, esCreador, yaCompleto) {
+  const tarjeta = document.createElement("div");
+  tarjeta.className = `mision-card-rpg ${yaCompleto ? 'terminada' : ''}`;
+
+  const portada = data.portadaUrl || data.portada || 'https://via.placeholder.com/150x220?text=Sin+Portada';
+  const titulo = data.titulo || 'Misión';
+  const autor = data.autor || 'Desconocido';
+
+  tarjeta.innerHTML = `
+    <div class="mision-info-inner">
+      <img src="${portada}" alt="${titulo}" onerror="this.src='https://via.placeholder.com/150x220?text=Sin+Portada'">
+      <div class="mision-textos">
+        <strong>${titulo}</strong>
+        <small>Autor: ${autor} | ${yaCompleto ? '✅ <span style="color:#5cdb95;">Conquistado</span>' : '⏳ <span style="color:#f39c12;">En lectura</span>'}</small>
+      </div>
+    </div>
+    <div class="mision-acciones-rpg" id="acciones-rpg-${id}">
+      <!-- Botones inyectados dinámicamente -->
+    </div>
+  `;
+
+  const divAcciones = tarjeta.querySelector(`#acciones-rpg-${id}`);
+
+  if (!yaCompleto) {
+    const btnTerminar = document.createElement("button");
+    btnTerminar.className = "btn-rpg-accion btn-rpg-terminar";
+    btnTerminar.innerHTML = "🏁 Terminar";
+    btnTerminar.onclick = () => completarMisionDesdePerfil(id, data, userId);
+    divAcciones.appendChild(btnTerminar);
+  }
+
+  if (esCreador) {
+    const btnEliminar = document.createElement("button");
+    btnEliminar.className = "btn-rpg-accion btn-rpg-eliminar";
+    btnEliminar.innerHTML = "🗑️ Borrar";
+    btnEliminar.onclick = () => eliminarMisionSecundariaPerfil(id);
+    divAcciones.appendChild(btnEliminar);
+  }
+
+  return tarjeta;
 }
 
 async function completarMisionDesdePerfil(id, data, userId) {
