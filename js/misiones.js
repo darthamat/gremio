@@ -11,7 +11,7 @@ const db = getFirestore(app);
 let currentUserId = null;
 let userData = null;
 let todasLasMisiones = [];
-let cicloActivo = "todos"; // 'todos' o un formato 'YYYY-MM'
+let filtroActivo = "mes_actual"; // 'todas', 'mes_actual', 'en_curso', 'completadas'
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
@@ -29,111 +29,148 @@ onAuthStateChanged(auth, async (user) => {
 // Carga todas las misiones del tablón global
 async function cargarTablonMisiones() {
   const contenedor = document.getElementById("tablon-misiones-lista");
-  const contenedorCiclos = document.getElementById("contenedor-pestanas-ciclos");
   if (!contenedor) return;
 
-  contenedor.innerHTML = `<p style="text-align: center; color: #f3e5ab; font-style: italic;">Examinando pergaminos en el tablón...</p>`;
+  contenedor.innerHTML = `<p style="text-align: center; color: #f3e5ab; font-style: italic; width: 100%;">Examinando pergaminos en el tablón...</p>`;
 
   try {
     const querySnap = await getDocs(collection(db, "misionesSecundarias"));
     todasLasMisiones = [];
 
     querySnap.forEach(docSnap => {
-      todasLasMisiones.push({ id: docSnap.id, ...docSnap.data() });
+      const data = docSnap.data();
+      const fechaValida = data.fechaCreacion ? new Date(data.fechaCreacion) : new Date();
+      
+      todasLasMisiones.push({ 
+        id: docSnap.id, 
+        ...data,
+        fechaCreacionObj: isNaN(fechaValida.getTime()) ? new Date() : fechaValida
+      });
     });
 
-    renderizarPestanasCiclos();
-    renderizarPergaminosFiltrados();
+    renderizarPestanasFiltros();
+    renderizarMisionesFiltradas();
 
   } catch (error) {
     console.error("Error al cargar misiones:", error);
-    contenedor.innerHTML = "<p style='color: #ff6b6b; text-align: center;'>Error al consultar los archivos del tablón.</p>";
+    contenedor.innerHTML = "<p style='color: #ff6b6b; text-align: center; width: 100%;'>Error al consultar los archivos del tablón.</p>";
   }
 }
 
-// Genera las pestañas superiores agrupadas por Año y Mes según la fecha de creación
-function renderizarPestanasCiclos() {
+// Genera los 4 Botones Principales de Filtrado
+function renderizarPestanasFiltros() {
   const contenedorCiclos = document.getElementById("contenedor-pestanas-ciclos");
   if (!contenedorCiclos) return;
 
-  const ciclosSet = new Set();
-  todasLasMisiones.forEach(m => {
-    const fecha = m.fechaCreacion ? new Date(m.fechaCreacion) : new Date();
-    const ano = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    ciclosSet.add(`${ano}-${mes}`);
-  });
-
-  const ciclosOrdenados = Array.from(ciclosSet).sort().reverse();
-
-  let html = `<button class="btn-ciclo ${cicloActivo === 'todos' ? 'activo' : ''}" data-ciclo="todos">📜 Todos</button>`;
-  
-  const mesesNombres = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-  
-  ciclosOrdenados.forEach(ciclo => {
-    const [ano, mes] = ciclo.split("-");
-    const nombreMes = mesesNombres[parseInt(mes, 10) - 1];
-    html += `<button class="btn-ciclo ${cicloActivo === ciclo ? 'activo' : ''}" data-ciclo="${ciclo}">${nombreMes} ${ano}</button>`;
-  });
+  const html = `
+    <button class="btn-ciclo ${filtroActivo === 'mes_actual' ? 'activo' : ''}" data-filtro="mes_actual">🗡️ Mes en Curso</button>
+    <button class="btn-ciclo ${filtroActivo === 'en_curso' ? 'activo' : ''}" data-filtro="en_curso">⏳ Mis Misiones Aceptadas</button>
+    <button class="btn-ciclo ${filtroActivo === 'completadas' ? 'activo' : ''}" data-filtro="completadas">📜 Histórico Completadas</button>
+    <button class="btn-ciclo ${filtroActivo === 'todas' ? 'activo' : ''}" data-filtro="todas">🌍 Todas las Misiones</button>
+  `;
 
   contenedorCiclos.innerHTML = html;
 
   contenedorCiclos.querySelectorAll(".btn-ciclo").forEach(btn => {
     btn.addEventListener("click", (e) => {
-      cicloActivo = e.target.getAttribute("data-ciclo");
-      renderizarPestanasCiclos();
-      renderizarPergaminosFiltrados();
+      filtroActivo = e.target.getAttribute("data-filtro");
+      renderizarPestanasFiltros();
+      renderizarMisionesFiltradas();
     });
   });
 }
 
-// Filtra y pinta los pergaminos en el tablón
-function renderizarPergaminosFiltrados() {
+// Filtra y pinta las misiones según el botón seleccionado
+function renderizarMisionesFiltradas() {
   const contenedor = document.getElementById("tablon-misiones-lista");
   if (!contenedor) return;
 
   contenedor.innerHTML = "";
 
-  const misionFiltradas = todasLasMisiones.filter(m => {
-    if (cicloActivo === "todos") return true;
-    const fecha = m.fechaCreacion ? new Date(m.fechaCreacion) : new Date();
-    const ano = fecha.getFullYear();
-    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-    return `${ano}-${mes}` === cicloActivo;
-  });
+  const fechaHoy = new Date();
+  const mesActual = fechaHoy.getMonth();
+  const anoActual = fechaHoy.getFullYear();
 
-  if (misionFiltradas.length === 0) {
-    contenedor.innerHTML = `<p style="text-align: center; color: #f3e5ab; font-style: italic; grid-column: 1/-1;">No hay contratos clavados en este periodo temporal.</p>`;
+  let misionesAVisualizar = [];
+
+  // Lógica de filtrado según la pestaña activa
+  if (filtroActivo === "mes_actual") {
+    misionesAVisualizar = todasLasMisiones.filter(m => {
+      const f = m.fechaCreacionObj;
+      return f.getMonth() === mesActual && f.getFullYear() === anoActual;
+    });
+  } else if (filtroActivo === "en_curso") {
+    misionesAVisualizar = todasLasMisiones.filter(m => {
+      const aceptados = m.usuariosAceptaron || [];
+      const completados = m.usuariosCompletaron || [];
+      return aceptados.includes(currentUserId) && !completados.includes(currentUserId);
+    });
+  } else if (filtroActivo === "completadas") {
+    misionesAVisualizar = todasLasMisiones.filter(m => {
+      const completados = m.usuariosCompletaron || [];
+      return completados.includes(currentUserId);
+    });
+
+    // Ordenar de más reciente a más antiguo para el histórico
+    misionesAVisualizar.sort((a, b) => b.fechaCreacionObj - a.fechaCreacionObj);
+  } else {
+    // 'todas'
+    misionesAVisualizar = [...todasLasMisiones];
+  }
+
+  if (misionesAVisualizar.length === 0) {
+    let msgVacio = "No hay contratos registrados en esta sección.";
+    if (filtroActivo === "mes_actual") msgVacio = "No hay misiones secundarias creadas durante este mes.";
+    if (filtroActivo === "en_curso") msgVacio = "No tienes expediciones aceptadas pendientes de terminar.";
+    if (filtroActivo === "completadas") msgVacio = "Aún no has completado ninguna misión secundaria.";
+
+    contenedor.innerHTML = `<p style="text-align: center; color: #f3e5ab; font-style: italic; grid-column: 1/-1;">${msgVacio}</p>`;
     return;
   }
 
-  misionFiltradas.forEach(mision => {
+  // Pinta las tarjetas de las misiones filtradas
+  misionesAVisualizar.forEach(mision => {
     const usuariosCompletaron = mision.usuariosCompletaron || [];
     const completadoPorMi = usuariosCompletaron.includes(currentUserId);
     const yaUnido = (mision.usuariosAceptaron || []).includes(currentUserId);
 
     const card = document.createElement("div");
-    // Si ya está completado, se añade la clase 'completado' (efecto pergamino enrollado / recortado)
     card.className = `pergamino-card ${completadoPorMi ? 'completado' : ''}`;
 
-    card.innerHTML = `
-      <h3>📜 ${mision.titulo}</h3>
-      <div class="detalles-completos">
-        <p style="margin: 4px 0; font-size: 0.85rem;"><strong>Autor:</strong> ${mision.autor || 'Desconocido'}</p>
-        <p style="margin: 4px 0; font-size: 0.80rem; font-style: italic; color: #5c4033;">«${mision.proclama || 'Sin proclama específica'}»</p>
-        <p style="margin: 4px 0; font-size: 0.75rem; color: #714624;">📄 ${mision.paginas || 0} págs | 👤 Creado por: ${mision.creadorNombre || 'Aventurero'}</p>
-      </div>
+    const titulo = mision.titulo || 'Misión sin título';
+    const autor = mision.autor || 'Desconocido';
+    const proclama = mision.proclama || mision.mensaje || mision.descripcion || 'Sin proclama específica';
+    const paginas = Number(mision.paginas) || 0;
+    const creadorNombre = mision.creadorNombre || userData?.nombre || 'Aventurero';
+    const portadaUrl = mision.portadaUrl || 'https://via.placeholder.com/150x220?text=Sin+Portada';
 
-      <div style="margin-top: 8px;">
-        ${completadoPorMi ? `
-          <span style="font-size: 0.75rem; font-weight: bold; color: #2e7d32; display: block; text-align: center;">✅ Expedición Completada</span>
-        ` : `
-          ${!yaUnido ? `
-            <button class="btn-accion-tablon btn-unirse" data-id="${mision.id}">🗡️ Unirse a la Exploración</button>
+    // Formatear mes y año de creación para el histórico
+    const meses = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const fechaTexto = `${meses[mision.fechaCreacionObj.getMonth()]} ${mision.fechaCreacionObj.getFullYear()}`;
+
+    card.innerHTML = `
+      <img src="${portadaUrl}" alt="${titulo}" style="width: 55px; height: 80px; object-fit: cover; border-radius: 3px; border: 1px solid #8b5a2b; flex-shrink: 0;" onerror="this.src='https://via.placeholder.com/150x220?text=Sin+Portada'">
+      <div style="flex-grow: 1;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="word-break: break-word; margin: 0;">📜 ${titulo}</h3>
+          <small style="font-size: 0.65rem; color: #8b5a2b; font-weight: bold;">${fechaTexto}</small>
+        </div>
+        <div class="detalles-completos">
+          <p style="margin: 3px 0; font-size: 0.8rem;"><strong>Autor:</strong> ${autor}</p>
+          <p style="margin: 3px 0; font-size: 0.75rem; font-style: italic; color: #5c4033;">«${proclama}»</p>
+          <p style="margin: 3px 0; font-size: 0.7rem; color: #714624;">📄 ${paginas} págs | 👤 Creado por: ${creadorNombre}</p>
+        </div>
+        <div style="margin-top: 6px;">
+          ${completadoPorMi ? `
+            <span style="font-size: 0.75rem; font-weight: bold; color: #2e7d32; display: block; text-align: center;">✅ Expedición Conquistada</span>
           ` : `
-            <span style="font-size: 0.75rem; font-weight: bold; color: #8b5a2b; display: block; text-align: center;">⏳ En curso (Termina en tu Perfil)</span>
+            ${!yaUnido ? `
+              <button class="btn-accion-tablon btn-unirse" data-id="${mision.id}">🗡️ Unirse a la Exploración</button>
+            ` : `
+              <span style="font-size: 0.75rem; font-weight: bold; color: #8b5a2b; display: block; text-align: center;">⏳ En curso (Termina en tu Perfil)</span>
+            `}
           `}
-        `}
+        </div>
       </div>
     `;
 
@@ -146,7 +183,7 @@ function renderizarPergaminosFiltrados() {
   });
 }
 
-// Unirse a un portal desde el tablón
+// Unirse a un portal
 async function unirseAMisionPortal(misionId) {
   try {
     const misionRef = doc(db, "misionesSecundarias", misionId);
@@ -169,8 +206,8 @@ function inicializarModalCreacion() {
   const btnCerrar = document.getElementById("btn-cerrar-modal-mision");
   const form = document.getElementById("form-crear-portal");
 
-  if (btnAbrir && modal) btnAbrir.addEventListener("click", () => modal.style.display = "flex");
-  if (btnCerrar && modal) btnCerrar.addEventListener("click", () => modal.style.display = "none");
+  if (btnAbrir && modal) btnAbrir.addEventListener("click", () => modal.classList.remove("oculto"));
+  if (btnCerrar && modal) btnCerrar.addEventListener("click", () => modal.classList.add("oculto"));
 
   if (form) {
     form.addEventListener("submit", async (e) => {
@@ -178,16 +215,20 @@ function inicializarModalCreacion() {
       const titulo = document.getElementById("mision-titulo").value.trim();
       const autor = document.getElementById("mision-autor").value.trim();
       const paginas = Number(document.getElementById("mision-paginas").value) || 100;
+      const portadaUrl = document.getElementById("mision-portada-url").value.trim() || "";
       const proclama = document.getElementById("mision-proclama").value.trim();
+
+      const nombreCreador = userData?.nombre || "Aventurero del Cónclave";
 
       try {
         await addDoc(collection(db, "misionesSecundarias"), {
           titulo,
           autor,
           paginas,
+          portadaUrl,
           proclama,
           creadorId: currentUserId,
-          creadorNombre: userData.nombre || "Aventurero",
+          creadorNombre: nombreCreador,
           activa: true,
           usuariosAceptaron: [currentUserId],
           usuariosCompletaron: [],
@@ -195,7 +236,7 @@ function inicializarModalCreacion() {
         });
 
         alert("📜 ¡Nuevo contrato clavado en el tablón con éxito!");
-        modal.style.display = "none";
+        modal.classList.add("oculto");
         form.reset();
         await cargarTablonMisiones();
       } catch (err) {
